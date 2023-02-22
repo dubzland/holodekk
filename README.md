@@ -1,1 +1,29 @@
 Central repo for holodekk related spikes.
+
+# Roadmap
+
+## Milestone 1 (kubernetes)
+
+### shim
+	- build runc shim from capone source
+	- build ruby wrapper for shim
+	- allow deps to be injected via ruby wrapper
+	- handle events from ruby wrapper
+	- build runnable object from wrapper
+	- add docker driver
+	- add kubernetes driver
+
+### kubernetes integrated
+	- run "shim" as a kubernetes service (pod)
+	- interact with kubernetes from pod
+
+## Milestone 2 (development orchestrator)
+
+## node org supervisor
+	- respond to shim start requests
+	- respond to shim lifecycle events
+	- store state
+	- manage cgroups/users/limits
+
+## node supervisor
+	- respond to app requests
