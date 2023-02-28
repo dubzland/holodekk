@@ -1,5 +1,5 @@
 [package]
-name = "holodekk-shim"
+name = "holodekk"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.1.6", features = ["derive"] }
 libc = "0.2.139"
+log = "0.4.17"
+syslog = "6.0.1"
