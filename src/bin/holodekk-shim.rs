@@ -1,58 +1,84 @@
 extern crate libc;
 
-use std::panic;
-use std::path::{PathBuf};
+use std::fs;
+use std::path::{Path, PathBuf};
 
-use log::error;
-use syslog::{BasicLogger, Facility, Formatter3164};
+use clap::{Parser, Subcommand};
 
-use clap::Parser;
+use holodekk::libsee;
+use holodekk::logger::logger_init;
+use holodekk::runtime;
+use holodekk::streams::override_streams;
 
-use holodekk::shim::Shim;
-
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-struct Args {
-    #[arg(short, long)]
-    base: PathBuf,
+struct Cli {
+    /// Path to the shim's pid file
+    #[arg(long = "shim-pidfile", value_name = "file")]
+    pidfile: PathBuf,
 
-    #[arg(short, long)]
-    exec: bool,
+    /// Path to the runtime (ex. /usr/bin/runc)
+    #[arg(long = "runtime-path", value_name = "file")]
+    runtime_path: PathBuf,
 
-    name: String,
+    /// name for the container instance
+    #[arg(long = "container-id", value_name = "id")]
+    container_id: String,
+
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Create a new container
+    Create {
+        /// Path to the OCI bundle directory
+        #[arg(short, long = "bundle", value_name = "dir")]
+        bundle_path: PathBuf,
+    },
+    /// Execute a command in an existing container
+    Exec {
+        /// Path to the container's pid file
+        #[arg(long = "container-pidfile", value_name = "file")]
+        container_pidfile: PathBuf,
+
+        runtime_args: Vec<String>,
+
+    }
 }
 
 fn main() {
-    let args = Args::parse();
-    let pidfile = args.base.join("shim.pid");
-    let bundle = args.base.join("bundle");
+    let options = Cli::parse();
 
-    setup_logger(log::LevelFilter::Debug);
+    logger_init("holodekk-shim", log::LevelFilter::Debug);
 
-    let shim = Shim::new(bundle)
-        .pid_file(pidfile);
-    if args.exec {
-        shim.exec(args.name);
-    } else {
-        shim.create(args.name);
+    let res = libsee::fork().unwrap();
+    if let Some(pid) = res {
+        // in parent
+        write_pid(options.pidfile, pid);
+        libsee::_exit(0);
     }
 
-}
+    // In child
+    override_streams((None, None, None)).unwrap();
+    libsee::setsid().unwrap();
+    libsee::prctl(libc::PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0).unwrap();
 
-fn setup_logger(level: log::LevelFilter) {
-    let formatter = Formatter3164 {
-        facility: Facility::LOG_USER,
-        hostname: None,
-        process: "holodekk-shim".into(),
-        pid: 0,
+    let cmd: Box<dyn runtime::Command> = match &options.command {
+        Commands::Create { bundle_path } => {
+            Box::new(runtime::CreateCommand::new(bundle_path))
+        },
+        Commands::Exec { container_pidfile, runtime_args } => {
+            Box::new(runtime::ExecCommand::new(container_pidfile, runtime_args))
+        },
     };
 
-    let logger = syslog::unix(formatter).expect("could not connect to syslog");
-    log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
-        .map(|()| log::set_max_level(level))
-        .expect("log::set_boxed_logger() failed");
+    runtime::exec(options.runtime_path.as_os_str().to_str().unwrap(), &options.container_id, cmd).unwrap();
+}
 
-    panic::set_hook(Box::new(|info| {
-        error!("{}", info);
-    }));
+fn write_pid<F: AsRef<Path>>(pidfile: F, pid: libsee::Pid) {
+    if let Err(err) = fs::write(pidfile.as_ref(), format!("{}", pid)) {
+        panic!("write() to pidfile {} failed: {}", pidfile.as_ref().display(), err);
+    }
 }
