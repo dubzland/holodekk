@@ -1,14 +1,14 @@
 extern crate libc;
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
 use holodekk::libsee;
-use holodekk::logger::logger_init;
-use holodekk::runtime;
-use holodekk::streams::override_streams;
+use holodekk::logger;
+
+mod runtime;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -51,19 +51,7 @@ enum Commands {
 fn main() {
     let options = Cli::parse();
 
-    logger_init("holodekk-shim", log::LevelFilter::Debug);
-
-    let res = libsee::fork().unwrap();
-    if let Some(pid) = res {
-        // in parent
-        write_pid(options.pidfile, pid);
-        libsee::_exit(0);
-    }
-
-    // In child
-    override_streams((None, None, None)).unwrap();
-    libsee::setsid().unwrap();
-    libsee::prctl(libc::PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0).unwrap();
+    logger::init("holodekk-shim", log::LevelFilter::Debug);
 
     let cmd: Box<dyn runtime::Command> = match &options.command {
         Commands::Create { bundle_path } => {
@@ -74,11 +62,14 @@ fn main() {
         },
     };
 
-    runtime::exec(options.runtime_path.as_os_str().to_str().unwrap(), &options.container_id, cmd).unwrap();
-}
+    let shim = runtime::Shim::new(options.runtime_path)
+        .container_id(&options.container_id);
 
-fn write_pid<F: AsRef<Path>>(pidfile: F, pid: libsee::Pid) {
-    if let Err(err) = fs::write(pidfile.as_ref(), format!("{}", pid)) {
-        panic!("write() to pidfile {} failed: {}", pidfile.as_ref().display(), err);
+    let res = shim.exec(cmd);
+    if let Some(pid) = res {
+        if let Err(err) = fs::write(&options.pidfile, format!("{}", pid)) {
+            panic!("write() to pidfile {} failed: {}", options.pidfile.display(), err);
+        }
+        libsee::_exit(0);
     }
 }

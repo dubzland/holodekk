@@ -86,18 +86,12 @@ pub fn dup2(fd_new: c_int, fd_old: c_int) -> Result<()> {
     Ok(())
 }
 
-pub fn execv(argv: &Vec<CString>) -> Result<c_int> {
+pub fn execv(argv: &Vec<CString>) {
     let mut argv_raw: Vec<*const c_char> = vec![];
     for arg in argv.iter() { argv_raw.push(arg.as_ptr()) }
     argv_raw.push(std::ptr::null());
-    let res = syscall!(execv(argv_raw[0], argv_raw.as_ptr()))?;
-    Ok(res)
+    unsafe { libc::execv(argv_raw[0], argv_raw.as_ptr()); }
 }
-
-// pub fn execv(prog: *const libc::c_char, argv: *const *const libc::c_char) -> Result<c_int> {
-//     let res = syscall!(execv(prog, argv))?;
-//     Ok(res)
-// }
 
 pub fn _exit(code: c_int) -> ! {
     unsafe { libc::_exit(code); }

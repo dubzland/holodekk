@@ -3,7 +3,7 @@ use std::panic;
 use log::error;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
-pub fn logger_init(process: &str, level: log::LevelFilter) {
+pub fn init(process: &str, level: log::LevelFilter) {
     let formatter = Formatter3164 {
         facility: Facility::LOG_USER,
         hostname: None,
