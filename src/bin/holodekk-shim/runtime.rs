@@ -4,8 +4,6 @@ use std::path::{Path, PathBuf};
 
 use log::debug;
 
-use libsee::Pid;
-
 use holodekk::libsee;
 use holodekk::streams::{create_pipes, override_streams};
 
@@ -72,7 +70,7 @@ impl Command for ExecCommand {
 pub struct Container {
     id: String,
     pidfile: PathBuf,
-    pid: Pid,
+    // pid: libsee::Pid,
 }
 
 impl Container {
@@ -80,7 +78,7 @@ impl Container {
         Container {
             id: id.to_string(),
             pidfile: pidfile.as_ref().to_owned(),
-            pid: -1
+            // pid: -1
         }
     }
 }
