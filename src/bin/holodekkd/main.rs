@@ -1,29 +1,13 @@
 use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use actix_web::{post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{post, web, App, HttpResponse, HttpServer};
+use awc::{ClientBuilder, Connector};
+use awc_uds::UdsConnector;
 use clap::error::ErrorKind;
 use clap::{CommandFactory, Parser};
-use futures::StreamExt;
-use hyper::{Body, Client, Method, Request, body::HttpBody, Uri as HyperUri};
-use hyperlocal::{UnixConnector, Uri};
 use nix::unistd::chown;
-use serde::Deserialize;
 use users::get_group_by_name;
-
-#[derive(Deserialize)]
-struct AuxResponse {
-    id: String,
-}
-
-
-#[derive(Deserialize)]
-enum BuildResponse {
-    #[serde(rename = "stream")]
-    Stream(String),
-    #[serde(rename = "aux")]
-    Aux(AuxResponse),
-}
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -70,52 +54,19 @@ async fn main() -> std::io::Result<()> {
 }
 
 #[post("/build")]
-async fn build(mut payload: web::Payload) -> impl Responder {
-    let connector = UnixConnector;
-    let uri: HyperUri = Uri::new("/var/run/docker.sock", "/build").into();
-    let client: Client<UnixConnector, Body> = Client::builder().build(connector);
-
-    let (sender, body) = Body::channel();
-
-    let producer = async {
-        let mut sender = sender;
-        while let Some(item) = payload.next().await {
-            let chunk = item.unwrap();
-            let res = sender.send_data(chunk).await;
-            match res {
-                Err(_) => break,
-                _ => (),
-            }
-        }
-    };
-
-    let docker_req = Request::builder()
-        .method(Method::POST)
-        .uri(uri)
-        .header("content-type", "application/x-tar")
-        .body(body)
-        .expect("request builder");
-
-    let (_, resp) = futures::join!(producer, client.request(docker_req));
-
+async fn build(payload: web::Payload) -> HttpResponse {
+    println!("Received build request");
+    let socket_path = Path::new("/var/run/docker.sock");
+    let connector = Connector::new().connector(UdsConnector::new(socket_path));
+    let client = ClientBuilder::new().connector(connector).finish();
+    println!("Sending build context to Docker");
+    let resp = client.post("http://localhost/build").send_stream(payload).await;
     match resp {
-        Ok(mut r) => {
-            println!("Response: {}", r.status());
-            while let Some(maybe_chunk) = r.body_mut().data().await {
-                let chunk_raw = maybe_chunk.unwrap();
-                println!("raw: {:?}", &chunk_raw);
-                let utf8 = String::from_utf8(chunk_raw.to_vec()).unwrap();
-                let line: BuildResponse = serde_json::from_str(&utf8).unwrap();
-                match line {
-                    BuildResponse::Stream(msg) => { println!("{}", msg); },
-                    BuildResponse::Aux(aux) => { println!("built image: {}" , aux.id); },
-                }
-            }
-            HttpResponse::Ok().body("Hello world!")
-        }
-        Err(err) => {
-            println!("Error: {}", err);
-            HttpResponse::InternalServerError().body("Error building image")
+        Ok(r) => {
+            HttpResponse::Ok().streaming(r)
+        },
+        Err(e) => {
+            HttpResponse::InternalServerError().body(format!("Docker error: {}", e))
         }
     }
 }
