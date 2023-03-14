@@ -1,6 +1,6 @@
 use std::panic;
 
-use log::error;
+pub use log::{debug, error, LevelFilter};
 use syslog::{BasicLogger, Facility, Formatter3164};
 
 pub fn init(process: &str, level: log::LevelFilter) {

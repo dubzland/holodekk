@@ -5,10 +5,8 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
-use log::debug;
-
-use holodekk::libsee;
-use holodekk::logger;
+use holodekk_core::libsee;
+use holodekk_core::logger;
 
 mod runtime;
 
@@ -53,11 +51,11 @@ pub enum Commands {
 fn main() {
     let options = Options::parse();
 
-    logger::init("holodekk-shim", log::LevelFilter::Debug);
+    logger::init("holodekk-shim", logger::LevelFilter::Debug);
 
     let res = libsee::fork().unwrap();
     if let Some(pid) = res {
-        debug!("forked worker with pid: {}", pid);
+        logger::debug!("forked worker with pid: {}", pid);
         if let Err(err) = fs::write(&options.pidfile, format!("{}", pid)) {
             panic!("write() to pidfile {} failed: {}", options.pidfile.display(), err);
         }
