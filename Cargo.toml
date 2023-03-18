@@ -1,10 +1,11 @@
 [workspace]
 members = [
-    "crates/holodekk",
+    "crates/holodekk-cli",
     "crates/holodekkd",
     "crates/holodekk-core",
     "crates/holodekk-shim",
 ]
+exclude = ["packages/ruby/ext/holodekk_rust"]
 
 [workspace.package]
 version = "0.1.0"

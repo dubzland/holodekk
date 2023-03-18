@@ -8,6 +8,12 @@ license-file.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+serde.workspace = true
+serde_json.workspace = true
+flate2 = "1.0.25"
+hyper = "0.14.24"
+hyperlocal = "0.8.0"
 log = "0.4.17"
 libc = "0.2.139"
 syslog = "6.0.1"
+tar = "0.4.38"
