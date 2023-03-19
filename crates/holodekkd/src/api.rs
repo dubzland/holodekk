@@ -1,5 +1,3 @@
-mod subroutines;
-
 use std::fmt;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
@@ -7,6 +5,8 @@ use std::path::PathBuf;
 use actix_web::{web, App, HttpServer};
 
 use nix::unistd::{chown, Gid};
+
+use crate::subroutines;
 
 #[derive(Debug)]
 pub enum Error {
@@ -45,7 +45,7 @@ pub async fn run(socket_gid: Gid, socket_path: &PathBuf) -> InitResult {
     // initialize the server and bind the socket
     let server = HttpServer::new(|| {
         App::new()
-            .service(web::scope("/subroutines").configure(subroutines::routes))
+            .service(web::scope("/subroutines").configure(subroutines::api::routes))
     })
     .bind_uds(socket_path).map_err(|err| Error::Bind(err))?;
 

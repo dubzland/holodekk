@@ -66,22 +66,22 @@ async fn create() -> Result<HttpResponse, Error> {
 }
 
 #[post("/build")]
-async fn build(body: Bytes) -> Result<HttpResponse, Error> {
+async fn build(_body: Bytes) -> Result<HttpResponse, Error> {
     println!("Received build request.");
 
-    let _runtime: RuntimeHandles;
-    let current_dir = env::current_dir().unwrap();
-    let mut holodekk_dir = PathBuf::from(current_dir);
-    holodekk_dir.push(".holodekk");
+    // let _runtime: RuntimeHandles;
+    // let current_dir = env::current_dir().unwrap();
+    // let mut holodekk_dir = PathBuf::from(current_dir);
+    // holodekk_dir.push(".holodekk");
 
-    if holodekk_dir.try_exists().unwrap() {
-        let mut ruby_path = PathBuf::from(&holodekk_dir);
-        ruby_path.push("default.rb");
-        if ruby_path.try_exists().unwrap() {
-            let cleanup = init_ruby(&holodekk_dir, &ruby_path).unwrap();
-            _runtime = RuntimeHandles::for_ruby(cleanup);
-        }
-    }
+    // if holodekk_dir.try_exists().unwrap() {
+    //     let mut ruby_path = PathBuf::from(&holodekk_dir);
+    //     ruby_path.push("default.rb");
+    //     if ruby_path.try_exists().unwrap() {
+    //         let cleanup = init_ruby(&holodekk_dir, &ruby_path).unwrap();
+    //         _runtime = RuntimeHandles::for_ruby(cleanup);
+    //     }
+    // }
 
     // let options = BuildImageOptions::<String> {
     //     dockerfile: "Dockerfile".to_string(),
