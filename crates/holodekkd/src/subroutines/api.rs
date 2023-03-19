@@ -1,5 +1,5 @@
-use std::env;
-use std::path::PathBuf;
+// use std::env;
+// use std::path::PathBuf;
 
 use actix_web::{web::Bytes, post, web, Error, HttpResponse};
 
@@ -11,9 +11,9 @@ use actix_web::{web::Bytes, post, web, Error, HttpResponse};
 
 // use tokio_stream::{Stream, StreamExt};
 
-use magnus::{eval, require};
-use magnus::{Error as MagnusError, RArray, RHash, RModule};
-use magnus::embed::{self, Cleanup};
+// use magnus::{eval, require};
+// use magnus::{Error as MagnusError, RArray, RHash, RModule};
+// use magnus::embed::{self, Cleanup};
 
 // use crate::docker;
 
@@ -50,15 +50,15 @@ pub fn routes(cfg: &mut web::ServiceConfig) {
 //     }
 // }
 
-struct RuntimeHandles {
-    _ruby: Option<Cleanup>,
-}
+// struct RuntimeHandles {
+//     _ruby: Option<Cleanup>,
+// }
 
-impl RuntimeHandles {
-    fn for_ruby(handle: Cleanup) -> Self {
-        Self { _ruby: Some(handle) }
-    }
-}
+// impl RuntimeHandles {
+//     fn for_ruby(handle: Cleanup) -> Self {
+//         Self { _ruby: Some(handle) }
+//     }
+// }
 
 #[post("/create")]
 async fn create() -> Result<HttpResponse, Error> {
@@ -99,30 +99,30 @@ async fn build(_body: Bytes) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().body(""))
 }
 
-fn init_ruby(holodekk_dir: &PathBuf, ruby_file: &PathBuf) -> Result<Cleanup, MagnusError> {
-    let cleanup = unsafe { embed::init() };
-    // let module = define_module("Holodekk")?;
-    // let injector = module.define_class("Injector", class::object())?;
-    // injector.define_singleton_method("inject", function!(handle_subroutine, 1))?;
+// fn init_ruby(holodekk_dir: &PathBuf, ruby_file: &PathBuf) -> Result<Cleanup, MagnusError> {
+//     let cleanup = unsafe { embed::init() };
+//     // let module = define_module("Holodekk")?;
+//     // let injector = module.define_class("Injector", class::object())?;
+//     // injector.define_singleton_method("inject", function!(handle_subroutine, 1))?;
 
-    let current_dir = env::current_dir().unwrap();
+//     let current_dir = env::current_dir().unwrap();
 
-    env::set_current_dir(holodekk_dir).unwrap();
-    env::set_var("HOLODEKK_TARGET", ruby_file);
-    require(ruby_file.to_str().unwrap()).unwrap();
-    env::set_current_dir(current_dir).unwrap();
+//     env::set_current_dir(holodekk_dir).unwrap();
+//     env::set_var("HOLODEKK_TARGET", ruby_file);
+//     require(ruby_file.to_str().unwrap()).unwrap();
+//     env::set_current_dir(current_dir).unwrap();
 
-    // Get a reference to the global Holodekk module
-    if let Some(holodekk) = RModule::from_value(eval("Holodekk").unwrap()) {
-        if holodekk.respond_to("subroutines", false).unwrap() {
-            // Get the subroutine hash
-            let subroutines: RHash = holodekk.funcall("subroutines", ()).unwrap();
-            let keys: RArray = subroutines.funcall("keys", ()).unwrap();
-            println!("subroutines: {}", keys);
-            // let res: RString = holodekk.funcall("subroutines", ())?;
-            // println!("hello: {}", res);
-        }
-    }
+//     // Get a reference to the global Holodekk module
+//     if let Some(holodekk) = RModule::from_value(eval("Holodekk").unwrap()) {
+//         if holodekk.respond_to("subroutines", false).unwrap() {
+//             // Get the subroutine hash
+//             let subroutines: RHash = holodekk.funcall("subroutines", ()).unwrap();
+//             let keys: RArray = subroutines.funcall("keys", ()).unwrap();
+//             println!("subroutines: {}", keys);
+//             // let res: RString = holodekk.funcall("subroutines", ())?;
+//             // println!("hello: {}", res);
+//         }
+//     }
 
-    Ok(cleanup)
-}
+//     Ok(cleanup)
+// }

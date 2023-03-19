@@ -1,18 +1,28 @@
 pub mod api;
-pub mod store;
+mod service;
+
+pub use service::Service;
 
 use std::cell::RefCell;
-
 use std::collections::HashMap;
-pub use store::*;
+use std::result;
+
+#[derive(Debug)]
+pub enum Error {
+    Unknown,
+    DefinitionNotFound(String),
+    TagNotFound(String),
+}
+
+pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug, Clone, Default, PartialEq)]
-pub struct Subroutine {
+pub struct SubroutineDef {
     name: String,
     tags: RefCell<HashMap<String, String>>,
 }
 
-impl Subroutine {
+impl SubroutineDef {
     pub fn new(name: &str) -> Self {
         Self { name: name.to_string(), tags: RefCell::new(HashMap::new()) }
     }
@@ -33,7 +43,7 @@ impl Subroutine {
     pub fn get_engine_id(&self, tag: &str) -> Result<String> {
         match self.tags.borrow().get(tag) {
             Some(engine_id) => Ok(engine_id.to_string()),
-            None => Err(Error::NotFound),
+            None => Err(Error::TagNotFound(tag.to_string())),
         }
     }
 }
