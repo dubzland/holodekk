@@ -4,7 +4,7 @@ use std::mem;
 use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
 
 use crate::libsee;
-use crate::pipes::{ Pipe };
+use crate::pipes::Pipe;
 
 pub struct InputStream(RawFd);
 
@@ -19,7 +19,9 @@ impl Read for InputStream {
 
 impl Drop for InputStream {
     fn drop(&mut self) {
-        unsafe { libc::close(self.0); }
+        unsafe {
+            libc::close(self.0);
+        }
     }
 }
 
@@ -33,7 +35,9 @@ pub struct OutputStream(RawFd);
 
 impl Drop for OutputStream {
     fn drop(&mut self) {
-        unsafe { libc::close(self.0); }
+        unsafe {
+            libc::close(self.0);
+        }
     }
 }
 
@@ -44,7 +48,13 @@ pub struct IOMain {
 }
 
 impl IOMain {
-    pub fn streams(self) -> (Option<OutputStream>, Option<InputStream>, Option<InputStream>) {
+    pub fn streams(
+        self,
+    ) -> (
+        Option<OutputStream>,
+        Option<InputStream>,
+        Option<InputStream>,
+    ) {
         (self.stdin, self.stdout, self.stderr)
     }
 }
@@ -56,14 +66,28 @@ pub struct IOWorker {
 }
 
 impl IOWorker {
-    pub fn streams(self) -> (Option<InputStream>, Option<OutputStream>, Option<OutputStream>) {
+    pub fn streams(
+        self,
+    ) -> (
+        Option<InputStream>,
+        Option<OutputStream>,
+        Option<OutputStream>,
+    ) {
         (self.stdin, self.stdout, self.stderr)
     }
 }
 
 pub fn create_pipes(use_stdin: bool, use_stdout: bool, use_stderr: bool) -> (IOMain, IOWorker) {
-    let mut main = IOMain { stdin: None, stdout: None, stderr: None };
-    let mut worker = IOWorker { stdin: None, stdout: None, stderr: None };
+    let mut main = IOMain {
+        stdin: None,
+        stdout: None,
+        stderr: None,
+    };
+    let mut worker = IOWorker {
+        stdin: None,
+        stdout: None,
+        stderr: None,
+    };
 
     if use_stdin {
         let stdin = Pipe::new().expect("Failed to create stdin pipe.");
@@ -91,8 +115,13 @@ fn open_dev_null(flags: libc::c_int) -> libsee::Result<RawFd> {
     libsee::open("/dev/null", flags | libc::O_CLOEXEC)
 }
 
-pub fn override_streams((ins, outs, errs):
-    (Option<InputStream>, Option<OutputStream>, Option<OutputStream>)) -> libsee::Result<()> {
+pub fn override_streams(
+    (ins, outs, errs): (
+        Option<InputStream>,
+        Option<OutputStream>,
+        Option<OutputStream>,
+    ),
+) -> libsee::Result<()> {
     match ins {
         Some(InputStream(fd)) => {
             libsee::dup2(fd, libc::STDIN_FILENO)?;
@@ -107,7 +136,7 @@ pub fn override_streams((ins, outs, errs):
     match outs {
         Some(OutputStream(fd)) => {
             libsee::dup2(fd, libc::STDOUT_FILENO)?;
-        },
+        }
         None => {
             let fd = open_dev_null(libc::O_WRONLY)?;
             libsee::dup2(fd, libc::STDOUT_FILENO)?;

@@ -6,8 +6,8 @@ use clap::{Parser, Subcommand};
 
 use colored::*;
 
-use holodekk_core::subroutine;
 use holodekk_core::engine::{docker, Image, ImageTag};
+use holodekk_core::subroutine;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -19,19 +19,19 @@ pub struct Options {
 #[derive(Subcommand)]
 pub enum Commands {
     /// List the available subroutines.
-    #[command(name="ls")]
+    #[command(name = "ls")]
     List {},
 
     /// Build the subroutine in the current directory.
     Build {
         /// Directory where the subroutine is located.
-        #[arg(short, long, default_value=".holodekk")]
+        #[arg(short, long, default_value = ".holodekk")]
         directory: String,
 
         /// Name of the subroutine to run
-        #[arg(default_value="default")]
-        name: String
-    }
+        #[arg(default_value = "default")]
+        name: String,
+    },
 }
 
 #[tokio::main]
@@ -43,7 +43,7 @@ async fn main() -> holodekk_core::Result<()> {
     holodekk_dir.push(".holodekk");
 
     match &options.command {
-        Commands::List{} => {
+        Commands::List {} => {
             let docker = docker::Service::new();
             let subroutines = subroutine::Service::new(&docker);
             let images = subroutines.images().await?;
@@ -58,8 +58,8 @@ async fn main() -> holodekk_core::Result<()> {
                 }
                 println!("");
             }
-        },
-        Commands::Build{ directory, name } => {
+        }
+        Commands::Build { directory, name } => {
             let current_dir = env::current_dir().unwrap();
             let mut holodekk_dir = PathBuf::from(current_dir);
             holodekk_dir.push(directory);
@@ -71,15 +71,18 @@ async fn main() -> holodekk_core::Result<()> {
                     ProcessCommand::new(&ruby_path)
                         .current_dir(&holodekk_dir)
                         .arg("build")
-                        .status().unwrap();
+                        .status()
+                        .unwrap();
                 } else {
                     println!("Could not find subroutine {}.", ruby_path.display());
                 }
             } else {
-                println!("Holodekk directory [{}] does not exist.", holodekk_dir.display());
+                println!(
+                    "Holodekk directory [{}] does not exist.",
+                    holodekk_dir.display()
+                );
             }
-
-        },
+        }
     }
     Ok(())
 }

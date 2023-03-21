@@ -34,7 +34,7 @@ impl fmt::Display for HolodekkError {
                     write!(f, "{}", message)?;
                 }
                 Ok(())
-            },
+            }
             HolodekkError::Io(err) => write!(f, "{}", err),
             HolodekkError::Utf8(err) => write!(f, "{}", err),
             HolodekkError::Parse(err) => write!(f, "{}", err),
@@ -52,4 +52,3 @@ impl error::Error for HolodekkError {
         None
     }
 }
-

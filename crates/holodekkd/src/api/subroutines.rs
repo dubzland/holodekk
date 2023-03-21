@@ -1,7 +1,7 @@
 // use std::env;
 // use std::path::PathBuf;
 
-use actix_web::{web::Bytes, post, web, Error, HttpResponse};
+use actix_web::{error, get, post, web, web::Bytes, Error, HttpResponse, Responder, Result};
 
 // use bollard::Docker;
 // use bollard::image::BuildImageOptions;
@@ -11,16 +11,12 @@ use actix_web::{web::Bytes, post, web, Error, HttpResponse};
 
 // use tokio_stream::{Stream, StreamExt};
 
-// use magnus::{eval, require};
-// use magnus::{Error as MagnusError, RArray, RHash, RModule};
-// use magnus::embed::{self, Cleanup};
+use holodekk_core::subroutine;
 
-// use crate::docker;
+use super::server::ApiServices;
 
 pub fn routes(cfg: &mut web::ServiceConfig) {
-
-    cfg
-        .service(build);
+    cfg.service(images).service(build);
 }
 
 // struct DockerBuilder {
@@ -60,9 +56,14 @@ pub fn routes(cfg: &mut web::ServiceConfig) {
 //     }
 // }
 
-#[post("/create")]
-async fn create() -> Result<HttpResponse, Error> {
-    Ok(HttpResponse::Ok().body(""))
+#[get("/images")]
+async fn images(services: web::Data<ApiServices>) -> Result<impl Responder> {
+    let subroutines = subroutine::Service::new(services.docker());
+    let images = subroutines
+        .images()
+        .await
+        .map_err(|_e| error::ErrorInternalServerError("Bogus"))?;
+    Ok(web::Json(images))
 }
 
 #[post("/build")]

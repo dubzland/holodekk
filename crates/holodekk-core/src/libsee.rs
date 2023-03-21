@@ -88,19 +88,25 @@ pub fn dup2(fd_new: c_int, fd_old: c_int) -> Result<()> {
 
 pub fn execv(argv: &Vec<CString>) {
     let mut argv_raw: Vec<*const c_char> = vec![];
-    for arg in argv.iter() { argv_raw.push(arg.as_ptr()) }
+    for arg in argv.iter() {
+        argv_raw.push(arg.as_ptr())
+    }
     argv_raw.push(std::ptr::null());
-    unsafe { libc::execv(argv_raw[0], argv_raw.as_ptr()); }
+    unsafe {
+        libc::execv(argv_raw[0], argv_raw.as_ptr());
+    }
 }
 
 pub fn _exit(code: c_int) -> ! {
-    unsafe { libc::_exit(code); }
+    unsafe {
+        libc::_exit(code);
+    }
 }
 
 pub fn fork() -> Result<Option<Pid>> {
     match syscall!(fork())? {
         0 => Ok(None),
-        pid => Ok(Some(pid))
+        pid => Ok(Some(pid)),
     }
 }
 
@@ -109,7 +115,13 @@ pub fn open(path: &str, flags: c_int) -> Result<c_int> {
     syscall!(open(path_c.as_ptr(), flags))
 }
 
-pub fn prctl(option: c_int, arg2: c_ulong, arg3: c_ulong, arg4: c_ulong, arg5: c_ulong) -> Result<()> {
+pub fn prctl(
+    option: c_int,
+    arg2: c_ulong,
+    arg3: c_ulong,
+    arg4: c_ulong,
+    arg5: c_ulong,
+) -> Result<()> {
     syscall!(prctl(option, arg2, arg3, arg4, arg5))?;
     Ok(())
 }

@@ -2,27 +2,28 @@ use std::cell::Ref;
 
 use async_trait::async_trait;
 
+use serde::Serialize;
+
 use crate::Result;
 
 #[derive(Clone, Debug)]
-pub enum ContainerKind {
-}
+pub enum ContainerKind {}
 
 pub trait Container<I, T>
 where
     I: Image<T>,
-    T: ImageTag
+    T: ImageTag,
 {
     fn id(&self) -> &str;
     fn kind(&self) -> &ImageKind;
     fn image(&self) -> &I;
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum ImageKind {
     Subroutine,
     Service,
-    Application
+    Application,
 }
 
 pub trait ImageTag {
@@ -31,7 +32,7 @@ pub trait ImageTag {
 
 pub trait Image<T>
 where
-    T: ImageTag
+    T: ImageTag,
 {
     fn name(&self) -> &str;
     fn kind(&self) -> &ImageKind;
@@ -42,7 +43,7 @@ where
 pub trait ImageStore<I, T>
 where
     I: Image<T>,
-    T: ImageTag
+    T: ImageTag,
 {
     async fn subroutine_images(&self) -> Result<Vec<I>>;
 }
@@ -51,7 +52,7 @@ where
 pub trait ImageBuilder<I, T>
 where
     I: Image<T>,
-    T: ImageTag
+    T: ImageTag,
 {
-    async fn build(&self, name: &str, tag: &str, data: &Vec<u8>) -> Result<I>;
+    async fn build_subroutine(&self, name: &str, tag: &str, data: &Vec<u8>) -> Result<I>;
 }

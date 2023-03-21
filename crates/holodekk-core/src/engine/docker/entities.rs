@@ -1,6 +1,8 @@
 use std::cell::{Ref, RefCell};
 
-use crate::engine::{Image, ImageTag, ImageKind};
+use serde::Serialize;
+
+use crate::engine::{Image, ImageKind, ImageTag};
 
 /// Represents a pairing between a human readable tag and the internal id.
 ///
@@ -11,7 +13,7 @@ use crate::engine::{Image, ImageTag, ImageKind};
 ///
 /// let tag = DockerImageTag::new("acme/widgets", "sha256:5a8a49...e1bdc6");
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct DockerImageTag {
     name: String,
     _id: String,
@@ -19,7 +21,10 @@ pub struct DockerImageTag {
 
 impl DockerImageTag {
     pub fn new(name: &str, id: &str) -> Self {
-        Self { name: name.to_string(), _id: id.to_string() }
+        Self {
+            name: name.to_string(),
+            _id: id.to_string(),
+        }
     }
 }
 
@@ -29,7 +34,7 @@ impl ImageTag for DockerImageTag {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct DockerImage {
     name: String,
     tags: RefCell<Vec<DockerImageTag>>,
@@ -46,9 +51,9 @@ impl DockerImage {
     }
 
     pub fn add_tag(&self, tag: &str, engine_id: &str) {
-        self.tags.borrow_mut().push(
-            DockerImageTag::new(tag, engine_id)
-        );
+        self.tags
+            .borrow_mut()
+            .push(DockerImageTag::new(tag, engine_id));
     }
 }
 
@@ -65,4 +70,3 @@ impl Image<DockerImageTag> for DockerImage {
         self.tags.borrow()
     }
 }
-

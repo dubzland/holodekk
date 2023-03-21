@@ -1,5 +1,5 @@
-mod service;
 mod entities;
+mod service;
 
+pub use entities::{DockerImage, DockerImageTag};
 pub use service::Service;
-pub use entities::{DockerImageTag, DockerImage};

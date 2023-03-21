@@ -1,5 +1,5 @@
-use crate::errors::Result;
 use crate::engine::{Engine, Image, ImageTag};
+use crate::errors::Result;
 
 /// Manages both images and running instances of subroutines.
 ///
@@ -33,8 +33,7 @@ where
     ///     Ok(())
     /// }
     /// ```
-    pub async fn images(&self) -> Result<Vec<I>>
-    {
+    pub async fn images(&self) -> Result<Vec<I>> {
         self.engine.subroutine_images().await
     }
 }
