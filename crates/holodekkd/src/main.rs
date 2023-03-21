@@ -21,32 +21,22 @@ struct Options {
     socket_group: String,
 }
 
-// #[actix_web::main]
-// async fn main() -> api::InitResult {
-//     let options = Options::parse();
-
-//     // map the requested group name to id
-//     let socket_gid = match get_group_by_name(&options.socket_group) {
-//         Some(group) => { Gid::from_raw(group.gid()) },
-//         None => {
-//             let mut cmd = Options::command();
-//             cmd.error(
-//                 ErrorKind::InvalidValue,
-//                 format!("group {} not found.", &options.socket_group).to_string()
-//             )
-//             .exit();
-//         }
-//     };
-
-//     api::run(socket_gid, &options.socket_path).await
-// }
 #[actix_web::main]
 async fn main() -> api::InitResult {
-    let docker = holodekkd::engine::docker::DockerEngine::new();
-    let sub_service = holodekkd::subroutines::Service::new();
-    sub_service.init(&docker).await;
-    for image in sub_service.list_definitions().unwrap().iter() {
-        println!("image: {:?}", image);
-    }
-    Ok(())
+    let options = Options::parse();
+
+    // map the requested group name to id
+    let socket_gid = match get_group_by_name(&options.socket_group) {
+        Some(group) => { Gid::from_raw(group.gid()) },
+        None => {
+            let mut cmd = Options::command();
+            cmd.error(
+                ErrorKind::InvalidValue,
+                format!("group {} not found.", &options.socket_group).to_string()
+            )
+            .exit();
+        }
+    };
+
+    api::run(socket_gid, &options.socket_path).await
 }

@@ -17,6 +17,7 @@ hyper = "0.14.24"
 hyperlocal = "0.8.0"
 tar = "0.4.38"
 tokio = { version = "1.26.0", features = ["full"] }
+colored = "2.0.0"
 
 [[bin]]
 name = "holodekk"
