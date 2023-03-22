@@ -3,9 +3,9 @@ members = [
     "crates/holodekk-cli",
     "crates/holodekkd",
     "crates/holodekk-core",
+    "crates/holodekk-projector",
     "crates/holodekk-shim",
 ]
-exclude = ["packages/ruby/ext/holodekk_rust"]
 
 [workspace.package]
 version = "0.1.0"
