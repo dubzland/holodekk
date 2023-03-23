@@ -9,6 +9,7 @@ license-file.workspace = true
 
 [dependencies]
 holodekk-core.workspace = true
+holodekk-projector.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 clap.workspace = true
