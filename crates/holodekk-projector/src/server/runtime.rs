@@ -25,7 +25,7 @@ impl ProjectorRuntime {
         F::Output: Send + 'static,
     {
         if let Some(rt) = &self.rt {
-            rt.handle().spawn(async { future.await })
+            rt.handle().spawn(future)
         } else {
             tokio::runtime::Handle::current().spawn(future)
         }
