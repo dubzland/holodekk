@@ -10,10 +10,15 @@ license-file.workspace = true
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true
+tokio.workspace = true
+actix-web = "4"
+async-trait = "0.1.67"
+bollard = "0.14.0"
 flate2 = "1.0.25"
 hyper = "0.14.24"
 hyperlocal = "0.8.0"
 log = "0.4.17"
 libc = "0.2.139"
+regex = "1.7.1"
 syslog = "6.0.1"
 tar = "0.4.38"

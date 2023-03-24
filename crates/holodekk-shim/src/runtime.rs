@@ -1,9 +1,9 @@
-use std::ffi::{CString};
+use std::ffi::CString;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use holodekk_core::logger::debug;
 use holodekk_core::libsee;
+use holodekk_core::logger::debug;
 use holodekk_core::streams::{create_pipes, override_streams};
 
 pub trait Command {
@@ -11,13 +11,13 @@ pub trait Command {
 }
 
 pub struct CreateCommand {
-    bundle_path: PathBuf
+    bundle_path: PathBuf,
 }
 
 impl CreateCommand {
     pub fn new<F: AsRef<Path>>(bundle_path: F) -> Self {
         Self {
-            bundle_path: bundle_path.as_ref().to_owned()
+            bundle_path: bundle_path.as_ref().to_owned(),
         }
     }
 }
@@ -31,19 +31,19 @@ impl Command for CreateCommand {
             CString::new(pidfile).unwrap(),
             CString::new("--bundle").unwrap(),
             CString::new(self.bundle_path.display().to_string()).unwrap(),
-            CString::new(id).unwrap()
+            CString::new(id).unwrap(),
         ]
     }
 }
 
 pub struct ExecCommand {
-    arguments: Vec<String>
+    arguments: Vec<String>,
 }
 
 impl ExecCommand {
     pub fn new(args: &Vec<String>) -> Self {
         Self {
-            arguments: args.to_owned()
+            arguments: args.to_owned(),
         }
     }
 }
@@ -56,7 +56,7 @@ impl Command for ExecCommand {
             CString::new("--detach").unwrap(),
             CString::new("--pid-file").unwrap(),
             CString::new(pidfile).unwrap(),
-            CString::new(id).unwrap()
+            CString::new(id).unwrap(),
         ];
 
         for arg in self.arguments.iter() {
@@ -105,7 +105,10 @@ pub fn exec<F: AsRef<Path>>(runtime_path: F, container: &mut Container, cmd: Box
                     debug!("failed to read runtime's STDERR: {}", err);
                 }
             }
-            debug!("{}", String::from_utf8(line.to_vec()).unwrap_or(format!("{:?}", buf)));
+            debug!(
+                "{}",
+                String::from_utf8(line.to_vec()).unwrap_or(format!("{:?}", buf))
+            );
         } else {
             debug!("runtime exited with status: {}", libc::WEXITSTATUS(status));
         }
@@ -115,7 +118,7 @@ pub fn exec<F: AsRef<Path>>(runtime_path: F, container: &mut Container, cmd: Box
         let argv = cmd.to_argv(
             runtime_path.as_ref().to_str().unwrap(),
             container.pidfile.to_str().unwrap(),
-            &container.id
+            &container.id,
         );
         libsee::execv(&argv);
         libsee::_exit(127);

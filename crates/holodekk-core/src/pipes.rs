@@ -1,6 +1,6 @@
-use std::os::fd::{ RawFd };
+use std::os::fd::RawFd;
 
-use libc::{ c_int };
+use libc::c_int;
 
 pub struct Pipe {
     rd: RawFd,
@@ -10,14 +10,15 @@ pub struct Pipe {
 impl Pipe {
     pub fn new() -> Option<Self> {
         let mut fds: [c_int; 2] = [-1, -1];
-        let ret = unsafe {
-            libc::pipe2(fds.as_mut_ptr(), libc::O_CLOEXEC)
-        };
+        let ret = unsafe { libc::pipe2(fds.as_mut_ptr(), libc::O_CLOEXEC) };
 
         if ret == -1 {
             None
         } else {
-            Some(Pipe { rd: fds[0], wr: fds[1] })
+            Some(Pipe {
+                rd: fds[0],
+                wr: fds[1],
+            })
         }
     }
 

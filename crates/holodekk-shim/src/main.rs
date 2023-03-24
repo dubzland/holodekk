@@ -42,11 +42,8 @@ pub enum Commands {
         bundle_path: PathBuf,
     },
     /// Execute a command in an existing container
-    Exec {
-        runtime_args: Vec<String>,
-    }
+    Exec { runtime_args: Vec<String> },
 }
-
 
 fn main() {
     let options = Options::parse();
@@ -57,24 +54,21 @@ fn main() {
     if let Some(pid) = res {
         logger::debug!("forked worker with pid: {}", pid);
         if let Err(err) = fs::write(&options.pidfile, format!("{}", pid)) {
-            panic!("write() to pidfile {} failed: {}", options.pidfile.display(), err);
+            panic!(
+                "write() to pidfile {} failed: {}",
+                options.pidfile.display(),
+                err
+            );
         }
         libsee::_exit(0);
     }
 
     // Create the container
-    let mut container = runtime::Container::new(
-        &options.container_id,
-        &options.container_pidfile,
-    );
+    let mut container = runtime::Container::new(&options.container_id, &options.container_pidfile);
 
     let cmd: Box<dyn runtime::Command> = match &options.command {
-        Commands::Create { bundle_path } => {
-            Box::new(runtime::CreateCommand::new(bundle_path))
-        },
-        Commands::Exec { runtime_args } => {
-            Box::new(runtime::ExecCommand::new(runtime_args))
-        },
+        Commands::Create { bundle_path } => Box::new(runtime::CreateCommand::new(bundle_path)),
+        Commands::Exec { runtime_args } => Box::new(runtime::ExecCommand::new(runtime_args)),
     };
 
     runtime::exec(&options.runtime_path, &mut container, cmd);
