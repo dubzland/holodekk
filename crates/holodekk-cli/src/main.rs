@@ -1,14 +1,11 @@
-use std::env;
-use std::path::PathBuf;
-use std::process::Command as ProcessCommand;
-
 use clap::{Parser, Subcommand};
 
 use colored::*;
 
 use holodekk_core::engine::{docker, Image, ImageTag};
 use holodekk_core::subroutine;
-use holodekk_projector::server::ProjectorServer;
+
+use holodekk_cli::{runtime, CliRuntimeError};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -49,10 +46,6 @@ pub enum Commands {
 async fn main() {
     let options = Options::parse();
 
-    let current_dir = env::current_dir().unwrap();
-    let mut holodekk_dir = PathBuf::from(current_dir);
-    holodekk_dir.push(".holodekk");
-
     match &options.command {
         Commands::List {} => {
             let docker = docker::Service::new();
@@ -71,59 +64,18 @@ async fn main() {
             }
         }
         Commands::Build { directory, name } => {
-            let current_dir = env::current_dir().unwrap();
-            let mut holodekk_dir = PathBuf::from(current_dir);
-            holodekk_dir.push(directory);
-
-            if holodekk_dir.try_exists().unwrap() {
-                let mut ruby_path = PathBuf::from(&holodekk_dir);
-                ruby_path.push(format!("{}.rb", name));
-                if ruby_path.try_exists().unwrap() {
-                    ProcessCommand::new(&ruby_path)
-                        .current_dir(&holodekk_dir)
-                        .arg("build")
-                        .status()
-                        .unwrap();
-                } else {
-                    println!("Could not find subroutine {}.", ruby_path.display());
-                }
-            } else {
-                println!(
-                    "Holodekk directory [{}] does not exist.",
-                    holodekk_dir.display()
-                );
-            }
+            runtime::detect(directory, name).unwrap().build();
         }
-        Commands::Run { directory, name } => {
-            let current_dir = env::current_dir().unwrap();
-            let mut holodekk_dir = PathBuf::from(current_dir);
-            holodekk_dir.push(directory);
-
-            if holodekk_dir.try_exists().unwrap() {
-                let mut ruby_path = PathBuf::from(&holodekk_dir);
-                ruby_path.push(format!("{}.rb", name));
-                if ruby_path.try_exists().unwrap() {
-                    // Start a projector
-                    let projector = ProjectorServer::new().listen_tcp(5150, None).unwrap();
-
-                    ProcessCommand::new(&ruby_path)
-                        .current_dir(&holodekk_dir)
-                        .arg("start")
-                        .arg("--projector-port")
-                        .arg("5150")
-                        .status()
-                        .unwrap();
-
-                    projector.stop();
-                } else {
-                    println!("Could not find subroutine {}.", ruby_path.display());
+        Commands::Run { directory, name } => match runtime::detect(directory, name) {
+            Ok(runtime) => runtime.run(),
+            Err(err) => match err {
+                CliRuntimeError::ArgumentError(reason) => {
+                    eprintln!("{}", reason);
                 }
-            } else {
-                println!(
-                    "Holodekk directory [{}] does not exist.",
-                    holodekk_dir.display()
-                );
-            }
-        }
+                _ => {
+                    eprintln!("Unknown error.");
+                }
+            },
+        },
     }
 }

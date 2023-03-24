@@ -9,12 +9,25 @@ pub enum ProjectorCommand {
 
 pub struct ProjectorHandle {
     server: ProjectorServer,
+    port: u16,
     cmd_tx: UnboundedSender<ProjectorCommand>,
 }
 
 impl ProjectorHandle {
-    pub fn new(server: ProjectorServer, cmd_tx: UnboundedSender<ProjectorCommand>) -> Self {
-        Self { server, cmd_tx }
+    pub fn new(
+        server: ProjectorServer,
+        port: u16,
+        cmd_tx: UnboundedSender<ProjectorCommand>,
+    ) -> Self {
+        Self {
+            server,
+            port,
+            cmd_tx,
+        }
+    }
+
+    pub fn port(&self) -> &u16 {
+        &self.port
     }
 
     pub fn stop(&self) {

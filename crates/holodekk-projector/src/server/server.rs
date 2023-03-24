@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::net::{SocketAddr, TcpListener};
 
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::task::JoinHandle;
@@ -29,7 +29,7 @@ impl ProjectorServer {
         &self.runtime
     }
 
-    pub fn listen_tcp(self, port: u16, addr: Option<&str>) -> Result<ProjectorHandle> {
+    pub fn listen_tcp(self, port: Option<u16>, addr: Option<&str>) -> Result<ProjectorHandle> {
         let (cmd_tx, cmd_rx) = unbounded_channel();
 
         let signal = async {
@@ -49,13 +49,14 @@ impl ProjectorServer {
 
         let listen_address: SocketAddr;
 
-        if addr.is_some() {
-            let addr = addr.unwrap();
-            listen_address = format!("{}:{}", addr, port).parse().unwrap();
-        } else {
-            let addr = "[::1]";
-            listen_address = format!("{}:{}", addr, port).parse().unwrap();
-        }
+        let addr = addr.or(Some("[::1]")).unwrap();
+        let port = port
+            .or_else(|| {
+                let listener = TcpListener::bind(format!("{addr}:0")).unwrap();
+                Some(listener.local_addr().unwrap().port())
+            })
+            .unwrap();
+        listen_address = format!("{}:{}", addr, port).parse().unwrap();
 
         let server = Server::builder()
             .add_service(GreeterServer::new(MyGreeter::default()))
@@ -68,6 +69,7 @@ impl ProjectorServer {
                 _task_handle: Some(server_handle),
                 ..self
             },
+            port,
             cmd_tx,
         ))
     }

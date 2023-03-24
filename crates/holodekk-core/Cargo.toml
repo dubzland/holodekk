@@ -22,3 +22,4 @@ libc = "0.2.139"
 regex = "1.7.1"
 syslog = "6.0.1"
 tar = "0.4.38"
+clap.workspace = true

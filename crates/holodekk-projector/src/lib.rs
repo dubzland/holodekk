@@ -5,5 +5,10 @@
 //! current state of the system.
 
 pub mod client;
-pub mod error;
+mod error;
+pub use error::{ProjectorError, Result};
+
+mod projector;
+pub use projector::Projector;
+
 pub mod server;
