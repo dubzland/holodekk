@@ -32,8 +32,8 @@ where
     F: Send,
     F::Output: Send,
 {
-    if runtime.is_some() {
-        runtime.unwrap().block_on(f)
+    if let Some(rt) = runtime {
+        rt.block_on(f)
     } else {
         let handle = tokio::runtime::Handle::current();
         let _guard = handle.enter();

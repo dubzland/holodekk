@@ -49,7 +49,7 @@ where
         }
     }
 
-    pub fn run(&self, args: &Vec<String>) {
+    pub fn run(&self, args: &[String]) {
         let options = Options::parse_from(args.iter());
 
         match &options.command {

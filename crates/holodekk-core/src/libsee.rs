@@ -86,7 +86,7 @@ pub fn dup2(fd_new: c_int, fd_old: c_int) -> Result<()> {
     Ok(())
 }
 
-pub fn execv(argv: &Vec<CString>) {
+pub fn execv(argv: &[CString]) {
     let mut argv_raw: Vec<*const c_char> = vec![];
     for arg in argv.iter() {
         argv_raw.push(arg.as_ptr())

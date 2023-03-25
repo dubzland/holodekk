@@ -51,7 +51,7 @@ async fn main() {
             let docker = docker::Service::new();
             let subroutines = subroutine::Service::new(&docker);
             let images = subroutines.images().await.unwrap();
-            if images.len() > 0 {
+            if !images.is_empty() {
                 println!("{}\n", "Available Subroutines".green());
                 println!("{:25} {:15}", "Name".bold(), "Tag".bold());
                 println!("{:-<25} {:-<15}", "", "");
@@ -60,14 +60,14 @@ async fn main() {
                         println!("{:25} {:15}", image.name(), tag.name());
                     }
                 }
-                println!("");
+                println!();
             }
         }
         Commands::Build { directory, name } => {
-            runtime::detect(directory, name).unwrap().build();
+            runtime::detect(directory, name).unwrap().build().await;
         }
         Commands::Run { directory, name } => match runtime::detect(directory, name) {
-            Ok(runtime) => runtime.run(),
+            Ok(runtime) => runtime.run().await,
             Err(err) => match err {
                 CliRuntimeError::ArgumentError(reason) => {
                     eprintln!("{}", reason);

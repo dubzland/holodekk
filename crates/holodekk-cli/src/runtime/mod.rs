@@ -7,7 +7,7 @@ use super::{CliRuntime, CliRuntimeError};
 
 pub fn detect(directory: &str, name: &str) -> Result<Box<dyn CliRuntime>, CliRuntimeError> {
     let current_dir = env::current_dir().unwrap();
-    let mut holodekk_dir = PathBuf::from(current_dir);
+    let mut holodekk_dir = current_dir;
     holodekk_dir.push(directory);
 
     if holodekk_dir.try_exists().unwrap() {

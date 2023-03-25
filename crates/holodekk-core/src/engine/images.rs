@@ -4,6 +4,7 @@ use async_trait::async_trait;
 
 use serde::Serialize;
 
+use crate::subroutine::Subroutine;
 use crate::Result;
 
 #[derive(Clone, Debug)]
@@ -46,6 +47,8 @@ where
     T: ImageTag,
 {
     async fn subroutine_images(&self) -> Result<Vec<I>>;
+    async fn application_images(&self) -> Result<Vec<I>>;
+    async fn application_image_exists(&self, subroutine: &Subroutine) -> Result<bool>;
 }
 
 #[async_trait]
@@ -54,5 +57,6 @@ where
     I: Image<T>,
     T: ImageTag,
 {
-    async fn build_subroutine(&self, name: &str, tag: &str, data: &Vec<u8>) -> Result<I>;
+    async fn build_subroutine(&self, name: &str, tag: &str, data: Vec<u8>) -> Result<I>;
+    async fn build_application(&self, subroutine: &Subroutine) -> Result<I>;
 }

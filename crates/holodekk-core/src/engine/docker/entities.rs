@@ -45,7 +45,7 @@ impl DockerImage {
     pub fn new(name: &str, kind: ImageKind) -> Self {
         Self {
             name: name.into(),
-            kind: kind.into(),
+            kind,
             tags: RefCell::new(vec![]),
         }
     }

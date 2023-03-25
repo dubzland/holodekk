@@ -85,24 +85,19 @@ pub async fn run(socket_gid: Gid, socket_path: &PathBuf) -> InitResult {
 
     let server = match unix_socket {
         true => {
-            let s = builder
-                .bind_uds(socket_path)
-                .map_err(|err| Error::Bind(err))?;
+            let s = builder.bind_uds(socket_path).map_err(Error::Bind)?;
 
             // update socket ownership and permissions
-            chown(socket_path, Some(0.into()), Some(socket_gid))
-                .map_err(|err| Error::Chown(err))?;
+            chown(socket_path, Some(0.into()), Some(socket_gid)).map_err(Error::Chown)?;
             let metadata = std::fs::metadata(socket_path).unwrap();
             let mut perms = metadata.permissions();
             perms.set_mode(0o660);
-            std::fs::set_permissions(socket_path, perms).map_err(|err| Error::Perms(err))?;
+            std::fs::set_permissions(socket_path, perms).map_err(Error::Perms)?;
 
             s
         }
-        false => builder
-            .bind(("0.0.0.0", 6080))
-            .map_err(|err| Error::Bind(err))?,
+        false => builder.bind(("0.0.0.0", 6080)).map_err(Error::Bind)?,
     };
 
-    server.run().await.map_err(|err| Error::Start(err))
+    server.run().await.map_err(Error::Start)
 }

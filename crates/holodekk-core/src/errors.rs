@@ -1,5 +1,3 @@
-use bollard;
-
 #[derive(Debug)]
 pub enum Error {
     BuildFailed,

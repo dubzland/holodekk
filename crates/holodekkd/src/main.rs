@@ -41,7 +41,7 @@ async fn main() -> api::server::InitResult {
             let mut cmd = Options::command();
             cmd.error(
                 ErrorKind::InvalidValue,
-                format!("group {} not found.", &options.socket_group).to_string(),
+                format!("group {} not found.", &options.socket_group),
             )
             .exit();
         }

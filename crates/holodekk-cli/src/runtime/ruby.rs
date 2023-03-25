@@ -1,8 +1,11 @@
 use std::path::PathBuf;
 use std::process::Command;
 
+use async_trait::async_trait;
+
 use colored::*;
 
+use holodekk_core::engine::{docker, ImageBuilder};
 use holodekk_core::subroutine;
 
 use holodekk_projector::server::ProjectorServer;
@@ -22,31 +25,49 @@ impl RubyCliRuntime {
             file: file.to_owned(),
         }
     }
-}
 
-impl CliRuntime for RubyCliRuntime {
-    fn build(&self) {
-        Command::new(&self.file)
-            .current_dir(&self.directory)
-            .arg("build")
-            .status()
-            .unwrap();
-    }
-    fn manifest(&self) {}
-    fn run(&self) {
+    fn subroutine(&self) -> subroutine::Subroutine {
         let output = Command::new(&self.file)
             .current_dir(&self.directory)
             .args(["manifest"])
             .output()
             .expect("failed to execute process");
 
-        let subroutine: subroutine::Subroutine =
-            serde_json::from_str(std::str::from_utf8(&output.stdout).unwrap()).unwrap();
+        serde_json::from_str(std::str::from_utf8(&output.stdout).unwrap()).unwrap()
+    }
+}
+
+#[async_trait]
+impl CliRuntime for RubyCliRuntime {
+    async fn build(&self) {
+        let subroutine = self.subroutine();
+        println!(
+            "{} {} {}",
+            "Building application for".cyan(),
+            subroutine.name.to_string().white().bold(),
+            "via Docker.".cyan()
+        );
+        let docker = docker::Service::new();
+        docker.build_application(&subroutine).await.unwrap();
+        println!("{}", "Build complete.".cyan());
+    }
+    fn manifest(&self) {}
+    async fn run(&self) {
+        let subroutine = self.subroutine();
+
+        // Check to see if an image exists
+        print!("Checking for application image ...");
+        if subroutine.container_image_exists().await.unwrap() {
+            println!(" ok.");
+        } else {
+            println!(" not found.");
+            self.build().await;
+        }
 
         println!(
             "{} {} {}",
             "Launching subroutine".green(),
-            format!("{}", subroutine.name).white().bold(),
+            subroutine.name.to_string().white().bold(),
             "on the Holodekk.".green()
         );
 
@@ -55,6 +76,7 @@ impl CliRuntime for RubyCliRuntime {
         let port = projector.port();
         println!("Projector running on port {}.", port);
 
+        // Launch the subroutine
         Command::new(&self.file)
             .current_dir(&self.directory)
             .arg("start")
