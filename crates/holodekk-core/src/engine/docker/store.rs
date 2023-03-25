@@ -1,41 +1,33 @@
-// use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
-use std::default::Default;
-use std::path::PathBuf;
 
 use async_trait::async_trait;
 
-use bollard::image::{BuildImageOptions, ListImagesOptions};
-use bollard::Docker;
-
-use futures_util::stream::StreamExt;
+use bollard::image::ListImagesOptions;
 
 use regex::Regex;
 
-use tar::Builder as TarBuilder;
-
-// use super::{ImageStore, Image, ImageTag, ImageKind};
-use super::{DockerImage, DockerImageTag};
-use crate::engine::{Engine, Image, ImageBuilder, ImageKind, ImageStore};
+use crate::engine::{Image, ImageKind, ImageStore};
 use crate::errors::{Error, Result};
 use crate::subroutine::Subroutine;
 
-pub struct Service {
+use super::{DockerImage, DockerImageTag};
+
+pub struct Store {
     prefix: String,
     client: bollard::Docker,
 }
 
-impl Default for Service {
+impl Default for Store {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Service {
+impl Store {
     pub fn new() -> Self {
-        let client = Docker::connect_with_socket_defaults().unwrap();
+        let client = bollard::Docker::connect_with_socket_defaults().unwrap();
         Self {
-            prefix: "holodekk".to_string(),
+            prefix: super::DOCKER_PREFIX.to_string(),
             client,
         }
     }
@@ -76,10 +68,9 @@ impl Service {
             ..Default::default()
         };
 
-        let mut images = vec![];
-
         match self.client.list_images(Some(options)).await {
             Ok(docker_images) => {
+                let mut images = vec![];
                 for image in docker_images {
                     for tag in &image.repo_tags {
                         if let Some(img) = self.image_from_tag(tag, &image.id)? {
@@ -87,19 +78,18 @@ impl Service {
                         }
                     }
                 }
+                Ok(images)
             }
             Err(e) => {
-                println!("Error received from docker: {}", e);
                 // Convert the bollard erro to ours.
-                return Err(Error::BollardError(e));
+                Err(Error::BollardError(e))
             }
-        };
-        Ok(images)
+        }
     }
 }
 
 #[async_trait]
-impl ImageStore<DockerImage, DockerImageTag> for Service {
+impl ImageStore<DockerImage, DockerImageTag> for Store {
     /// Retrieve a list of subroutine images from Docker.
     ///
     /// # Examples
@@ -169,70 +159,4 @@ impl ImageStore<DockerImage, DockerImageTag> for Service {
         //     .partition(|i| i.kind().eq(&ImageKind::Application));
         // Ok(sub_images)
     }
-}
-
-#[async_trait]
-impl ImageBuilder<DockerImage, DockerImageTag> for Service {
-    async fn build_subroutine(&self, name: &str, tag: &str, data: Vec<u8>) -> Result<DockerImage> {
-        let options = BuildImageOptions {
-            t: format!("{}:{}", name, tag),
-            q: true,
-            ..Default::default()
-        };
-        let mut image_stream = self.client.build_image(options, None, Some(data.into()));
-        while let Some(msg) = image_stream.next().await {
-            println!("msg: {:?}", msg);
-        }
-        Ok(DockerImage::new("foo", ImageKind::Subroutine))
-    }
-
-    async fn build_application(&self, subroutine: &Subroutine) -> Result<DockerImage> {
-        let options = BuildImageOptions {
-            t: format!("holodekk/application/{}:latest", subroutine.name),
-            ..Default::default()
-        };
-
-        let context = PathBuf::from(&subroutine.container.context);
-
-        let mut bytes = Vec::default();
-        create_archive(&context, &mut bytes).unwrap();
-
-        let mut image_stream = self.client.build_image(options, None, Some(bytes.into()));
-        while let Some(msg) = image_stream.next().await {
-            match msg {
-                Ok(build_info) => {
-                    if let Some(stream) = build_info.stream {
-                        print!("{}", stream);
-                    }
-                }
-                Err(err) => {
-                    panic!("{}", err);
-                }
-            }
-        }
-        Ok(DockerImage::new("foo", ImageKind::Subroutine))
-    }
-}
-
-impl Engine<DockerImage, DockerImageTag> for Service {}
-
-fn create_archive<T: std::io::Write>(
-    context: &PathBuf,
-    // dockerfile: &str,
-    target: T,
-) -> std::io::Result<()> {
-    let mut archive: TarBuilder<T> = TarBuilder::new(target);
-
-    // let mut header = Header::new_gnu();
-    // let bytes = dockerfile.as_bytes().to_vec();
-    // header.set_size(bytes.len().try_into().unwrap());
-    // header.set_cksum();
-
-    // archive
-    //     .append_data(&mut header, "Dockerfile", dockerfile.as_bytes())
-    //     .unwrap();
-
-    archive.append_dir_all("", context)?;
-
-    Ok(())
 }

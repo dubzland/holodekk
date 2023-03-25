@@ -47,8 +47,8 @@ impl CliRuntime for RubyCliRuntime {
             subroutine.name.to_string().white().bold(),
             "via Docker.".cyan()
         );
-        let docker = docker::Service::new();
-        docker.build_application(&subroutine).await.unwrap();
+        let builder = docker::Builder::new();
+        builder.build_application(&subroutine).await.unwrap();
         println!("{}", "Build complete.".cyan());
     }
     fn manifest(&self) {}

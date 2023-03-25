@@ -53,12 +53,16 @@ impl fmt::Display for Error {
 pub type InitResult = Result<(), Error>;
 
 pub struct ApiServices {
-    docker: docker::Service,
+    store: docker::Store,
+    builder: docker::Builder,
 }
 
 impl ApiServices {
-    pub fn docker(&self) -> &docker::Service {
-        &self.docker
+    pub fn store(&self) -> &docker::Store {
+        &self.store
+    }
+    pub fn builder(&self) -> &docker::Builder {
+        &self.builder
     }
 }
 
@@ -66,8 +70,9 @@ pub async fn run(socket_gid: Gid, socket_path: &PathBuf) -> InitResult {
     let unix_socket = false;
 
     // Create the global services
-    let docker = docker::Service::new();
-    let services = web::Data::new(ApiServices { docker });
+    let store = docker::Store::new();
+    let builder = docker::Builder::new();
+    let services = web::Data::new(ApiServices { store, builder });
 
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init();

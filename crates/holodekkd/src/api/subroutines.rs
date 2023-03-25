@@ -58,7 +58,7 @@ pub fn routes(cfg: &mut web::ServiceConfig) {
 
 #[get("/images")]
 async fn images(services: web::Data<ApiServices>) -> Result<impl Responder> {
-    let subroutines = subroutine::Service::new(services.docker());
+    let subroutines = subroutine::Service::new(services.store());
     let images = subroutines
         .images()
         .await

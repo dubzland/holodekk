@@ -2,8 +2,7 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::engine::docker;
-use crate::engine::ImageStore;
+use crate::engine::{docker, ImageStore};
 use crate::errors::Result;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -26,8 +25,8 @@ pub struct Subroutine {
 
 impl Subroutine {
     pub async fn container_image_exists(&self) -> Result<bool> {
-        let docker = docker::Service::new();
-        docker.application_image_exists(self).await
+        let store = docker::Store::new();
+        store.application_image_exists(self).await
     }
 }
 

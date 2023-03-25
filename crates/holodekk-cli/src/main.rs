@@ -48,8 +48,8 @@ async fn main() {
 
     match &options.command {
         Commands::List {} => {
-            let docker = docker::Service::new();
-            let subroutines = subroutine::Service::new(&docker);
+            let store = docker::Store::new();
+            let subroutines = subroutine::Service::new(&store);
             let images = subroutines.images().await.unwrap();
             if !images.is_empty() {
                 println!("{}\n", "Available Subroutines".green());
