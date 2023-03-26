@@ -8,9 +8,8 @@ use regex::Regex;
 
 use crate::engine::{Image, ImageKind, ImageStore};
 use crate::errors::{Error, Result};
-use crate::subroutine::Subroutine;
 
-use super::{DockerImage, DockerImageTag};
+use super::DockerImage;
 
 pub struct Store {
     prefix: String,
@@ -89,7 +88,9 @@ impl Store {
 }
 
 #[async_trait]
-impl ImageStore<DockerImage, DockerImageTag> for Store {
+impl ImageStore for Store {
+    type Image = DockerImage;
+
     /// Retrieve a list of subroutine images from Docker.
     ///
     /// # Examples
@@ -100,8 +101,8 @@ impl ImageStore<DockerImage, DockerImageTag> for Store {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<()> {
-    ///     let docker = docker::Service::new();
-    ///     let images = docker.subroutine_images().await?;
+    ///     let store = docker::Store::new();
+    ///     let images = store.subroutine_images().await?;
     ///     Ok(())
     /// }
     /// ```
@@ -123,8 +124,8 @@ impl ImageStore<DockerImage, DockerImageTag> for Store {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<()> {
-    ///     let docker = docker::Service::new();
-    ///     let images = docker.application_images().await?;
+    ///     let store = docker::Store::new();
+    ///     let images = store.application_images().await?;
     ///     Ok(())
     /// }
     /// ```
@@ -136,27 +137,29 @@ impl ImageStore<DockerImage, DockerImageTag> for Store {
         Ok(sub_images)
     }
 
-    /// Determine whether a given application image exists.
+    /// Determine whether a given image exists.
     ///
     /// # Examples
     ///
     /// ```
     /// use holodekk_core::Result;
-    /// use holodekk_core::engine::{docker, ImageStore};
+    /// use holodekk_core::engine::{docker, ImageKind, ImageStore};
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<()> {
-    ///     let docker = docker::Service::new();
-    ///     let images = docker.application_image_exists().await?;
+    ///     let store = docker::Store::new();
+    ///     if store.image_exists(ImageKind::Application, "acme/widget-api").unwrap() {
+    ///         println!("Image exists!");
+    ///     }
     ///     Ok(())
     /// }
     /// ```
-    async fn application_image_exists(&self, subroutine: &Subroutine) -> Result<bool> {
-        let images = self.application_images().await?;
-        Ok(images.iter().any(|i| i.name().eq(&subroutine.name)))
-        // let (sub_images, _): (Vec<DockerImage>, Vec<DockerImage>) = images
-        //     .into_iter()
-        //     .partition(|i| i.kind().eq(&ImageKind::Application));
-        // Ok(sub_images)
+    async fn image_exists(&self, kind: ImageKind, name: &str) -> Result<bool> {
+        let images = match kind {
+            ImageKind::Application => self.application_images(),
+            ImageKind::Subroutine => self.subroutine_images(),
+            ImageKind::Service => return Ok(false),
+        };
+        Ok(images.await.unwrap().iter().any(|i| i.name().eq(name)))
     }
 }

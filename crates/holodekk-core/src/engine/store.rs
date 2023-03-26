@@ -1,17 +1,14 @@
 use async_trait::async_trait;
 
-use crate::subroutine::Subroutine;
 use crate::Result;
 
-use super::{Image, ImageTag};
+use super::{Image, ImageKind};
 
 #[async_trait]
-pub trait ImageStore<I, T>
-where
-    I: Image<T>,
-    T: ImageTag,
-{
-    async fn subroutine_images(&self) -> Result<Vec<I>>;
-    async fn application_images(&self) -> Result<Vec<I>>;
-    async fn application_image_exists(&self, subroutine: &Subroutine) -> Result<bool>;
+pub trait ImageStore {
+    type Image: Image;
+
+    async fn subroutine_images(&self) -> Result<Vec<Self::Image>>;
+    async fn application_images(&self) -> Result<Vec<Self::Image>>;
+    async fn image_exists(&self, kind: ImageKind, name: &str) -> Result<bool>;
 }

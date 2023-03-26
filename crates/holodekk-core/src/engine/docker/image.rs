@@ -1,4 +1,4 @@
-use std::cell::{Ref, RefCell};
+use std::sync::{RwLock, RwLockReadGuard};
 
 use serde::Serialize;
 
@@ -37,7 +37,7 @@ impl ImageTag for DockerImageTag {
 #[derive(Debug, Serialize)]
 pub struct DockerImage {
     name: String,
-    tags: RefCell<Vec<DockerImageTag>>,
+    tags: RwLock<Vec<DockerImageTag>>,
     kind: ImageKind,
 }
 
@@ -46,18 +46,21 @@ impl DockerImage {
         Self {
             name: name.into(),
             kind,
-            tags: RefCell::new(vec![]),
+            tags: RwLock::new(vec![]),
         }
     }
 
     pub fn add_tag(&self, tag: &str, engine_id: &str) {
         self.tags
-            .borrow_mut()
+            .write()
+            .unwrap()
             .push(DockerImageTag::new(tag, engine_id));
     }
 }
 
-impl Image<DockerImageTag> for DockerImage {
+impl Image for DockerImage {
+    type Tag = DockerImageTag;
+
     fn name(&self) -> &str {
         &self.name
     }
@@ -66,7 +69,7 @@ impl Image<DockerImageTag> for DockerImage {
         &self.kind
     }
 
-    fn tags(&self) -> Ref<'_, Vec<DockerImageTag>> {
-        self.tags.borrow()
+    fn tags(&self) -> RwLockReadGuard<'_, Vec<DockerImageTag>> {
+        self.tags.read().unwrap()
     }
 }

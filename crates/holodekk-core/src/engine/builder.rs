@@ -1,16 +1,20 @@
 use async_trait::async_trait;
 
-use crate::subroutine::Subroutine;
+use crate::holodekk::Application;
+
 use crate::Result;
 
-use super::{Image, ImageTag};
+use super::Image;
 
 #[async_trait]
-pub trait ImageBuilder<I, T>
-where
-    I: Image<T>,
-    T: ImageTag,
-{
-    async fn build_subroutine(&self, name: &str, tag: &str, data: Vec<u8>) -> Result<I>;
-    async fn build_application(&self, subroutine: &Subroutine) -> Result<I>;
+pub trait ImageBuilder {
+    type Image: Image;
+
+    async fn build_subroutine(&self, name: &str, tag: &str, data: Vec<u8>) -> Result<Self::Image>;
+    async fn build_application(
+        &self,
+        application: &Application<Self::Image>,
+        // bytes: &'static [u8],
+        bytes: Vec<u8>,
+    ) -> Result<Self::Image>;
 }

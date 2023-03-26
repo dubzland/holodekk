@@ -1,5 +1,5 @@
 use std::default::Default;
-use std::path::PathBuf;
+use std::sync::{RwLock, RwLockReadGuard};
 
 use async_trait::async_trait;
 
@@ -8,12 +8,10 @@ use bollard::Docker;
 
 use futures_util::stream::StreamExt;
 
-use tar::Builder as TarBuilder;
-
 use super::{DockerImage, DockerImageTag};
-use crate::engine::{ImageBuilder, ImageKind};
+use crate::engine::{Image, ImageBuilder, ImageKind};
 use crate::errors::Result;
-use crate::subroutine::Subroutine;
+use crate::holodekk::Application;
 
 pub struct Builder {
     prefix: String,
@@ -37,7 +35,9 @@ impl Builder {
 }
 
 #[async_trait]
-impl ImageBuilder<DockerImage, DockerImageTag> for Builder {
+impl ImageBuilder for Builder {
+    type Image = DockerImage;
+
     async fn build_subroutine(&self, name: &str, tag: &str, data: Vec<u8>) -> Result<DockerImage> {
         let options = BuildImageOptions {
             t: format!("{}/subroutine/{}:{}", self.prefix, name, tag),
@@ -51,16 +51,16 @@ impl ImageBuilder<DockerImage, DockerImageTag> for Builder {
         Ok(DockerImage::new("foo", ImageKind::Subroutine))
     }
 
-    async fn build_application(&self, subroutine: &Subroutine) -> Result<DockerImage> {
+    async fn build_application(
+        &self,
+        application: &Application<DockerImage>,
+        // bytes: &'static [u8],
+        bytes: Vec<u8>,
+    ) -> Result<DockerImage> {
         let options = BuildImageOptions {
-            t: format!("{}/application/{}:latest", self.prefix, subroutine.name),
+            t: format!("{}/application/{}:latest", self.prefix, application.name()),
             ..Default::default()
         };
-
-        let context = PathBuf::from(&subroutine.container.context);
-
-        let mut bytes = Vec::default();
-        create_archive(&context, &mut bytes).unwrap();
 
         let mut image_stream = self.client.build_image(options, None, Some(bytes.into()));
         while let Some(msg) = image_stream.next().await {
@@ -79,23 +79,20 @@ impl ImageBuilder<DockerImage, DockerImageTag> for Builder {
     }
 }
 
-fn create_archive<T: std::io::Write>(
-    context: &PathBuf,
-    // dockerfile: &str,
-    target: T,
-) -> std::io::Result<()> {
-    let mut archive: TarBuilder<T> = TarBuilder::new(target);
+pub struct OtherImage {
+    tags: RwLock<Vec<DockerImageTag>>,
+}
 
-    // let mut header = Header::new_gnu();
-    // let bytes = dockerfile.as_bytes().to_vec();
-    // header.set_size(bytes.len().try_into().unwrap());
-    // header.set_cksum();
+impl Image for OtherImage {
+    type Tag = DockerImageTag;
 
-    // archive
-    //     .append_data(&mut header, "Dockerfile", dockerfile.as_bytes())
-    //     .unwrap();
-
-    archive.append_dir_all("", context)?;
-
-    Ok(())
+    fn name(&self) -> &str {
+        "Other"
+    }
+    fn kind(&self) -> &ImageKind {
+        &ImageKind::Subroutine
+    }
+    fn tags(&self) -> RwLockReadGuard<'_, Vec<DockerImageTag>> {
+        self.tags.read().unwrap()
+    }
 }

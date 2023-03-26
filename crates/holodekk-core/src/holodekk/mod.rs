@@ -1,6 +1,8 @@
-use clap::{Parser, Subcommand};
+mod subroutine;
+pub use crate::engine::Image;
+pub use subroutine::{Application, ContainerManifest, Subroutine, SubroutineManifest};
 
-use crate::subroutine::Subroutine;
+use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -30,19 +32,21 @@ pub trait Platform {
 }
 
 /// A single holodekk instance wrapped around a subroutine.
-pub struct Holodekk<T>
+pub struct Holodekk<T, I>
 where
     T: Platform,
+    I: Image,
 {
-    subroutine: Subroutine,
+    subroutine: Subroutine<I>,
     platform: T,
 }
 
-impl<T> Holodekk<T>
+impl<T, I> Holodekk<T, I>
 where
     T: Platform,
+    I: Image,
 {
-    pub fn new(subroutine: Subroutine, platform: T) -> Self {
+    pub fn new(subroutine: Subroutine<I>, platform: T) -> Self {
         Self {
             subroutine,
             platform,
@@ -54,14 +58,14 @@ where
 
         match &options.command {
             Commands::Build { .. } => {
-                self.platform.build(&self.subroutine.name);
+                self.platform.build(self.subroutine.name());
             }
             Commands::Manifest {} => {
-                let json: String = self.platform.manifest(&self.subroutine.name);
+                let json: String = self.platform.manifest(self.subroutine.name());
                 println!("{}", json);
             }
             Commands::Start { projector_port } => {
-                self.platform.run(&self.subroutine.name, *projector_port);
+                self.platform.run(self.subroutine.name(), *projector_port);
             }
         }
     }

@@ -1,19 +1,19 @@
-use std::cell::Ref;
+use std::sync::RwLockReadGuard;
 
 use serde::Serialize;
 
 #[derive(Clone, Debug)]
 pub enum ContainerKind {}
 
-pub trait Container<I, T>
-where
-    I: Image<T>,
-    T: ImageTag,
-{
-    fn id(&self) -> &str;
-    fn kind(&self) -> &ImageKind;
-    fn image(&self) -> &I;
-}
+// pub trait Container<I, T>
+// where
+//     I: Image<T>,
+//     T: ImageTag,
+// {
+//     fn id(&self) -> &str;
+//     fn kind(&self) -> &ImageKind;
+//     fn image(&self) -> &I;
+// }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum ImageKind {
@@ -26,11 +26,10 @@ pub trait ImageTag {
     fn name(&self) -> &str;
 }
 
-pub trait Image<T>
-where
-    T: ImageTag,
-{
+pub trait Image {
+    type Tag: ImageTag;
+
     fn name(&self) -> &str;
     fn kind(&self) -> &ImageKind;
-    fn tags(&self) -> Ref<'_, Vec<T>>;
+    fn tags(&self) -> RwLockReadGuard<'_, Vec<Self::Tag>>;
 }

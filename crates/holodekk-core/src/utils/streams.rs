@@ -3,8 +3,8 @@ use std::io::{self, Read};
 use std::mem;
 use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
 
-use crate::libsee;
-use crate::pipes::Pipe;
+use super::libsee;
+use super::pipes::Pipe;
 
 pub struct InputStream(RawFd);
 

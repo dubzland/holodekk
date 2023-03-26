@@ -1,43 +1,78 @@
-use std::future::Future;
+use holodekk_core::engine::docker;
+use holodekk_core::engine::{Image, ImageBuilder, ImageStore};
 
-use crate::client::ProjectorClient;
-use crate::error::Result;
-
-pub struct Projector {
-    client: ProjectorClient,
-    rt: Option<tokio::runtime::Runtime>,
+pub struct ProjectorBuilder<T: Image> {
+    store: Option<Box<dyn ImageStore<Image = T>>>,
+    builder: Option<Box<dyn ImageBuilder<Image = T>>>,
 }
 
-impl Projector {
-    pub fn new(port: u16) -> Self {
-        let rt = match tokio::runtime::Handle::try_current() {
-            Ok(_) => None,
-            Err(_) => Some(tokio::runtime::Runtime::new().unwrap()),
-        };
-        let client = wait_for_future(
-            rt.as_ref(),
-            ProjectorClient::build().connect_tcp(port, None),
-        )
-        .unwrap();
-        Self { client, rt }
+impl<T: Image> ProjectorBuilder<T> {
+    fn new() -> Self {
+        Default::default()
     }
 
-    pub fn say_hello(&self, name: String) -> Result<String> {
-        wait_for_future(self.rt.as_ref(), self.client.say_hello(&name))
+    pub fn with_docker_store(self) -> Self
+    where
+        docker::Store: ImageStore<Image = T>,
+    {
+        let store = Box::new(docker::Store::new());
+        Self {
+            store: Some(store),
+            ..self
+        }
+    }
+
+    pub fn with_docker_builder(self) -> Self
+    where
+        docker::Builder: ImageBuilder<Image = T>,
+    {
+        let builder = Box::new(docker::Builder::new());
+        // let store = Box::new(docker::Store::new()) as Box<dyn ImageStore<Image = DockerImage>>;
+
+        Self {
+            builder: Some(builder),
+            ..self
+        }
+    }
+
+    pub fn build(self) -> Projector<T> {
+        let store = self.store.unwrap();
+        let builder = self.builder.unwrap();
+        Projector::new(store, builder)
     }
 }
 
-fn wait_for_future<F: Future>(runtime: Option<&tokio::runtime::Runtime>, f: F) -> F::Output
-where
-    F: Send,
-    F::Output: Send,
-{
-    if let Some(rt) = runtime {
-        rt.block_on(f)
-    } else {
-        let handle = tokio::runtime::Handle::current();
-        let _guard = handle.enter();
-        let h2 = tokio::runtime::Handle::current();
-        h2.block_on(f)
+impl<T: Image> Default for ProjectorBuilder<T> {
+    fn default() -> Self {
+        ProjectorBuilder {
+            store: None,
+            builder: None,
+        }
+    }
+}
+
+pub struct Projector<T: Image> {
+    store: Box<dyn ImageStore<Image = T>>,
+    builder: Box<dyn ImageBuilder<Image = T>>,
+}
+
+impl<T: Image> Projector<T> {
+    fn new(
+        store: Box<dyn ImageStore<Image = T>>,
+        builder: Box<dyn ImageBuilder<Image = T>>,
+    ) -> Self {
+        Self { store, builder }
+    }
+
+    fn store(&self) -> &Box<dyn ImageStore<Image = T>> {
+        &self.store
+    }
+
+    fn builder(&self) -> &Box<dyn ImageBuilder<Image = T>> {
+        &self.builder
+    }
+
+    pub fn build() -> ProjectorBuilder<T> {
+        ProjectorBuilder::new()
     }
 }

@@ -11,9 +11,8 @@ use actix_web::{error, get, post, web, web::Bytes, Error, HttpResponse, Responde
 
 // use tokio_stream::{Stream, StreamExt};
 
-use holodekk_core::subroutine;
-
 use super::server::ApiServices;
+use holodekk_core::engine::ImageStore;
 
 pub fn routes(cfg: &mut web::ServiceConfig) {
     cfg.service(images).service(build);
@@ -58,9 +57,9 @@ pub fn routes(cfg: &mut web::ServiceConfig) {
 
 #[get("/images")]
 async fn images(services: web::Data<ApiServices>) -> Result<impl Responder> {
-    let subroutines = subroutine::Service::new(services.store());
-    let images = subroutines
-        .images()
+    let images = services
+        .store()
+        .subroutine_images()
         .await
         .map_err(|_e| error::ErrorInternalServerError("Bogus"))?;
     Ok(web::Json(images))

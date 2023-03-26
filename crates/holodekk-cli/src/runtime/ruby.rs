@@ -1,12 +1,14 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use async_trait::async_trait;
 
 use colored::*;
 
-use holodekk_core::engine::{docker, ImageBuilder};
-use holodekk_core::subroutine;
+use tar::Builder as TarBuilder;
+
+use holodekk_core::engine::{docker, ImageBuilder, ImageKind, ImageStore};
+use holodekk_core::holodekk::{Application, ContainerManifest, SubroutineManifest};
 
 use holodekk_projector::server::ProjectorServer;
 
@@ -26,7 +28,7 @@ impl RubyCliRuntime {
         }
     }
 
-    fn subroutine(&self) -> subroutine::Subroutine {
+    fn subroutine(&self) -> SubroutineManifest {
         let output = Command::new(&self.file)
             .current_dir(&self.directory)
             .args(["manifest"])
@@ -44,11 +46,19 @@ impl CliRuntime for RubyCliRuntime {
         println!(
             "{} {} {}",
             "Building application for".cyan(),
-            subroutine.name.to_string().white().bold(),
+            subroutine.name().to_string().white().bold(),
             "via Docker.".cyan()
         );
         let builder = docker::Builder::new();
-        builder.build_application(&subroutine).await.unwrap();
+        let mut bytes = Vec::default();
+        match subroutine.container() {
+            ContainerManifest::FromContext { context, .. } => {
+                let path = PathBuf::from(context.as_str());
+                create_archive(path, &mut bytes).unwrap();
+            }
+        }
+        let app = Application::new(subroutine.name());
+        builder.build_application(&app, bytes).await.unwrap();
         println!("{}", "Build complete.".cyan());
     }
     fn manifest(&self) {}
@@ -57,7 +67,12 @@ impl CliRuntime for RubyCliRuntime {
 
         // Check to see if an image exists
         print!("Checking for application image ...");
-        if subroutine.container_image_exists().await.unwrap() {
+        let store = docker::Store::new();
+        if store
+            .image_exists(ImageKind::Application, subroutine.name())
+            .await
+            .unwrap()
+        {
             println!(" ok.");
         } else {
             println!(" not found.");
@@ -67,7 +82,7 @@ impl CliRuntime for RubyCliRuntime {
         println!(
             "{} {} {}",
             "Launching subroutine".green(),
-            subroutine.name.to_string().white().bold(),
+            subroutine.name().to_string().white().bold(),
             "on the Holodekk.".green()
         );
 
@@ -87,4 +102,9 @@ impl CliRuntime for RubyCliRuntime {
 
         projector.stop();
     }
+}
+
+fn create_archive<T: std::io::Write, P: AsRef<Path>>(context: P, target: T) -> std::io::Result<()> {
+    let mut archive: TarBuilder<T> = TarBuilder::new(target);
+    archive.append_dir_all("", context.as_ref())
 }
