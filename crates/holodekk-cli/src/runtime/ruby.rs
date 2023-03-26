@@ -8,9 +8,9 @@ use colored::*;
 
 use tar::Builder as TarBuilder;
 
-use holodekk::engine::{docker, ImageBuilder, ImageKind, ImageStore};
-use holodekk::holodekk::{Application, ContainerManifest, SubroutineManifest};
+use holodekk::engine::{docker, Build, ImageKind, Store};
 use holodekk::projector::server::ProjectorServer;
+use holodekk::subroutine::{ContainerManifest, SubroutineManifest};
 
 use super::CliRuntime;
 
@@ -52,7 +52,7 @@ impl CliRuntime for RubyCliRuntime {
             subroutine.name().to_string().white().bold(),
             "via Docker.".cyan()
         );
-        let builder = docker::DockerImageBuilder::new();
+        let engine = docker::Docker::new();
         let mut bytes = Vec::default();
         match subroutine.container() {
             ContainerManifest::FromDockerContext { context, .. } => {
@@ -60,8 +60,16 @@ impl CliRuntime for RubyCliRuntime {
                 create_archive(path, &mut bytes).unwrap();
             }
         }
-        let app = Application::new(subroutine.name());
-        builder.build_application(&app, bytes).await.unwrap();
+        engine
+            .build(
+                ImageKind::Application,
+                subroutine.name(),
+                "latest",
+                bytes,
+                None,
+            )
+            .await
+            .unwrap();
         println!("{}", "Build complete.".cyan());
     }
     fn manifest(&self) {}
@@ -70,8 +78,8 @@ impl CliRuntime for RubyCliRuntime {
 
         // Check to see if an image exists
         print!("Checking for application image ...");
-        let store = docker::DockerImageStore::new();
-        if store
+        let engine = docker::Docker::new();
+        if engine
             .image_exists(ImageKind::Application, subroutine.name())
             .await
             .unwrap()

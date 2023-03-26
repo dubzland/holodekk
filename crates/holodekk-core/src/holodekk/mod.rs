@@ -1,8 +1,10 @@
-mod subroutine;
+pub mod subroutine;
 pub use crate::engine::Image;
-pub use subroutine::{Application, ContainerManifest, Subroutine, SubroutineManifest};
+// pub use subroutine::{Application, ContainerManifest, Subroutine, SubroutineManifest};
 
 use clap::{Parser, Subcommand};
+
+use subroutine::Subroutine;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -32,21 +34,19 @@ pub trait Platform {
 }
 
 /// A single holodekk instance wrapped around a subroutine.
-pub struct Holodekk<T, I>
+pub struct Holodekk<T>
 where
     T: Platform,
-    I: Image,
 {
-    subroutine: Subroutine<I>,
+    subroutine: Subroutine,
     platform: T,
 }
 
-impl<T, I> Holodekk<T, I>
+impl<T> Holodekk<T>
 where
     T: Platform,
-    I: Image,
 {
-    pub fn new(subroutine: Subroutine<I>, platform: T) -> Self {
+    pub fn new(subroutine: Subroutine, platform: T) -> Self {
         Self {
             subroutine,
             platform,

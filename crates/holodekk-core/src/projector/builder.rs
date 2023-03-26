@@ -1,53 +1,26 @@
-use crate::engine::docker::{DockerImageBuilder, DockerImageStore};
-use crate::engine::{Image, ImageBuilder, ImageStore};
+use crate::engine::docker::Docker;
+use crate::engine::Engine;
 
 use super::Projector;
 
-pub struct ProjectorBuilder<T: Image> {
-    store: Option<Box<dyn ImageStore<Image = T>>>,
-    builder: Option<Box<dyn ImageBuilder<Image = T>>>,
+#[derive(Default)]
+pub struct ProjectorBuilder {
+    engine: Option<Box<dyn Engine>>,
 }
 
-impl<T: Image> ProjectorBuilder<T> {
+impl ProjectorBuilder {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn with_docker_store(self) -> Self
-    where
-        DockerImageStore: ImageStore<Image = T>,
-    {
-        let store = Box::new(DockerImageStore::new());
+    pub fn with_docker_engine(self) -> Self {
         Self {
-            store: Some(store),
-            ..self
+            engine: Some(Box::new(Docker::new())),
         }
     }
 
-    pub fn with_docker_builder(self) -> Self
-    where
-        DockerImageBuilder: ImageBuilder<Image = T>,
-    {
-        let builder = Box::new(DockerImageBuilder::new());
-
-        Self {
-            builder: Some(builder),
-            ..self
-        }
-    }
-
-    pub fn build(self) -> Projector<T> {
-        let store = self.store.unwrap();
-        let builder = self.builder.unwrap();
-        Projector::new(store, builder)
-    }
-}
-
-impl<T: Image> Default for ProjectorBuilder<T> {
-    fn default() -> Self {
-        ProjectorBuilder {
-            store: None,
-            builder: None,
-        }
+    pub fn build(self) -> Projector {
+        let engine = self.engine.unwrap();
+        Projector::new(engine)
     }
 }

@@ -13,31 +13,22 @@ pub use builder::ProjectorBuilder;
 
 pub mod server;
 
-use crate::engine::{Image, ImageBuilder, ImageStore};
+use crate::engine::Engine;
 
-pub struct Projector<T: Image> {
-    store: Box<dyn ImageStore<Image = T>>,
-    builder: Box<dyn ImageBuilder<Image = T>>,
+pub struct Projector {
+    engine: Box<dyn Engine>,
 }
 
-impl<T: Image> Projector<T> {
-    pub fn new(
-        store: Box<dyn ImageStore<Image = T>>,
-        builder: Box<dyn ImageBuilder<Image = T>>,
-    ) -> Self {
-        Self { store, builder }
+impl Projector {
+    pub fn new(engine: Box<dyn Engine>) -> Self {
+        Self { engine }
     }
 
-    pub fn store(&self) -> &dyn ImageStore<Image = T> {
-        self.store.as_ref()
+    pub fn engine(&self) -> &dyn Engine {
+        self.engine.as_ref()
     }
 
-    // pub fn builder(&self) -> &Box<dyn ImageBuilder<Image = T>> {
-    pub fn builder(&self) -> &dyn ImageBuilder<Image = T> {
-        self.builder.as_ref()
-    }
-
-    pub fn build() -> ProjectorBuilder<T> {
+    pub fn build() -> ProjectorBuilder {
         ProjectorBuilder::new()
     }
 }

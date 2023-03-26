@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 
 use colored::*;
 
-use holodekk::engine::{docker, Image, ImageStore, ImageTag};
+use holodekk::engine::{docker, ImageKind, Store};
 
 use holodekk_cli::{runtime, CliRuntimeError};
 
@@ -47,8 +47,8 @@ async fn main() {
 
     match &options.command {
         Commands::List {} => {
-            let store = docker::DockerImageStore::new();
-            let images = store.subroutine_images().await.unwrap();
+            let engine = docker::Docker::new();
+            let images = engine.images(ImageKind::Subroutine).await.unwrap();
             if !images.is_empty() {
                 println!("{}\n", "Available Subroutines".green());
                 println!("{:25} {:15}", "Name".bold(), "Tag".bold());

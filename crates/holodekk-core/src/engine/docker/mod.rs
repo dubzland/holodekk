@@ -1,29 +1,41 @@
-mod image;
-mod image_builder;
-mod image_store;
+//! Tooling to interact with a [Docker](https://docker.com) daemon for container management.
+//!
+//! Utilizes the awesome [bollard](https://github.com/fussybeaver/bollard) crate.
 
-pub use image::{DockerImage, DockerImageTag};
-pub use image_builder::DockerImageBuilder;
-pub use image_store::DockerImageStore;
+mod build;
+mod store;
 
-use async_trait::async_trait;
-
-use super::{Engine, ImageBuilder, ImageStore};
+use super::Engine;
 
 pub(crate) const DOCKER_PREFIX: &str = "holodekk";
 
+/// Necessary services for building, publishing, and executing containers on the Docker platform.
+///
+/// # Examples
+///
+/// ```rust
+/// use holodekk::engine::docker::Docker;
+///
+/// let engine = Docker::new();
+/// ```
 pub struct Docker {
-    image_builder: DockerImageBuilder,
-    image_store: DockerImageStore,
+    client: bollard::Docker,
+    prefix: String,
 }
 
-#[async_trait]
-impl Engine<DockerImage> for Docker {
-    async fn image_builder(&self) -> crate::Result<&dyn ImageBuilder<Image = DockerImage>> {
-        Ok(&self.image_builder)
-    }
-
-    async fn image_store(&self) -> crate::Result<&dyn ImageStore<Image = DockerImage>> {
-        Ok(&self.image_store)
+impl Default for Docker {
+    fn default() -> Self {
+        Self {
+            client: bollard::Docker::connect_with_socket_defaults().unwrap(),
+            prefix: DOCKER_PREFIX.to_string(),
+        }
     }
 }
+
+impl Docker {
+    pub fn new() -> Self {
+        Default::default()
+    }
+}
+
+impl Engine for Docker {}

@@ -3,7 +3,7 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::engine::Image;
+use crate::engine::{Image, ImageKind};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Container {
@@ -18,12 +18,12 @@ impl fmt::Display for Container {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Application<T: Image> {
+pub struct Application {
     name: String,
-    image: Option<Box<T>>,
+    image: Option<Box<Image>>,
 }
 
-impl<T: Image> Default for Application<T> {
+impl Default for Application {
     fn default() -> Self {
         Self {
             name: "".to_string(),
@@ -32,7 +32,7 @@ impl<T: Image> Default for Application<T> {
     }
 }
 
-impl<T: Image> Application<T> {
+impl Application {
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
@@ -40,7 +40,7 @@ impl<T: Image> Application<T> {
         }
     }
 
-    pub fn with_image(self, image: Box<T>) -> Self {
+    pub fn with_image(self, image: Box<Image>) -> Self {
         Self {
             image: Some(image),
             ..self
@@ -53,34 +53,42 @@ impl<T: Image> Application<T> {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Subroutine<T: Image> {
+pub struct Subroutine {
     name: String,
-    application: Application<T>,
+    application: Application,
 }
 
-impl<T: Image> Subroutine<T> {
+impl Subroutine {
+    pub fn new(name: &str, application: Application) -> Self {
+        Self {
+            name: name.to_string(),
+            application,
+        }
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }
 
-    pub fn application(&self) -> &Application<T> {
+    pub fn application(&self) -> &Application {
         &self.application
     }
 
-    pub fn from_manifest(manifest: &SubroutineManifest) -> Subroutine<T> {
-        let application = Application {
-            name: manifest.name().to_string(),
-            image: None,
+    pub fn from_manifest(manifest: &SubroutineManifest) -> Subroutine {
+        let image = match manifest.container() {
+            ContainerManifest::FromDockerContext {
+                context,
+                dockerfile,
+            } => Image::new(manifest.name(), ImageKind::Application),
         };
 
-        Self {
-            name: manifest.name().to_string(),
-            application,
-        }
+        let application = Application::new(manifest.name()).with_image(Box::new(image));
+
+        Self::new(manifest.name(), application)
     }
 }
 
-impl<T: Image> fmt::Display for Subroutine<T> {
+impl fmt::Display for Subroutine {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
     }
