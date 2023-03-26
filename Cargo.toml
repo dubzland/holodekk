@@ -3,7 +3,6 @@ members = [
     "crates/holodekk-cli",
     "crates/holodekkd",
     "crates/holodekk-core",
-    "crates/holodekk-projector",
     "crates/holodekk-shim",
 ]
 
@@ -17,9 +16,10 @@ license-file = "LICENSE"
 # # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies]
-holodekk-core = { path = "./crates/holodekk-core" }
-holodekk-projector = { path = "./crates/holodekk-projector" }
+holodekk = { path = "./crates/holodekk-core" }
 clap = { version = "4.1.6", features = ["derive"] }
+futures-util = "0.3.27"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.93"
+thiserror = "1.0.40"
 tokio = { version = "1.26.0", features = ["full"] }

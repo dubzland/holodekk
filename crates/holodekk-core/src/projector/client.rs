@@ -3,8 +3,6 @@ use hello_world::HelloRequest;
 
 use tonic::transport::Channel;
 
-use crate::error::Result;
-
 pub mod hello_world {
     tonic::include_proto!("helloworld");
 }
@@ -12,7 +10,11 @@ pub mod hello_world {
 pub struct ProjectorClientBuilder {}
 
 impl ProjectorClientBuilder {
-    pub async fn connect_tcp(&self, port: u16, addr: Option<&str>) -> Result<ProjectorClient> {
+    pub async fn connect_tcp(
+        &self,
+        port: u16,
+        addr: Option<&str>,
+    ) -> crate::Result<ProjectorClient> {
         let connect_address: String;
 
         if let Some(addr) = addr {
@@ -36,7 +38,7 @@ impl ProjectorClient {
         ProjectorClientBuilder {}
     }
 
-    pub async fn say_hello(&self, name: &str) -> Result<String> {
+    pub async fn say_hello(&self, name: &str) -> crate::Result<String> {
         let request = tonic::Request::new(HelloRequest { name: name.into() });
 
         // let mut client = GreeterClient::connect(address).await?;

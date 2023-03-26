@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 
 use colored::*;
 
-use holodekk_core::engine::{docker, Image, ImageStore, ImageTag};
+use holodekk::engine::{docker, Image, ImageStore, ImageTag};
 
 use holodekk_cli::{runtime, CliRuntimeError};
 

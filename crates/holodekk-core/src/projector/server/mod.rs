@@ -16,8 +16,6 @@ use tonic::{Request, Response, Status};
 
 use runtime::ProjectorRuntime;
 
-use crate::error::Result;
-
 pub(crate) mod hello_world {
     tonic::include_proto!("helloworld");
 }
@@ -61,7 +59,11 @@ impl ProjectorServer {
         &self.runtime
     }
 
-    pub fn listen_tcp(self, port: Option<u16>, addr: Option<&str>) -> Result<ProjectorHandle> {
+    pub fn listen_tcp(
+        self,
+        port: Option<u16>,
+        addr: Option<&str>,
+    ) -> crate::Result<ProjectorHandle> {
         let (cmd_tx, cmd_rx) = unbounded_channel();
 
         let signal = async {

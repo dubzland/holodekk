@@ -1,5 +1,5 @@
-use holodekk_core::engine::docker::{DockerImageBuilder, DockerImageStore};
-use holodekk_core::engine::{Image, ImageBuilder, ImageStore};
+use crate::engine::docker::{DockerImageBuilder, DockerImageStore};
+use crate::engine::{Image, ImageBuilder, ImageStore};
 
 use super::Projector;
 

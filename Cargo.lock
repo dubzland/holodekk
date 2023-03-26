@@ -367,9 +367,9 @@ dependencies = [
 
 [[package]]
 name = "axum"
-version = "0.6.11"
+version = "0.6.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13d8068b6ccb8b34db9de397c7043f91db8b4c66414952c6db944f238c4d3db3"
+checksum = "349f8ccfd9221ee7d1f3d4b33e1f8319b3a81ed8f61f2ea40b37b859794b4491"
 dependencies = [
  "async-trait",
  "axum-core",
@@ -1007,26 +1007,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
-name = "holodekk-cli"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "clap",
- "colored",
- "flate2",
- "holodekk-core",
- "holodekk-projector",
- "hyper",
- "hyperlocal",
- "serde",
- "serde_json",
- "tar",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "holodekk-core"
+name = "holodekk"
 version = "0.1.0"
 dependencies = [
  "actix-web",
@@ -1034,27 +1015,18 @@ dependencies = [
  "bollard",
  "clap",
  "flate2",
+ "futures",
  "futures-util",
  "hyper",
  "hyperlocal",
  "libc",
  "log",
+ "prost",
  "regex",
  "serde",
  "serde_json",
  "syslog",
  "tar",
- "tokio",
-]
-
-[[package]]
-name = "holodekk-projector"
-version = "0.1.0"
-dependencies = [
- "futures",
- "futures-util",
- "holodekk-core",
- "prost",
  "thiserror",
  "tokio",
  "tonic",
@@ -1062,11 +1034,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "holodekk-cli"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "clap",
+ "colored",
+ "flate2",
+ "holodekk",
+ "hyper",
+ "hyperlocal",
+ "serde",
+ "serde_json",
+ "tar",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "holodekk-shim"
 version = "0.1.0"
 dependencies = [
  "clap",
- "holodekk-core",
+ "holodekk",
  "libc",
 ]
 
@@ -1084,7 +1074,7 @@ dependencies = [
  "clap",
  "env_logger",
  "futures-util",
- "holodekk-core",
+ "holodekk",
  "lazy_static",
  "log",
  "nix",

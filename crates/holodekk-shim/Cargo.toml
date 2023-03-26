@@ -9,5 +9,5 @@ license-file.workspace = true
 
 [dependencies]
 clap.workspace = true
-holodekk-core.workspace = true
+holodekk.workspace = true
 libc = "0.2.139"

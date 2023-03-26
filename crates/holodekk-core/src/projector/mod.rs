@@ -13,7 +13,7 @@ pub use builder::ProjectorBuilder;
 
 pub mod server;
 
-use holodekk_core::engine::{Image, ImageBuilder, ImageStore};
+use crate::engine::{Image, ImageBuilder, ImageStore};
 
 pub struct Projector<T: Image> {
     store: Box<dyn ImageStore<Image = T>>,

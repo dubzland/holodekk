@@ -8,10 +8,9 @@ use colored::*;
 
 use tar::Builder as TarBuilder;
 
-use holodekk_core::engine::{docker, ImageBuilder, ImageKind, ImageStore};
-use holodekk_core::holodekk::{Application, ContainerManifest, SubroutineManifest};
-
-use holodekk_projector::server::ProjectorServer;
+use holodekk::engine::{docker, ImageBuilder, ImageKind, ImageStore};
+use holodekk::holodekk::{Application, ContainerManifest, SubroutineManifest};
+use holodekk::projector::server::ProjectorServer;
 
 use super::CliRuntime;
 

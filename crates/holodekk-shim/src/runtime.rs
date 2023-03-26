@@ -2,9 +2,9 @@ use std::ffi::CString;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use holodekk_core::logger::debug;
-use holodekk_core::utils::libsee;
-use holodekk_core::utils::streams::{create_pipes, override_streams};
+use holodekk::logger::debug;
+use holodekk::utils::libsee;
+use holodekk::utils::streams::{create_pipes, override_streams};
 
 pub trait Command {
     fn to_argv(&self, runtime: &str, pidfile: &str, id: &str) -> Vec<CString>;

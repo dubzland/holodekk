@@ -5,8 +5,8 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
-use holodekk_core::logger;
-use holodekk_core::utils::libsee;
+use holodekk::logger;
+use holodekk::utils::libsee;
 
 mod runtime;
 

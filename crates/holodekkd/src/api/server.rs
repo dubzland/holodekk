@@ -7,7 +7,7 @@ use nix::unistd::{chown, Gid};
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
 
-use holodekk_core::engine::docker;
+use holodekk::engine::docker;
 
 use super::subroutines;
 

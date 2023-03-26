@@ -95,8 +95,8 @@ impl ImageStore for DockerImageStore {
     /// # Examples
     ///
     /// ```
-    /// use holodekk_core::Result;
-    /// use holodekk_core::engine::{docker, ImageStore};
+    /// use holodekk::Result;
+    /// use holodekk::engine::{docker, ImageStore};
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<()> {
@@ -118,8 +118,8 @@ impl ImageStore for DockerImageStore {
     /// # Examples
     ///
     /// ```
-    /// use holodekk_core::Result;
-    /// use holodekk_core::engine::{docker, ImageStore};
+    /// use holodekk::Result;
+    /// use holodekk::engine::{docker, ImageStore};
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<()> {
@@ -141,13 +141,13 @@ impl ImageStore for DockerImageStore {
     /// # Examples
     ///
     /// ```
-    /// use holodekk_core::Result;
-    /// use holodekk_core::engine::{docker, ImageKind, ImageStore};
+    /// use holodekk::Result;
+    /// use holodekk::engine::{docker, ImageKind, ImageStore};
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<()> {
     ///     let store = docker::DockerImageStore::new();
-    ///     if store.image_exists(ImageKind::Application, "acme/widget-api").unwrap() {
+    ///     if store.image_exists(ImageKind::Application, "acme/widget-api").await? {
     ///         println!("Image exists!");
     ///     }
     ///     Ok(())

@@ -9,7 +9,7 @@ use crate::engine::{Image, ImageKind, ImageTag};
 /// # Examples
 ///
 /// ```rust
-/// use holodekk_core::engine::docker::DockerImageTag;
+/// use holodekk::engine::docker::DockerImageTag;
 ///
 /// let tag = DockerImageTag::new("acme/widgets", "sha256:5a8a49...e1bdc6");
 /// ```
