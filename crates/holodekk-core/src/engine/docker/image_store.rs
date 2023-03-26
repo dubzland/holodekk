@@ -7,22 +7,21 @@ use bollard::image::ListImagesOptions;
 use regex::Regex;
 
 use crate::engine::{Image, ImageKind, ImageStore};
-use crate::errors::{Error, Result};
 
 use super::DockerImage;
 
-pub struct Store {
+pub struct DockerImageStore {
     prefix: String,
     client: bollard::Docker,
 }
 
-impl Default for Store {
+impl Default for DockerImageStore {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Store {
+impl DockerImageStore {
     pub fn new() -> Self {
         let client = bollard::Docker::connect_with_socket_defaults().unwrap();
         Self {
@@ -31,7 +30,7 @@ impl Store {
         }
     }
 
-    fn image_from_tag(&self, tag_str: &str, id: &str) -> Result<Option<DockerImage>> {
+    fn image_from_tag(&self, tag_str: &str, id: &str) -> crate::Result<Option<DockerImage>> {
         let re = Regex::new(
             format!(
                 r"{}/(subroutine|service|application)/([^:]*):(.*)",
@@ -59,7 +58,7 @@ impl Store {
         }
     }
 
-    async fn images(&self) -> Result<Vec<DockerImage>> {
+    async fn images(&self) -> crate::Result<Vec<DockerImage>> {
         let mut filters = HashMap::new();
         filters.insert("dangling", vec!["false"]);
         let options = ListImagesOptions {
@@ -81,14 +80,14 @@ impl Store {
             }
             Err(e) => {
                 // Convert the bollard erro to ours.
-                Err(Error::BollardError(e))
+                Err(crate::Error::BollardError(e))
             }
         }
     }
 }
 
 #[async_trait]
-impl ImageStore for Store {
+impl ImageStore for DockerImageStore {
     type Image = DockerImage;
 
     /// Retrieve a list of subroutine images from Docker.
@@ -101,12 +100,12 @@ impl ImageStore for Store {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<()> {
-    ///     let store = docker::Store::new();
+    ///     let store = docker::DockerImageStore::new();
     ///     let images = store.subroutine_images().await?;
     ///     Ok(())
     /// }
     /// ```
-    async fn subroutine_images(&self) -> Result<Vec<DockerImage>> {
+    async fn subroutine_images(&self) -> crate::Result<Vec<DockerImage>> {
         let images = self.images().await?;
         let (sub_images, _): (Vec<DockerImage>, Vec<DockerImage>) = images
             .into_iter()
@@ -124,12 +123,12 @@ impl ImageStore for Store {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<()> {
-    ///     let store = docker::Store::new();
+    ///     let store = docker::DockerImageStore::new();
     ///     let images = store.application_images().await?;
     ///     Ok(())
     /// }
     /// ```
-    async fn application_images(&self) -> Result<Vec<DockerImage>> {
+    async fn application_images(&self) -> crate::Result<Vec<DockerImage>> {
         let images = self.images().await?;
         let (sub_images, _): (Vec<DockerImage>, Vec<DockerImage>) = images
             .into_iter()
@@ -147,14 +146,14 @@ impl ImageStore for Store {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<()> {
-    ///     let store = docker::Store::new();
+    ///     let store = docker::DockerImageStore::new();
     ///     if store.image_exists(ImageKind::Application, "acme/widget-api").unwrap() {
     ///         println!("Image exists!");
     ///     }
     ///     Ok(())
     /// }
     /// ```
-    async fn image_exists(&self, kind: ImageKind, name: &str) -> Result<bool> {
+    async fn image_exists(&self, kind: ImageKind, name: &str) -> crate::Result<bool> {
         let images = match kind {
             ImageKind::Application => self.application_images(),
             ImageKind::Subroutine => self.subroutine_images(),

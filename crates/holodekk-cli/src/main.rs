@@ -47,7 +47,7 @@ async fn main() {
 
     match &options.command {
         Commands::List {} => {
-            let store = docker::Store::new();
+            let store = docker::DockerImageStore::new();
             let images = store.subroutine_images().await.unwrap();
             if !images.is_empty() {
                 println!("{}\n", "Available Subroutines".green());

@@ -1,32 +1,29 @@
 use std::default::Default;
-use std::sync::{RwLock, RwLockReadGuard};
 
 use async_trait::async_trait;
 
 use bollard::image::BuildImageOptions;
-use bollard::Docker;
 
 use futures_util::stream::StreamExt;
 
-use super::{DockerImage, DockerImageTag};
-use crate::engine::{Image, ImageBuilder, ImageKind};
-use crate::errors::Result;
+use super::DockerImage;
+use crate::engine::{ImageBuilder, ImageKind};
 use crate::holodekk::Application;
 
-pub struct Builder {
+pub struct DockerImageBuilder {
     prefix: String,
     client: bollard::Docker,
 }
 
-impl Default for Builder {
+impl Default for DockerImageBuilder {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Builder {
+impl DockerImageBuilder {
     pub fn new() -> Self {
-        let client = Docker::connect_with_socket_defaults().unwrap();
+        let client = bollard::Docker::connect_with_socket_defaults().unwrap();
         Self {
             prefix: super::DOCKER_PREFIX.to_string(),
             client,
@@ -35,10 +32,15 @@ impl Builder {
 }
 
 #[async_trait]
-impl ImageBuilder for Builder {
+impl ImageBuilder for DockerImageBuilder {
     type Image = DockerImage;
 
-    async fn build_subroutine(&self, name: &str, tag: &str, data: Vec<u8>) -> Result<DockerImage> {
+    async fn build_subroutine(
+        &self,
+        name: &str,
+        tag: &str,
+        data: Vec<u8>,
+    ) -> crate::Result<DockerImage> {
         let options = BuildImageOptions {
             t: format!("{}/subroutine/{}:{}", self.prefix, name, tag),
             q: true,
@@ -56,7 +58,7 @@ impl ImageBuilder for Builder {
         application: &Application<DockerImage>,
         // bytes: &'static [u8],
         bytes: Vec<u8>,
-    ) -> Result<DockerImage> {
+    ) -> crate::Result<DockerImage> {
         let options = BuildImageOptions {
             t: format!("{}/application/{}:latest", self.prefix, application.name()),
             ..Default::default()
@@ -76,23 +78,5 @@ impl ImageBuilder for Builder {
             }
         }
         Ok(DockerImage::new("foo", ImageKind::Subroutine))
-    }
-}
-
-pub struct OtherImage {
-    tags: RwLock<Vec<DockerImageTag>>,
-}
-
-impl Image for OtherImage {
-    type Tag = DockerImageTag;
-
-    fn name(&self) -> &str {
-        "Other"
-    }
-    fn kind(&self) -> &ImageKind {
-        &ImageKind::Subroutine
-    }
-    fn tags(&self) -> RwLockReadGuard<'_, Vec<DockerImageTag>> {
-        self.tags.read().unwrap()
     }
 }

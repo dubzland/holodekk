@@ -8,7 +8,36 @@ pub mod client;
 mod error;
 pub use error::{ProjectorError, Result};
 
-mod projector;
-pub use projector::Projector;
+mod builder;
+pub use builder::ProjectorBuilder;
 
 pub mod server;
+
+use holodekk_core::engine::{Image, ImageBuilder, ImageStore};
+
+pub struct Projector<T: Image> {
+    store: Box<dyn ImageStore<Image = T>>,
+    builder: Box<dyn ImageBuilder<Image = T>>,
+}
+
+impl<T: Image> Projector<T> {
+    pub fn new(
+        store: Box<dyn ImageStore<Image = T>>,
+        builder: Box<dyn ImageBuilder<Image = T>>,
+    ) -> Self {
+        Self { store, builder }
+    }
+
+    pub fn store(&self) -> &dyn ImageStore<Image = T> {
+        self.store.as_ref()
+    }
+
+    // pub fn builder(&self) -> &Box<dyn ImageBuilder<Image = T>> {
+    pub fn builder(&self) -> &dyn ImageBuilder<Image = T> {
+        self.builder.as_ref()
+    }
+
+    pub fn build() -> ProjectorBuilder<T> {
+        ProjectorBuilder::new()
+    }
+}

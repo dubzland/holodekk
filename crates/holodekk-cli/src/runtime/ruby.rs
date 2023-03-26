@@ -1,3 +1,4 @@
+// use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -35,6 +36,9 @@ impl RubyCliRuntime {
             .output()
             .expect("failed to execute process");
 
+        //         io::stderr().write_all(&output.stdout).unwrap();
+        //         io::stderr().write_all(&output.stderr).unwrap();
+
         serde_json::from_str(std::str::from_utf8(&output.stdout).unwrap()).unwrap()
     }
 }
@@ -49,10 +53,10 @@ impl CliRuntime for RubyCliRuntime {
             subroutine.name().to_string().white().bold(),
             "via Docker.".cyan()
         );
-        let builder = docker::Builder::new();
+        let builder = docker::DockerImageBuilder::new();
         let mut bytes = Vec::default();
         match subroutine.container() {
-            ContainerManifest::FromContext { context, .. } => {
+            ContainerManifest::FromDockerContext { context, .. } => {
                 let path = PathBuf::from(context.as_str());
                 create_archive(path, &mut bytes).unwrap();
             }
@@ -67,7 +71,7 @@ impl CliRuntime for RubyCliRuntime {
 
         // Check to see if an image exists
         print!("Checking for application image ...");
-        let store = docker::Store::new();
+        let store = docker::DockerImageStore::new();
         if store
             .image_exists(ImageKind::Application, subroutine.name())
             .await
