@@ -1021,6 +1021,7 @@ dependencies = [
  "hyperlocal",
  "libc",
  "log",
+ "mio",
  "prost",
  "regex",
  "serde",
@@ -1044,6 +1045,7 @@ dependencies = [
  "holodekk",
  "hyper",
  "hyperlocal",
+ "mio",
  "serde",
  "serde_json",
  "tar",
@@ -1058,6 +1060,23 @@ dependencies = [
  "clap",
  "holodekk",
  "libc",
+]
+
+[[package]]
+name = "holodekk-subroutine"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "clap",
+ "holodekk",
+ "libc",
+ "log",
+ "mio",
+ "nix",
+ "serde",
+ "serde_json",
+ "syslog",
+ "thiserror",
 ]
 
 [[package]]

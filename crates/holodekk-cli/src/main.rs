@@ -22,7 +22,7 @@ pub enum Commands {
     /// Build the subroutine in the current directory.
     Build {
         /// Directory where the subroutine is located.
-        #[arg(short, long, default_value = ".holodekk")]
+        #[arg(short, long, default_value = "holodekk")]
         directory: String,
 
         /// Name of the subroutine to run
@@ -32,7 +32,7 @@ pub enum Commands {
 
     Run {
         /// Directory where the subroutine is located.
-        #[arg(short, long, default_value = ".holodekk")]
+        #[arg(short, long, default_value = "holodekk")]
         directory: String,
 
         /// Name of the subroutine to run

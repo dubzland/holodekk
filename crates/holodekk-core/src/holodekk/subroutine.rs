@@ -77,8 +77,8 @@ impl Subroutine {
     pub fn from_manifest(manifest: &SubroutineManifest) -> Subroutine {
         let image = match manifest.container() {
             ContainerManifest::FromDockerContext {
-                context,
-                dockerfile,
+                context: _,
+                dockerfile: _,
             } => Image::new(manifest.name(), ImageKind::Application),
         };
 

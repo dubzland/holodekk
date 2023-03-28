@@ -1,9 +1,10 @@
 [workspace]
 members = [
-    "crates/holodekk-cli",
     "crates/holodekkd",
+    "crates/holodekk-cli",
     "crates/holodekk-core",
     "crates/holodekk-shim",
+    "crates/holodekk-subroutine",
 ]
 
 [workspace.package]
@@ -19,7 +20,10 @@ license-file = "LICENSE"
 holodekk = { path = "./crates/holodekk-core" }
 clap = { version = "4.1.6", features = ["derive"] }
 futures-util = "0.3.27"
+log = "0.4.17"
+mio = "0.8.6"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.93"
+syslog = "6.0.1"
 thiserror = "1.0.40"
 tokio = { version = "1.26.0", features = ["full"] }

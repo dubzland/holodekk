@@ -3,6 +3,9 @@ use std::io::{self, Read};
 use std::mem;
 use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
 
+use mio::unix::SourceFd;
+use mio::{event, Interest, Registry, Token};
+
 use super::libsee;
 use super::pipes::Pipe;
 
@@ -14,6 +17,30 @@ impl Read for InputStream {
         let res = file.read(buf);
         mem::forget(file); // omit the destruciton of the file, i.e. no call to close(fd).
         res
+    }
+}
+
+impl event::Source for InputStream {
+    fn register(
+        &mut self,
+        registry: &Registry,
+        token: Token,
+        interests: Interest,
+    ) -> io::Result<()> {
+        SourceFd(&self.0).register(registry, token, interests)
+    }
+
+    fn reregister(
+        &mut self,
+        registry: &Registry,
+        token: Token,
+        interests: Interest,
+    ) -> io::Result<()> {
+        SourceFd(&self.0).reregister(registry, token, interests)
+    }
+
+    fn deregister(&mut self, registry: &Registry) -> io::Result<()> {
+        SourceFd(&self.0).deregister(registry)
     }
 }
 
