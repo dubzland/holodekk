@@ -98,13 +98,6 @@ impl MessageSubroutinePid {
     }
 }
 
-fn write_master_pidfile(pidfile: &PathBuf, pid: Pid) {
-    debug!("forked worker with pid: {}", pid);
-    if let Err(err) = fs::write(pidfile, format!("{}", pid)) {
-        panic!("write() to pidfile {} failed: {}", pidfile.display(), err);
-    }
-}
-
 fn connect_log_stream(log_socket: &PathBuf) {
     let mut stream = UnixStream::connect(log_socket).unwrap();
 
@@ -190,56 +183,8 @@ fn main() {
         pipe2(OFlag::O_CLOEXEC).expect("Failed to create stderr pipes");
 
     // fork again
-    match unsafe { fork() } {
-        Ok(ForkResult::Parent { child, .. }) => {
-            debug!("subroutine forked with pid {}", child);
-            // close the worker pipes
-            close(worker_stdout).expect("Failed to close worker stdout in main process");
-            close(worker_stderr).expect("failed to close worker stderr in main process");
-
-            // start the server to monitor the subroutine and serve logs
-            let result = Server::build()
-                .with_child(child)
-                .with_stdio(main_stdout, main_stderr)
-                .with_log_file(&options.log_file)
-                .listen_uds(&options.log_socket);
-
-            match result {
-                Ok(mut server) => {
-                    // Notify the parent of our state
-                    match serde_json::to_vec(&MessageSubroutinePid::new(child)) {
-                        Ok(msg) => {
-                            let mut sync_pipe = unsafe { File::from_raw_fd(child_fd) };
-                            if sync_pipe.write_all(&msg).is_err() {
-                                warn!("Failed to write status to sync pipe");
-                            }
-                        }
-                        Err(err) => {
-                            warn!("Failed to serialize JSON for sync update: {}", err);
-                        }
-                    }
-
-                    // Run the server
-                    match server.run() {
-                        Ok(status) => {
-                            debug!("subroutine exited with status: {:?}", status);
-                        }
-                        Err(err) => {
-                            // Make absolutely sure we've reaped the child
-                            warn!("Server exited abnormally: {:?}", err);
-                            kill(child, SIGTERM).unwrap();
-                            waitpid(child, None).unwrap();
-                        }
-                    }
-                }
-                Err(err) => {
-                    warn!("Error building server: {}", err);
-                }
-            }
-
-            // At this point, the child should be stopped.  Perform one last check to be
-            // absolutely sure it gets reaped.
-        }
+    let child_pid = match unsafe { fork() } {
+        Ok(ForkResult::Parent { child, .. }) => child,
         Ok(ForkResult::Child) => {
             // ensure we die if our parent disappears
             prctl(libc::PR_SET_PDEATHSIG, SIGKILL as libc::c_ulong, 0, 0, 0)
@@ -275,10 +220,88 @@ fn main() {
                 CString::new("127.0.0.1").unwrap(),
             ];
             execv(&argv[0], &argv).unwrap_or_else(|_| unsafe { libc::_exit(127) });
+            panic!("we should never get here");
         }
-        Err(_) => {
+        Err(err) => {
             eprintln!("Fork failed");
-            unsafe { libc::_exit(1) };
+            panic!("fork() of the subroutine process failed: {}", err);
+        }
+    };
+
+    // close the worker pipes
+    close(worker_stdout).expect("Failed to close worker stdout in main process");
+    close(worker_stderr).expect("failed to close worker stderr in main process");
+
+    // start the server to monitor the subroutine and serve logs
+    let result = Server::build()
+        .with_child(child_pid)
+        .with_stdio(main_stdout, main_stderr)
+        .with_log_file(&options.log_file)
+        .listen_uds(&options.log_socket);
+
+    match result {
+        Ok(mut server) => {
+            // Notify the parent of our state
+            match serde_json::to_vec(&MessageSubroutinePid::new(child_pid)) {
+                Ok(msg) => {
+                    let mut sync_pipe = unsafe { File::from_raw_fd(child_fd) };
+                    if sync_pipe.write_all(&msg).is_err() {
+                        warn!("Failed to write status to sync pipe");
+                    }
+                }
+                Err(err) => {
+                    warn!("Failed to serialize JSON for sync update: {}", err);
+                }
+            }
+
+            // Run the server
+            match server.run() {
+                Ok(status) => {
+                    debug!("subroutine exited with status: {:?}", status);
+                }
+                Err(err) => {
+                    // server terminated abnormally
+                    // Make absolutely sure we've reaped the child
+                    warn!("Server exited abnormally: {:?}", err);
+                    ensure_child_reaped(child_pid);
+                }
+            }
+        }
+        Err(err) => {
+            warn!("Error building server: {}", err);
+            ensure_child_reaped(child_pid);
+        }
+    }
+}
+
+fn write_master_pidfile(pidfile: &PathBuf, pid: Pid) {
+    debug!("forked worker with pid: {}", pid);
+    if let Err(err) = fs::write(pidfile, format!("{}", pid)) {
+        panic!("write() to pidfile {} failed: {}", pidfile.display(), err);
+    }
+}
+
+pub fn ensure_child_reaped(pid: Pid) {
+    match kill(pid, None) {
+        Ok(_) => {
+            warn!("child still running.  terminating.");
+            match kill(pid, SIGTERM) {
+                Ok(_) => {
+                    waitpid(pid, None).unwrap();
+                }
+                Err(err) => {
+                    warn!("failure trying to terminate child: {}", err);
+                }
+            }
+        }
+        Err(nix::errno::Errno::ESRCH) => {
+            debug!("child no longer exists");
+        }
+        Err(err) => {
+            warn!(
+                "Failed to check status of child during failure cleanup: {}",
+                err
+            );
         }
     }
 }

@@ -193,7 +193,11 @@ impl Server {
                     self.handle_stderr_event(event)?;
                 }
                 _ => {
-                    self.handle_sink_event(event)?;
+                    let done = self.handle_sink_event(event)?;
+                    if done {
+                        let token = event.token();
+                        self.drop_sink(token)?;
+                    }
                 }
             }
         }
@@ -261,13 +265,13 @@ impl Server {
         }
     }
 
-    fn handle_sink_event(&mut self, event: &Event) -> Result<()> {
+    fn handle_sink_event(&mut self, event: &Event) -> Result<bool> {
         let token = event.token();
 
         // make sure we actually have this sink
         if !self.log_sinks.contains_key(&token) {
             warn!("handle_sink_event() fired for non-existent sink.");
-            return Ok(());
+            return Ok(false);
         }
 
         // so that this dosn't panic
@@ -288,25 +292,27 @@ impl Server {
                     warn!("Error reading from log sink: {}", err);
                 }
             }
-            drop(sink);
 
-            self.drop_sink(token)?;
+            // let the poll know we are done with this sink
+            Ok(true)
         } else if event.is_writable() && sink.data_pending() {
             match sink.deliver_data() {
                 Ok(_) => {
                     self.poll
                         .registry()
                         .reregister(sink.stream(), token, Interest::READABLE)?;
+                    Ok(false)
                 }
                 Err(err) => {
                     warn!("Error delivering data for sink: {}", err);
-                    drop(sink);
-                    self.drop_sink(token)?;
+                    // drop this sink
+                    Ok(true)
                 }
             }
+        } else {
+            warn!("log sink in strange state.  dropping.");
+            Ok(true)
         }
-
-        Ok(())
     }
 
     fn drop_sink(&mut self, token: Token) -> Result<()> {
