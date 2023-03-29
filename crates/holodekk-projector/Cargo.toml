@@ -1,18 +1,20 @@
 [package]
-name = "holodekk"
+name = "holodekk-projector"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
 license-file.workspace = true
 
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [dependencies]
 async-trait.workspace = true
 futures-util.workspace = true
-libc.workspace = true
 log.workspace = true
-mio.workspace = true
-serde.workspace = true
-syslog.workspace = true
 thiserror.workspace = true
-bollard = "0.14.0"
-regex = "1.7.1"
+tokio.workspace = true
+tonic = "0.8.3"
+prost = "0.11.8"
+
+[build-dependencies]
+tonic-build = "0.8.4"

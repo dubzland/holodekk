@@ -1,72 +1,48 @@
+// use std::cell::{Ref, RefCell};
+// use std::collections::HashMap;
+// use std::ops::Deref;
+
 pub mod subroutine;
-pub use crate::engine::Image;
-// pub use subroutine::{Application, ContainerManifest, Subroutine, SubroutineManifest};
 
-use clap::{Parser, Subcommand};
+// use crate::engine::{docker::Docker, Engine};
+// use crate::errors::{Error, Result};
 
-use subroutine::Subroutine;
-
-#[derive(Debug, Parser)]
-#[command(author, version, about, long_about = None)]
-pub struct Options {
-    #[command(subcommand)]
-    command: Commands,
+pub struct Holodekk {
+    engine_type: String,
+    // projectors: RefCell<HashMap<String, Projector>>,
 }
 
-#[derive(Debug, Subcommand)]
-pub enum Commands {
-    /// Build a container from a Dockerfile
-    Build {
-        #[arg(long)]
-        projector_port: u16,
-    },
-    Start {
-        #[arg(long)]
-        projector_port: u16,
-    },
-    Manifest {},
-}
-
-pub trait Platform {
-    fn build(&self, subroutine: &str);
-    fn run(&self, subroutine: &str, projector_port: u16);
-    fn manifest(&self, subroutine: &str) -> String;
-}
-
-/// A single holodekk instance wrapped around a subroutine.
-pub struct Holodekk<T>
-where
-    T: Platform,
-{
-    subroutine: Subroutine,
-    platform: T,
-}
-
-impl<T> Holodekk<T>
-where
-    T: Platform,
-{
-    pub fn new(subroutine: Subroutine, platform: T) -> Self {
+impl Holodekk {
+    pub fn new(engine_type: &str) -> Self {
         Self {
-            subroutine,
-            platform,
+            engine_type: engine_type.to_string(),
+            // projectors: RefCell::new(HashMap::new()),
         }
     }
 
-    pub fn run(&self, args: &[String]) {
-        let options = Options::parse_from(args.iter());
+    //     pub fn projector(&self, namespace: &str) -> Result<impl Deref<Target = Projector> + '_> {
+    //         if !self.projectors.borrow().contains_key(namespace) {
+    //             let projector = self.create_projector(namespace)?;
+    //             self.projectors
+    //                 .borrow_mut()
+    //                 .insert(namespace.to_string(), projector);
+    //         }
 
-        match &options.command {
-            Commands::Build { .. } => {
-                self.platform.build(self.subroutine.name());
-            }
-            Commands::Manifest {} => {
-                let json: String = self.platform.manifest(self.subroutine.name());
-                println!("{}", json);
-            }
-            Commands::Start { projector_port } => {
-                self.platform.run(self.subroutine.name(), *projector_port);
-            }
-        }
-    }
+    //         Ok(Ref::map(self.projectors.borrow(), |projectors| {
+    //             projectors.get(namespace).unwrap()
+    //         }))
+    //     }
+
+    //     fn create_projector(&self, namespace: &str) -> Result<Projector> {
+    //         let engine = self.create_engine(&self.engine_type)?;
+    //         let projector = Projector::new(namespace, engine);
+    //         Ok(projector)
+    //     }
+
+    //     fn create_engine(&self, engine_type: &str) -> Result<Box<dyn Engine>> {
+    //         match engine_type {
+    //             "docker" => Ok(Box::new(Docker::new())),
+    //             _ => Err(Error::InvalidEngine(engine_type.to_string())),
+    //         }
+    //     }
 }

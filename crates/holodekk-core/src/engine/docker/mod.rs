@@ -5,7 +5,7 @@
 mod build;
 mod store;
 
-use super::Engine;
+use super::{Engine, Identity};
 
 pub(crate) const DOCKER_PREFIX: &str = "holodekk";
 
@@ -35,6 +35,12 @@ impl Default for Docker {
 impl Docker {
     pub fn new() -> Self {
         Default::default()
+    }
+}
+
+impl Identity for Docker {
+    fn name(&self) -> &'static str {
+        "docker"
     }
 }
 

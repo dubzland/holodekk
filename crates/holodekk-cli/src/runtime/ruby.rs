@@ -8,9 +8,10 @@ use colored::*;
 
 use tar::Builder as TarBuilder;
 
-use holodekk::engine::{docker, Build, ImageKind, Store};
-use holodekk::projector::server::ProjectorServer;
-use holodekk::subroutine::{ContainerManifest, SubroutineManifest};
+use holodekk::engine::{docker, Build, ImageKind};
+// use holodekk::projector::server::ProjectorServer;
+use holodekk::subroutine::{ContainerManifest, Subroutine, SubroutineManifest};
+use holodekk::Holodekk;
 
 use super::CliRuntime;
 
@@ -73,45 +74,62 @@ impl CliRuntime for RubyCliRuntime {
         println!("{}", "Build complete.".cyan());
     }
     fn manifest(&self) {}
-    async fn run(&self) {
-        let subroutine = self.subroutine();
+    async fn run(&self) -> holodekk::Result<()> {
+        let manifest = self.subroutine();
 
-        // Check to see if an image exists
-        print!("Checking for application image ...");
-        let engine = docker::Docker::new();
-        if engine
-            .image_exists(ImageKind::Application, subroutine.name())
-            .await
-            .unwrap()
-        {
-            println!(" ok.");
-        } else {
-            println!(" not found.");
-            self.build().await;
-        }
-
-        println!(
-            "{} {} {}",
-            "Launching subroutine".green(),
-            subroutine.name().to_string().white().bold(),
-            "on the Holodekk.".green()
-        );
+        // Launch a Holodekk instance
+        let holodekk = Holodekk::new("docker");
 
         // Start a projector
-        let projector = ProjectorServer::new().listen_tcp(None, None).unwrap();
-        let port = projector.port();
-        println!("Projector running on port {}.", port);
+        // let projector = holodekk.projector("local")?;
 
-        // Launch the subroutine
-        Command::new(&self.file)
-            .current_dir(&self.directory)
-            .arg("start")
-            .arg("--projector-port")
-            .arg(port.to_string())
-            .status()
-            .unwrap();
+        // Create the subroutine
+        let sub = Subroutine::new(
+            manifest.name(),
+            &self.directory,
+            self.file.as_path().file_stem().unwrap().to_str().unwrap(),
+        );
+        // let projector = ProjectorServer::new().listen_tcp(None, None).unwrap();
+        // let port = projector.port();
+        // println!("Projector running on port {}.", port);
 
-        projector.stop();
+        // // Check to see if an image exists
+        // print!("Checking for application image ...");
+        // let engine = docker::Docker::new();
+        // if engine
+        //     .image_exists(ImageKind::Application, subroutine.name())
+        //     .await
+        //     .unwrap()
+        // {
+        //     println!(" ok.");
+        // } else {
+        //     println!(" not found.");
+        //     self.build().await;
+        // }
+
+        // println!(
+        //     "{} {} {}",
+        //     "Launching subroutine".green(),
+        //     subroutine.name().to_string().white().bold(),
+        //     "on the Holodekk.".green()
+        // );
+
+        // // Start a projector
+        // let projector = ProjectorServer::new().listen_tcp(None, None).unwrap();
+        // let port = projector.port();
+        // println!("Projector running on port {}.", port);
+
+        // // Launch the subroutine
+        // Command::new(&self.file)
+        //     .current_dir(&self.directory)
+        //     .arg("start")
+        //     .arg("--projector-port")
+        //     .arg(port.to_string())
+        //     .status()
+        //     .unwrap();
+
+        // projector.stop();
+        Ok(())
     }
 }
 

@@ -11,21 +11,21 @@ fn error_chain_fmt(e: &impl error::Error, f: &mut fmt::Formatter<'_>) -> fmt::Re
 }
 
 #[derive(thiserror::Error)]
-pub enum ProjectorError {
+pub enum Error {
     #[error("Failed to connect to the projector.")]
     Connect(#[from] tonic::transport::Error),
     #[error("Failed to execute RPC call.")]
     Rpc(#[from] tonic::Status),
-    #[error("Attempt to access handle on uninitialized server.")]
-    Uninitialized,
-    #[error("Invalid address supplied: {0}.")]
-    InvalidAddress(String),
+    #[error("Failed to shutdown server gracefully")]
+    Shutdown,
+    #[error("IO error occurred")]
+    Io(#[from] std::io::Error),
 }
 
-impl std::fmt::Debug for ProjectorError {
+impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         error_chain_fmt(self, f)
     }
 }
 
-pub type Result<T> = result::Result<T, ProjectorError>;
+pub type Result<T> = result::Result<T, Error>;

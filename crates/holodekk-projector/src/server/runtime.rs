@@ -19,18 +19,6 @@ impl ProjectorRuntime {
         }
     }
 
-    pub(crate) fn spawn_server<F>(&self, future: F) -> tokio::task::JoinHandle<F::Output>
-    where
-        F: Future + Send + 'static,
-        F::Output: Send + 'static,
-    {
-        if let Some(rt) = &self.rt {
-            rt.handle().spawn(future)
-        } else {
-            tokio::runtime::Handle::current().spawn(future)
-        }
-    }
-
     pub(crate) fn block_on<F>(&self, future: F) -> F::Output
     where
         F: Future + Send + 'static,

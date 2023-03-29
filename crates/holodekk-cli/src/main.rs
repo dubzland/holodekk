@@ -42,7 +42,7 @@ pub enum Commands {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> holodekk::Result<()> {
     let options = Options::parse();
 
     match &options.command {
@@ -62,10 +62,12 @@ async fn main() {
             }
         }
         Commands::Build { directory, name } => {
-            runtime::detect(directory, name).unwrap().build().await;
+            runtime::detect(directory, name).unwrap().build().await
         }
         Commands::Run { directory, name } => match runtime::detect(directory, name) {
-            Ok(runtime) => runtime.run().await,
+            Ok(runtime) => {
+                runtime.run().await?;
+            }
             Err(err) => match err {
                 CliRuntimeError::ArgumentError(reason) => {
                     eprintln!("{}", reason);
@@ -75,5 +77,7 @@ async fn main() {
                 }
             },
         },
-    }
+    };
+
+    Ok(())
 }

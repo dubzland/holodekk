@@ -8,5 +8,4 @@ mod holodekk;
 pub use crate::holodekk::*;
 
 pub mod logger;
-pub mod projector;
 pub mod utils;

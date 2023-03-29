@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::fmt;
+use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::engine::{Image, ImageKind};
+use crate::engine::Image;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Container {
@@ -52,39 +53,44 @@ impl Application {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug)]
 pub struct Subroutine {
     name: String,
-    application: Application,
+    root_path: PathBuf,
+    variant: String,
+
+    pid_file: PathBuf,
+    log_file: PathBuf,
+    log_socket: PathBuf,
+    shim_pid_file: PathBuf,
 }
 
 impl Subroutine {
-    pub fn new(name: &str, application: Application) -> Self {
+    pub fn new(name: &str, root_path: &PathBuf, variant: &str) -> Self {
+        let mut working_directory = root_path.clone();
+        working_directory.push(".holodekk");
+        let mut pid_file = working_directory.clone();
+        pid_file.push("subroutine.pid");
+        let mut log_file = working_directory.clone();
+        log_file.push(format!("{}.log", variant));
+        let mut log_socket = working_directory.clone();
+        log_socket.push(format!("{}.sock", variant));
+        let mut shim_pid_file = working_directory.clone();
+        shim_pid_file.push(format!("{}.shim.pid", variant));
+
         Self {
             name: name.to_string(),
-            application,
+            root_path: root_path.to_owned(),
+            variant: variant.to_string(),
+            pid_file,
+            log_file,
+            log_socket,
+            shim_pid_file,
         }
     }
 
     pub fn name(&self) -> &str {
         &self.name
-    }
-
-    pub fn application(&self) -> &Application {
-        &self.application
-    }
-
-    pub fn from_manifest(manifest: &SubroutineManifest) -> Subroutine {
-        let image = match manifest.container() {
-            ContainerManifest::FromDockerContext {
-                context: _,
-                dockerfile: _,
-            } => Image::new(manifest.name(), ImageKind::Application),
-        };
-
-        let application = Application::new(manifest.name()).with_image(Box::new(image));
-
-        Self::new(manifest.name(), application)
     }
 }
 

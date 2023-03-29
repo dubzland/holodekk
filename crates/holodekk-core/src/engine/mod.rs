@@ -139,4 +139,8 @@ pub trait Store {
     async fn image_exists(&self, kind: ImageKind, name: &str) -> crate::Result<bool>;
 }
 
-pub trait Engine: Build + Store {}
+pub trait Identity {
+    fn name(&self) -> &'static str;
+}
+
+pub trait Engine: Identity + Build + Store {}

@@ -8,7 +8,7 @@ pub mod runtime;
 pub trait CliRuntime {
     async fn build(&self);
     fn manifest(&self);
-    async fn run(&self);
+    async fn run(&self) -> holodekk::Result<()>;
 }
 
 #[derive(Debug, Error)]
