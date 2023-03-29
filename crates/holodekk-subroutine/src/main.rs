@@ -41,7 +41,6 @@ use streams::open_dev_null;
 #[command(author, version, about, long_about = None)]
 pub struct Options {
     /// Name of the subroutine to execute
-
     #[arg(long, short, required = true)]
     name: String,
 
@@ -281,7 +280,7 @@ fn write_master_pidfile(pidfile: &PathBuf, pid: Pid) {
     }
 }
 
-pub fn ensure_child_reaped(pid: Pid) {
+fn ensure_child_reaped(pid: Pid) {
     match kill(pid, None) {
         Ok(_) => {
             warn!("child still running.  terminating.");
@@ -306,7 +305,7 @@ pub fn ensure_child_reaped(pid: Pid) {
     }
 }
 
-pub fn init_logger(level: LevelFilter) {
+fn init_logger(level: LevelFilter) {
     let formatter = Formatter3164 {
         facility: Facility::LOG_USER,
         hostname: None,
