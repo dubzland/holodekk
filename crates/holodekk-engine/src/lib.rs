@@ -22,6 +22,8 @@
 //! Finally, they must all be tied together into an actual [Engine].  See
 //! [Docker](docker::Docker) for an example of a fully-functional [Engine].
 pub mod docker;
+mod errors;
+pub use errors::{Error, Result};
 
 use std::sync::{RwLock, RwLockReadGuard};
 

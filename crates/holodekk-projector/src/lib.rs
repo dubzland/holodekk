@@ -1,12 +1,15 @@
-mod admin;
-mod client;
-mod errors;
-mod server;
-mod wrapper;
+pub mod client;
+pub mod errors;
+pub mod projector;
+pub mod server;
+
+pub(crate) mod hello_world {
+    tonic::include_proto!("helloworld");
+}
 
 pub use errors::{Error, Result};
 
-pub use admin::{AdminService, SubroutineManagerServer};
-pub use client::ProjectorClient;
-pub use server::{GreeterServer, MyGreeter};
-pub use wrapper::{ServerHandle, ServerManager};
+// pub use client::ProjectorClient;
+// pub use projector::{Projector, ProjectorHandle};
+// pub use server::{GreeterServer, MyGreeter, ProjectorServer, Service};
+// pub use wrapper::{ServerHandle, ServerManager};

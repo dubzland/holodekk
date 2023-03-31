@@ -7,7 +7,7 @@ use bollard::image::BuildImageOptions;
 use futures_util::stream::StreamExt;
 
 use super::Docker;
-use crate::engine::{Build, Image, ImageKind};
+use crate::{Build, Image, ImageKind};
 
 pub(crate) struct ImageBuilder<'a> {
     client: &'a bollard::Docker,

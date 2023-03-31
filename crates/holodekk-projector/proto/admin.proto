@@ -2,11 +2,20 @@ syntax = "proto3";
 
 package admin;
 
-service SubroutineManager {
-	rpc ListSubroutines(Empty) returns (SubroutineList) {}
+service Core {
+	rpc Status(Empty) returns (ProjectorStatus) {}
+}
+
+service Subroutines {
+	rpc List(Empty) returns (SubroutineList) {}
 }
 
 message Empty {}
+
+message ProjectorStatus {
+	int32 pid = 1;
+	int32 port = 2;
+}
 
 message Subroutine {
 	string name = 1;

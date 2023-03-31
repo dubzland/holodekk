@@ -1,11 +1,14 @@
-use std::fs;
+use std::fs::{self, File};
+use std::io::Write;
+use std::net::Ipv4Addr;
 use std::os::fd::{AsRawFd, RawFd};
+use std::os::unix::io::FromRawFd;
 use std::panic;
 use std::path::PathBuf;
 
 use clap::Parser;
 
-use log::{debug, error, LevelFilter};
+use log::{debug, error, warn, LevelFilter};
 
 use mio::{unix::SourceFd, Events, Interest, Poll, Token};
 
@@ -19,14 +22,72 @@ use nix::{
     unistd::{dup2, fork, setsid, ForkResult, Pid},
 };
 
+use serde::Serialize;
+
 use syslog::{BasicLogger, Facility, Formatter3164};
 
 mod projector;
 
 // TODO: Get rid of this
 use holodekk::utils::libsee::prctl;
+use holodekk_projector::server::{ProjectorServer, Service};
 use holodekk_projector::Result;
-use projector::Projector;
+
+#[derive(Debug, Serialize)]
+struct MessageProjectorPid<'a> {
+    pid: u32,
+    projector_port: Option<u16>,
+    projector_address: Option<Ipv4Addr>,
+    projector_socket: Option<&'a PathBuf>,
+    admin_port: Option<u16>,
+    admin_address: Option<Ipv4Addr>,
+    admin_socket: Option<&'a PathBuf>,
+}
+
+impl<'a> MessageProjectorPid<'a> {
+    pub fn new(pid: u32) -> Self {
+        Self {
+            pid,
+            projector_port: None,
+            projector_address: None,
+            projector_socket: None,
+            admin_port: None,
+            admin_address: None,
+            admin_socket: None,
+        }
+    }
+
+    pub fn with_projector_listener(
+        &mut self,
+        port: Option<u16>,
+        address: Option<Ipv4Addr>,
+        socket: Option<&'a PathBuf>,
+    ) -> &mut Self {
+        self.projector_port = port;
+        self.projector_address = address;
+        self.projector_socket = socket.to_owned();
+        self
+    }
+
+    /// Assigns the admin attributes for this status update.
+    ///
+    /// # Arguments
+    ///
+    /// `port` - Port number we are listening on
+    /// `address` - IPV4 address
+    /// `socket` - Unix socket path
+    pub fn with_admin_listener(
+        &mut self,
+        port: Option<u16>,
+        address: Option<Ipv4Addr>,
+        socket: Option<&'a PathBuf>,
+    ) -> &mut Self {
+        self.admin_port = port;
+        self.admin_address = address;
+        self.admin_socket = socket.to_owned();
+        self
+    }
+}
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -40,12 +101,32 @@ pub struct Options {
     pidfile: PathBuf,
 
     /// Projector port
-    #[arg(short, long, required = true)]
-    port: String,
+    #[arg(short, long)]
+    projector_port: Option<u16>,
 
-    /// RPC port
-    #[arg(long = "rpc-port", required = true)]
-    rpc_port: u16,
+    /// Projector listen address (IP)
+    #[arg(long)]
+    projector_address: Option<Ipv4Addr>,
+
+    /// Projector listen socket (UDS)
+    #[arg(long, conflicts_with_all = ["projector_port", "projector_address"])]
+    projector_socket: Option<PathBuf>,
+
+    /// Admin port
+    #[arg(long)]
+    admin_port: Option<u16>,
+
+    /// Admin listen address (IP)
+    #[arg(long)]
+    admin_address: Option<Ipv4Addr>,
+
+    /// Admin listen socket (UDS)
+    #[arg(long, conflicts_with_all = ["admin_port", "admin_address"])]
+    admin_socket: Option<PathBuf>,
+
+    /// Sync pipe FD
+    #[arg(long = "sync-pipe")]
+    syncpipe_fd: Option<i32>,
 }
 
 fn main() -> Result<()> {
@@ -97,23 +178,103 @@ fn main() -> Result<()> {
         }
     };
 
+    // build the admin service
+    let mut admin_service = Service::admin();
+    if options.admin_socket.is_some() {
+        admin_service.listen_uds(&options.admin_socket.as_ref().unwrap());
+    } else {
+        admin_service.listen_tcp(
+            options.admin_port.as_ref().unwrap(),
+            options.admin_address.as_ref(),
+        );
+    }
+
+    // build the projector service
+    let mut projector_service = Service::projector();
+    if options.projector_socket.is_some() {
+        projector_service.listen_uds(&options.projector_socket.as_ref().unwrap());
+    } else {
+        projector_service.listen_tcp(
+            options.projector_port.as_ref().unwrap(),
+            options.projector_address.as_ref(),
+        );
+    }
+
     // Start a projector
-    let projector = Projector::build()
+    let projector = ProjectorServer::build()
         .for_namespace(&options.namespace)
-        .with_docker_engine()
+        .with_admin_service(admin_service)
+        .with_projector_service(projector_service)
         .build();
 
-    let (admin_port, subroutine_port) = projector.start()?;
-    debug!(
-        "Projector running on ports {}/{}",
-        admin_port, subroutine_port
-    );
+    projector.start()?;
+
+    // Notify the holodekk of our state
+    if options.syncpipe_fd.is_some() {
+        send_status_update(&options);
+    }
 
     main_loop()?;
 
-    debug!("About to exit");
+    debug!("Shutdown triggered.  Stopping background processes...");
     projector.stop()?;
+    cleanup(&options);
+    debug!("Shutdown complete.");
     Ok(())
+}
+
+fn cleanup(options: &Options) {
+    if options.admin_socket.is_some() {
+        let admin_socket = options.admin_socket.as_ref().unwrap();
+        if admin_socket.exists() {
+            match std::fs::remove_file(admin_socket) {
+                Ok(_) => {}
+                Err(err) => {
+                    warn!("Failed to remove admin socket: {}", err);
+                }
+            }
+        }
+    }
+
+    if options.projector_socket.is_some() {
+        let projector_socket = options.projector_socket.as_ref().unwrap();
+        if projector_socket.exists() {
+            match std::fs::remove_file(projector_socket) {
+                Ok(_) => {}
+                Err(err) => {
+                    warn!("Failed to remove projector socket: {}", err);
+                }
+            }
+        }
+    }
+}
+
+fn send_status_update(options: &Options) {
+    let mut status = MessageProjectorPid::new(std::process::id());
+    status.with_admin_listener(
+        options.admin_port,
+        options.admin_address,
+        options.admin_socket.as_ref(),
+    );
+    status.with_projector_listener(
+        options.projector_port,
+        options.projector_address,
+        options.projector_socket.as_ref(),
+    );
+    match serde_json::to_vec(&status) {
+        Ok(msg) => {
+            let mut sync_pipe = unsafe { File::from_raw_fd(options.syncpipe_fd.unwrap()) };
+            match sync_pipe.write_all(&msg) {
+                Ok(_) => {}
+                Err(err) => {
+                    warn!("Failed to write status to sync pipe: {}", err);
+                }
+            }
+        }
+        Err(err) => {
+            warn!("Failed to serialize JSON for sync update: {}", err);
+        }
+    }
 }
 
 fn main_loop() -> std::io::Result<()> {

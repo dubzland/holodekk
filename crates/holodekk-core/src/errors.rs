@@ -20,16 +20,20 @@ pub enum Error {
     ImageNotFound(String),
     #[error("Tag not found.")]
     TagNotFound(String),
-    #[error("A Bollard error occured.")]
-    BollardError(bollard::errors::Error),
     #[error("Attempt to access handle on uninitialized server.")]
     Uninitialized,
     #[error("Invalid address supplied: {0}.")]
     InvalidAddress(String),
     #[error("Invalid engine supplied: {0}.")]
     InvalidEngine(String),
+    #[error("Projector does not exist: {0}")]
+    InvalidProjector(crate::ProjectorHandle),
     #[error("Failed to start projector.")]
-    ProjectorError,
+    ProjectorError(#[from] holodekk_projector::Error),
+    #[error("IO error.")]
+    Io(#[from] std::io::Error),
+    // #[error("Invalid input.")]
+    // ParseInt(#[from] ParseIntError),
 }
 
 impl fmt::Debug for Error {

@@ -12,6 +12,10 @@ fn error_chain_fmt(e: &impl error::Error, f: &mut fmt::Formatter<'_>) -> fmt::Re
 
 #[derive(thiserror::Error)]
 pub enum Error {
+    #[error("Error launching projector: {0:?}")]
+    LaunchError(std::process::ExitStatus),
+    #[error("Error synchronizing with projector process")]
+    SyncError(#[from] serde_json::Error),
     #[error("Failed to connect to the projector.")]
     Connect(#[from] tonic::transport::Error),
     #[error("Failed to execute RPC call.")]

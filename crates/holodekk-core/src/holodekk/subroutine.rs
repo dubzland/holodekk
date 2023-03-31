@@ -4,8 +4,6 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::engine::Image;
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Container {
     context: String,
@@ -21,14 +19,12 @@ impl fmt::Display for Container {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Application {
     name: String,
-    image: Option<Box<Image>>,
 }
 
 impl Default for Application {
     fn default() -> Self {
         Self {
             name: "".to_string(),
-            image: None,
         }
     }
 }
@@ -38,13 +34,6 @@ impl Application {
         Self {
             name: name.to_string(),
             ..Default::default()
-        }
-    }
-
-    pub fn with_image(self, image: Box<Image>) -> Self {
-        Self {
-            image: Some(image),
-            ..self
         }
     }
 

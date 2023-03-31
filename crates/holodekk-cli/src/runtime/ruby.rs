@@ -75,20 +75,27 @@ impl CliRuntime for RubyCliRuntime {
     }
     fn manifest(&self) {}
     async fn run(&self) -> holodekk::Result<()> {
-        let manifest = self.subroutine();
+        // let manifest = self.subroutine();
 
         // Launch a Holodekk instance
         let holodekk = Holodekk::new("docker");
 
         // Start a projector
-        // let projector = holodekk.projector("local")?;
+        holodekk.projector_for_namespace("local")?;
+        let projector = holodekk.projector_for_namespace("local")?;
+
+        println!("Projector started running on port {}", projector.port);
+
+        holodekk.stop_projector(projector)?;
+
+        holodekk.stop()?;
 
         // Create the subroutine
-        let sub = Subroutine::new(
-            manifest.name(),
-            &self.directory,
-            self.file.as_path().file_stem().unwrap().to_str().unwrap(),
-        );
+        // let sub = Subroutine::new(
+        //     manifest.name(),
+        //     &self.directory,
+        //     self.file.as_path().file_stem().unwrap().to_str().unwrap(),
+        // );
         // let projector = ProjectorServer::new().listen_tcp(None, None).unwrap();
         // let port = projector.port();
         // println!("Projector running on port {}.", port);

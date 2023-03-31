@@ -72,6 +72,10 @@ pub struct Options {
     #[arg(long, required = true)]
     log_socket: PathBuf,
 
+    /// Sync pipe
+    #[arg(long)]
+    sync_pipe: i32,
+
     #[arg(long)]
     reconnect_log: bool,
 }

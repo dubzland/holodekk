@@ -6,8 +6,8 @@ use bollard::image::ListImagesOptions;
 
 use regex::Regex;
 
-use crate::engine::docker::Docker;
-use crate::engine::{Image, ImageKind, Store};
+use crate::docker::Docker;
+use crate::{Image, ImageKind, Result, Store};
 
 pub(crate) struct ImageStore<'a> {
     client: &'a bollard::Docker,
@@ -19,7 +19,7 @@ impl<'a> ImageStore<'a> {
         Self { client, prefix }
     }
 
-    fn image_from_tag(&self, tag_str: &str, id: &str) -> crate::Result<Option<Image>> {
+    fn image_from_tag(&self, tag_str: &str, id: &str) -> Result<Option<Image>> {
         let re = Regex::new(
             format!(
                 r"{}/(subroutine|service|application)/([^:]*):(.*)",
@@ -47,7 +47,7 @@ impl<'a> ImageStore<'a> {
         }
     }
 
-    async fn fetch_images(&self) -> crate::Result<Vec<Image>> {
+    async fn fetch_images(&self) -> Result<Vec<Image>> {
         let mut filters = HashMap::new();
         filters.insert("dangling", vec!["false"]);
         let options = ListImagesOptions {
@@ -55,23 +55,24 @@ impl<'a> ImageStore<'a> {
             ..Default::default()
         };
 
-        match self.client.list_images(Some(options)).await {
-            Ok(docker_images) => {
-                let mut images = vec![];
-                for image in docker_images {
-                    for tag in &image.repo_tags {
-                        if let Some(img) = self.image_from_tag(tag, &image.id)? {
-                            images.push(img);
-                        }
-                    }
+        let docker_images = self.client.list_images(Some(options)).await?;
+        // match self.client.list_images(Some(options)).await {
+        //     Ok(docker_images) => {
+        let mut images = vec![];
+        for image in docker_images {
+            for tag in &image.repo_tags {
+                if let Some(img) = self.image_from_tag(tag, &image.id)? {
+                    images.push(img);
                 }
-                Ok(images)
-            }
-            Err(e) => {
-                // Convert the bollard erro to ours.
-                Err(crate::Error::BollardError(e))
             }
         }
+        Ok(images)
+        // }
+        // Err(e) => {
+        //     // Convert the bollard erro to ours.
+        //     Err(Error::BollardError(e))
+        // }
+        // }
     }
 }
 

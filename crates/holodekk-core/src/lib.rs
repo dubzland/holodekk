@@ -1,6 +1,5 @@
 //! The Holodekk.
 
-pub mod engine;
 mod errors;
 pub use errors::{Error, Result};
 
