@@ -4,7 +4,7 @@ use std::sync::{Arc, RwLock};
 
 use futures_util::FutureExt;
 
-use log::{debug, warn};
+use log::warn;
 
 use tokio::net::UnixListener;
 use tokio::sync::oneshot::{channel, Sender};
@@ -107,33 +107,20 @@ impl Service {
             let listener = TcpIncoming::new(listen_address, true, None).unwrap();
 
             tokio::spawn(async move {
-                debug!("Inside spawn of server.");
-                let res = router
+                router
                     .serve_with_incoming_shutdown(listener, signal.map(drop))
-                    .await;
-                debug!("server shutdown");
-                res
+                    .await
             })
         } else {
             let uds = UnixListener::bind(self.socket.as_ref().unwrap()).unwrap();
             let listener = UnixListenerStream::new(uds);
 
             tokio::spawn(async move {
-                debug!("Inside spawn of server.");
                 router
                     .serve_with_incoming_shutdown(listener, signal.map(drop))
                     .await
             })
         };
-        // } else {
-        //     let listener = self.uds_listener.write().unwrap().take().unwrap();
-        //     tokio::spawn(async move {
-        //         debug!("Inside spawn of server.");
-        //         router
-        //             .serve_with_incoming_shutdown(listener, signal.map(drop))
-        //             .await
-        //     })
-        // };
 
         self.cmd_tx.write().unwrap().replace(cmd_tx);
 

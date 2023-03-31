@@ -2,7 +2,7 @@ use actix_web::{error, get, post, web, web::Bytes, Error, HttpResponse, Responde
 
 use super::server::ApiServices;
 
-use holodekk::engine::{ImageKind, Store};
+use holodekk_engine::{ImageKind, Store};
 
 pub fn routes(cfg: &mut web::ServiceConfig) {
     cfg.service(images).service(build);

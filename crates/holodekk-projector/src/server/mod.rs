@@ -46,11 +46,10 @@ impl ProjectorServer {
         let handle = tokio::runtime::Handle::current();
         let admin_service = self.admin_service.clone();
         let projector_service = self.projector_service.clone();
+        let admin_handle = admin_service.start().unwrap();
+        let projector_handle = projector_service.start().unwrap();
         let thread_handle = thread::spawn(move || {
             handle.block_on(async move {
-                let admin_handle = admin_service.start().unwrap();
-                let projector_handle = projector_service.start().unwrap();
-
                 admin_handle.await.unwrap().unwrap();
                 projector_handle.await.unwrap().unwrap();
             });

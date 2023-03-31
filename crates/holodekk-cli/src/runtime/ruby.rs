@@ -8,7 +8,7 @@ use colored::*;
 
 use tar::Builder as TarBuilder;
 
-use holodekk::engine::{docker, Build, ImageKind};
+use holodekk_engine::{docker, Build, ImageKind};
 // use holodekk::projector::server::ProjectorServer;
 use holodekk::subroutine::{ContainerManifest, Subroutine, SubroutineManifest};
 use holodekk::Holodekk;
@@ -83,8 +83,6 @@ impl CliRuntime for RubyCliRuntime {
         // Start a projector
         holodekk.projector_for_namespace("local")?;
         let projector = holodekk.projector_for_namespace("local")?;
-
-        println!("Projector started running on port {}", projector.port);
 
         holodekk.stop_projector(projector)?;
 
