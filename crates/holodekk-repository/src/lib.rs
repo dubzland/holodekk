@@ -28,17 +28,23 @@ trait SubroutineRepository {
 }
 
 pub struct MemorySubroutineRepository {
-    subroutines: Arc<RwLock<HashMap<Uuid, Subroutine>>>,
+    _subroutines: Arc<RwLock<HashMap<Uuid, Subroutine>>>,
+}
+
+impl Default for MemorySubroutineRepository {
+    fn default() -> Self {
+        Self {
+            _subroutines: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
 }
 
 impl MemorySubroutineRepository {
     pub fn new() -> Self {
-        Self {
-            subroutines: Arc::new(RwLock::new(HashMap::new())),
-        }
+        Default::default()
     }
 
-    pub fn create(&self, subroutine: &Subroutine) -> Result<()> {
+    pub fn create(&self, _subroutine: &Subroutine) -> Result<()> {
         Ok(())
     }
 }

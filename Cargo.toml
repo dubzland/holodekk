@@ -26,6 +26,7 @@ holodekk-projector = { path = "./crates/holodekk-projector" }
 holodekk-repository = { path = "./crates/holodekk-repository" }
 holodekk-utils = { path = "./crates/holodekk-utils" }
 clap = { version = "4.1.6", features = ["derive"] }
+dirs = "5.0.0"
 futures-util = "0.3.27"
 libc = "0.2.139"
 log = "0.4.17"

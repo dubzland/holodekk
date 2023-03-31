@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::Read;
 use std::net::Ipv4Addr;
 use std::os::unix::io::FromRawFd;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use log::{debug, warn};
@@ -150,7 +150,7 @@ impl Projector {
 
     pub fn spawn(
         namespace: &str,
-        root: &PathBuf,
+        root: &Path,
         admin_port: Option<u16>,
         projector_port: Option<u16>,
     ) -> Result<Projector> {
@@ -158,36 +158,35 @@ impl Projector {
         let (parent_fd, child_fd) = pipe2(OFlag::empty()).unwrap();
         let mut sync_pipe = unsafe { File::from_raw_fd(parent_fd) };
 
-        let mut pidfile = root.clone();
+        let mut pidfile = root.to_path_buf();
         pidfile.push("uhura.pid");
 
-        let mut command = Command::new(
-            "/home/jdubz/code/gitlab/holodekk/holodekk/target/debug/uhura".to_string(),
-        );
-        command.arg("--namespace".to_string());
-        command.arg(namespace.to_string());
-        command.arg("--pidfile".to_string());
+        let mut command =
+            Command::new("/home/jdubz/code/gitlab/holodekk/holodekk/target/debug/uhura");
+        command.arg("--namespace");
+        command.arg(namespace);
+        command.arg("--pidfile");
         command.arg(pidfile.clone().into_os_string().into_string().unwrap());
-        command.arg("--sync-pipe".to_string());
+        command.arg("--sync-pipe");
         command.arg(child_fd.to_string());
 
-        if admin_port.is_some() {
-            command.arg("--admin-port".to_string());
-            command.arg(admin_port.unwrap().to_string());
+        if let Some(port) = admin_port {
+            command.arg("--admin-port");
+            command.arg(port.to_string());
         } else {
-            let mut socket = root.clone();
+            let mut socket = root.to_path_buf();
             socket.push("admin.sock");
-            command.arg("--admin-socket".to_string());
+            command.arg("--admin-socket");
             command.arg(socket.clone().into_os_string().into_string().unwrap());
         }
 
-        if projector_port.is_some() {
-            command.arg("--projector-port".to_string());
-            command.arg(projector_port.unwrap().to_string());
+        if let Some(port) = projector_port {
+            command.arg("--projector-port");
+            command.arg(port.to_string());
         } else {
-            let mut socket = root.clone();
+            let mut socket = root.to_path_buf();
             socket.push("projector.sock");
-            command.arg("--projector-socket".to_string());
+            command.arg("--projector-socket");
             command.arg(socket.clone().into_os_string().into_string().unwrap());
         }
 

@@ -1,5 +1,7 @@
 use std::{error, fmt, result};
 
+use uuid::Uuid;
+
 fn error_chain_fmt(e: &impl error::Error, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     writeln!(f, "{}\n", e)?;
     let mut current = e.source();
@@ -26,8 +28,8 @@ pub enum Error {
     InvalidAddress(String),
     #[error("Invalid engine supplied: {0}.")]
     InvalidEngine(String),
-    #[error("Projector does not exist: {0}")]
-    InvalidProjector(crate::ProjectorHandle),
+    #[error("Projector does not exist: {id}:{namespace}")]
+    InvalidProjector { id: Uuid, namespace: String },
     #[error("Failed to start projector.")]
     ProjectorError(#[from] holodekk_projector::Error),
     #[error("IO error.")]

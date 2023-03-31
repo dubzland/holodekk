@@ -9,6 +9,7 @@ license-file.workspace = true
 
 [dependencies]
 clap.workspace = true
+dirs.workspace = true
 holodekk.workspace = true
 holodekk-engine.workspace = true
 mio.workspace = true
@@ -22,6 +23,7 @@ flate2 = "1.0.25"
 hyper = "0.14.24"
 hyperlocal = "0.8.0"
 tar = "0.4.38"
+dialoguer = "0.10.3"
 
 [[bin]]
 name = "holodekk"

@@ -181,7 +181,7 @@ fn main() -> Result<()> {
     // build the admin service
     let mut admin_service = Service::admin();
     if options.admin_socket.is_some() {
-        admin_service.listen_uds(&options.admin_socket.as_ref().unwrap());
+        admin_service.listen_uds(options.admin_socket.as_ref().unwrap());
     } else {
         admin_service.listen_tcp(
             options.admin_port.as_ref().unwrap(),
@@ -192,7 +192,7 @@ fn main() -> Result<()> {
     // build the projector service
     let mut projector_service = Service::projector();
     if options.projector_socket.is_some() {
-        projector_service.listen_uds(&options.projector_socket.as_ref().unwrap());
+        projector_service.listen_uds(options.projector_socket.as_ref().unwrap());
     } else {
         projector_service.listen_tcp(
             options.projector_port.as_ref().unwrap(),

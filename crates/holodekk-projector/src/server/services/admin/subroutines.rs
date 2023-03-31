@@ -1,6 +1,7 @@
 use tonic::{Request, Response, Status};
 
-use super::{Empty, Subroutine, SubroutineList, Subroutines};
+use crate::proto::admin::entities::{Empty, Subroutine, SubroutineList};
+use crate::proto::admin::subroutines::Subroutines;
 
 #[derive(Default)]
 pub struct SubroutinesService {}

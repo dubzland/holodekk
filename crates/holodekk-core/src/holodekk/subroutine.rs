@@ -33,7 +33,6 @@ impl Application {
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
-            ..Default::default()
         }
     }
 
@@ -45,13 +44,13 @@ impl Application {
 #[derive(Debug)]
 pub struct Subroutine {
     name: String,
-    root_path: PathBuf,
-    variant: String,
+    _root_path: PathBuf,
+    _variant: String,
 
-    pid_file: PathBuf,
-    log_file: PathBuf,
-    log_socket: PathBuf,
-    shim_pid_file: PathBuf,
+    _pid_file: PathBuf,
+    _log_file: PathBuf,
+    _log_socket: PathBuf,
+    _shim_pid_file: PathBuf,
 }
 
 impl Subroutine {
@@ -69,12 +68,12 @@ impl Subroutine {
 
         Self {
             name: name.to_string(),
-            root_path: root_path.to_owned(),
-            variant: variant.to_string(),
-            pid_file,
-            log_file,
-            log_socket,
-            shim_pid_file,
+            _root_path: root_path.to_owned(),
+            _variant: variant.to_string(),
+            _pid_file: pid_file,
+            _log_file: log_file,
+            _log_socket: log_socket,
+            _shim_pid_file: shim_pid_file,
         }
     }
 

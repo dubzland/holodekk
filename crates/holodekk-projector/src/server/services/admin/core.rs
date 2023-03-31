@@ -1,6 +1,7 @@
 use tonic::{Request, Response, Status};
 
-use super::{Core, Empty, ProjectorStatus};
+use crate::proto::admin::core::Core;
+use crate::proto::admin::entities::{Empty, ProjectorStatus};
 
 pub struct CoreService {}
 impl CoreService {

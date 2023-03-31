@@ -10,7 +10,7 @@ use tar::Builder as TarBuilder;
 
 use holodekk_engine::{docker, Build, ImageKind};
 // use holodekk::projector::server::ProjectorServer;
-use holodekk::subroutine::{ContainerManifest, Subroutine, SubroutineManifest};
+use holodekk::subroutine::{ContainerManifest, SubroutineManifest};
 use holodekk::Holodekk;
 
 use super::CliRuntime;

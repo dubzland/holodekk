@@ -1,5 +1,6 @@
 //! The Holodekk.
 
+pub mod api;
 mod errors;
 pub use errors::{Error, Result};
 
