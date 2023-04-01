@@ -8,21 +8,19 @@ use serde::{Deserialize, Serialize};
 use crate::Holodekk;
 
 pub struct ApiServices {
-    holodekk: Holodekk,
+    holodekk: Arc<Holodekk>,
 }
 
 impl ApiServices {
-    pub fn holodekk(&self) -> Holodekk {
-        self.holodekk.clone()
+    pub fn holodekk(&self) -> Arc<Holodekk> {
+        Arc::clone(&self.holodekk)
     }
 }
 
 impl ApiServices {}
-pub async fn run(port: u16) {
+pub async fn run(holodekk: Arc<Holodekk>, port: u16) {
     // Create the global services
-    let services = Arc::new(ApiServices {
-        holodekk: Holodekk::new("docker"),
-    });
+    let services = Arc::new(ApiServices { holodekk });
 
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init();

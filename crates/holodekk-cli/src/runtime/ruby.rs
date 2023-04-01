@@ -1,6 +1,6 @@
-// use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::Arc;
 
 use async_trait::async_trait;
 
@@ -19,13 +19,15 @@ use super::CliRuntime;
 pub struct RubyCliRuntime {
     directory: PathBuf,
     file: PathBuf,
+    holodekk: Arc<Holodekk>,
 }
 
 impl RubyCliRuntime {
-    pub(crate) fn new(directory: &PathBuf, file: &PathBuf) -> Self {
+    pub(crate) fn new(holodekk: Arc<Holodekk>, directory: &PathBuf, file: &PathBuf) -> Self {
         Self {
             directory: directory.to_owned(),
             file: file.to_owned(),
+            holodekk,
         }
     }
 
@@ -74,19 +76,17 @@ impl CliRuntime for RubyCliRuntime {
         println!("{}", "Build complete.".cyan());
     }
     fn manifest(&self) {}
-    async fn run(&self) -> holodekk::Result<()> {
+    async fn project(&self) -> holodekk::Result<()> {
         // let manifest = self.subroutine();
 
-        // Launch a Holodekk instance
-        let holodekk = Holodekk::new("docker");
-
         // Start a projector
-        holodekk.projector_for_namespace("local")?;
-        let projector = holodekk.projector_for_namespace("local")?;
+        self.holodekk.projector_for_namespace("local")?;
+        let _projector = self.holodekk.projector_for_namespace("local")?;
+        // self.holodekk.stop_projector(projector)?;
 
-        holodekk.stop_projector(projector)?;
+        // holodekk.stop_projector(projector)?;
 
-        holodekk.stop()?;
+        // holodekk.stop()?;
 
         // Create the subroutine
         // let sub = Subroutine::new(

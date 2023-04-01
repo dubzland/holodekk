@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package admin;
+package uhura;
 
 service Core {
 	rpc Status(Empty) returns (ProjectorStatus) {}

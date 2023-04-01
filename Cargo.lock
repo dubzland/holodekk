@@ -629,9 +629,9 @@ dependencies = [
  "axum",
  "bollard",
  "env_logger",
- "futures-util",
  "holodekk-engine",
  "holodekk-projector",
+ "holodekk-utils",
  "libc",
  "log",
  "mio",
@@ -687,6 +687,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "holodekk-engine",
+ "holodekk-utils",
  "log",
  "nix",
  "prost",
@@ -717,6 +718,7 @@ dependencies = [
  "chrono",
  "clap",
  "holodekk",
+ "holodekk-utils",
  "libc",
  "log",
  "mio",
@@ -730,6 +732,17 @@ dependencies = [
 [[package]]
 name = "holodekk-utils"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "futures-core",
+ "futures-util",
+ "libc",
+ "nix",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tracing",
+]
 
 [[package]]
 name = "holodekkd"
@@ -1880,16 +1893,21 @@ name = "uhura"
 version = "0.1.0"
 dependencies = [
  "clap",
- "holodekk",
+ "futures-util",
  "holodekk-projector",
+ "holodekk-utils",
  "libc",
  "log",
  "mio",
  "nix",
+ "prost",
  "serde",
  "serde_json",
  "syslog",
  "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-build",
 ]
 
 [[package]]

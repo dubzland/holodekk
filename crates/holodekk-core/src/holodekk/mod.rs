@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
 use log::warn;
@@ -9,33 +10,63 @@ use uuid::Uuid;
 pub use holodekk_projector::projector::{Projector, ProjectorHandle};
 pub mod subroutine;
 
-// use crate::engine::{docker::Docker, Engine};
 use crate::{Error, Result};
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Holodekk {
-    _engine_type: String,
+    root_path: PathBuf,
+    bin_path: PathBuf,
     projectors: Arc<RwLock<HashMap<Uuid, Projector>>>,
 }
 
+impl Drop for Holodekk {
+    fn drop(&mut self) {}
+}
+
 impl Holodekk {
-    pub fn new(engine_type: &str) -> Self {
+    pub fn new<P: AsRef<Path>>(root: P, bin: P) -> Self {
         Self {
-            _engine_type: engine_type.to_string(),
+            root_path: root.as_ref().to_path_buf(),
+            bin_path: bin.as_ref().to_path_buf(),
             projectors: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
+    pub fn init(&self) -> std::io::Result<()> {
+        // ensure the root path exists
+        if !self.root_path.exists() {
+            fs::create_dir_all(&self.root_path)?;
+        }
+        Ok(())
+    }
+
+    /// Returns a handle for the given namespace.
+    ///
+    /// If a projector is not currently running for the specified namespace, one will be started.
+    ///
+    /// # Arguments
+    ///
+    /// `namespace` - desired namespace for the projector.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use holodekk::Holodekk;
+    ///
+    /// let holodekk = Holodekk::new("/tmp", "/usr/local/bin");
+    /// holodekk.init().unwrap();
+    /// let projector = holodekk.projector_for_namespace("local").unwrap();
+    /// ```
     pub fn projector_for_namespace(&self, namespace: &str) -> Result<ProjectorHandle> {
         let projectors = self.projectors.read().unwrap();
         if let Some((_, projector)) = projectors.iter().find(|(_, p)| p.namespace().eq(namespace)) {
-            println!("Returning an existing projector: {}", projector.handle());
             Ok(projector.handle())
         } else {
-            println!("Spawning a new projector");
             // Spawn a projector
-            let root = PathBuf::from("/tmp/holodekk/projector/local");
-            let projector = Projector::spawn("local", &root, None, None)?;
+            let mut projector_root = self.root_path.clone();
+            projector_root.push(namespace);
+            let projector =
+                Projector::spawn(namespace, &projector_root, &self.bin_path, None, None)?;
             let handle = projector.handle();
             drop(projectors);
             let mut projectors = self.projectors.write().unwrap();
@@ -48,7 +79,8 @@ impl Holodekk {
     pub fn stop_projector(&self, handle: ProjectorHandle) -> Result<()> {
         let mut projectors = self.projectors.write().unwrap();
         if let Some(projector) = projectors.remove(&handle.id) {
-            projector.stop()?;
+            // It will die as soon as everyone releases it.
+            drop(projector);
             Ok(())
         } else {
             Err(Error::InvalidProjector {

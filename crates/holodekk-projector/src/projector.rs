@@ -1,5 +1,5 @@
 use std::fmt;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Read;
 use std::net::Ipv4Addr;
 use std::os::unix::io::FromRawFd;
@@ -113,7 +113,7 @@ impl Projector {
         &self.handle.namespace
     }
 
-    pub fn pidfile(&self) -> &PathBuf {
+    pub fn pidfile(&self) -> &Path {
         &self.handle.pidfile
     }
 
@@ -129,28 +129,10 @@ impl Projector {
         &self.handle.projector_listener
     }
 
-    pub fn stop(&self) -> Result<()> {
-        match kill(self.handle.pid, SIGINT) {
-            Ok(_) => {
-                debug!(
-                    "stopped uhura running for namespace {} with pid {}",
-                    self.handle.namespace, self.handle.pid
-                );
-                Ok(())
-            }
-            Err(err) => {
-                warn!(
-                    "failed stop uhura running for namespace {} with pid {}: {}",
-                    self.handle.namespace, self.handle.pid, err
-                );
-                Ok(())
-            }
-        }
-    }
-
-    pub fn spawn(
+    pub fn spawn<P: AsRef<Path>>(
         namespace: &str,
-        root: &Path,
+        root_path: P,
+        bin_path: P,
         admin_port: Option<u16>,
         projector_port: Option<u16>,
     ) -> Result<Projector> {
@@ -158,15 +140,22 @@ impl Projector {
         let (parent_fd, child_fd) = pipe2(OFlag::empty()).unwrap();
         let mut sync_pipe = unsafe { File::from_raw_fd(parent_fd) };
 
-        let mut pidfile = root.to_path_buf();
+        // Ensure the root directory exists
+        if !root_path.as_ref().exists() {
+            fs::create_dir_all(&root_path)?;
+        }
+
+        let mut pidfile = root_path.as_ref().to_path_buf();
         pidfile.push("uhura.pid");
 
-        let mut command =
-            Command::new("/home/jdubz/code/gitlab/holodekk/holodekk/target/debug/uhura");
+        let mut uhura = bin_path.as_ref().to_path_buf();
+        uhura.push("uhura");
+
+        let mut command = Command::new(uhura);
         command.arg("--namespace");
         command.arg(namespace);
         command.arg("--pidfile");
-        command.arg(pidfile.clone().into_os_string().into_string().unwrap());
+        command.arg(&pidfile);
         command.arg("--sync-pipe");
         command.arg(child_fd.to_string());
 
@@ -174,20 +163,20 @@ impl Projector {
             command.arg("--admin-port");
             command.arg(port.to_string());
         } else {
-            let mut socket = root.to_path_buf();
+            let mut socket = root_path.as_ref().to_path_buf();
             socket.push("admin.sock");
             command.arg("--admin-socket");
-            command.arg(socket.clone().into_os_string().into_string().unwrap());
+            command.arg(socket);
         }
 
         if let Some(port) = projector_port {
             command.arg("--projector-port");
             command.arg(port.to_string());
         } else {
-            let mut socket = root.to_path_buf();
+            let mut socket = root_path.as_ref().to_path_buf();
             socket.push("projector.sock");
             command.arg("--projector-socket");
-            command.arg(socket.clone().into_os_string().into_string().unwrap());
+            command.arg(socket);
         }
 
         let status = command
@@ -195,8 +184,7 @@ impl Projector {
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .env_clear()
-            .status()
-            .expect("Failed to start uhura");
+            .status()?;
 
         if status.success() {
             let mut buf = [0; 256];
@@ -226,5 +214,22 @@ impl Projector {
             warn!("failed to launch uhura");
             Err(Error::LaunchError(status))
         }
+    }
+}
+
+impl Drop for Projector {
+    fn drop(&mut self) {
+        // TODO: check to see if uhura is still running before blindly killing it
+        println!("stopping in Drop");
+        match kill(self.handle.pid, SIGINT) {
+            Ok(_) => debug!(
+                "stopped uhura running for namespace {} with pid {}",
+                self.handle.namespace, self.handle.pid
+            ),
+            Err(err) => warn!(
+                "failed stop uhura running for namespace {} with pid {}: {}",
+                self.handle.namespace, self.handle.pid, err
+            ),
+        };
     }
 }

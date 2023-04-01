@@ -26,12 +26,14 @@ use serde::Serialize;
 
 use syslog::{BasicLogger, Facility, Formatter3164};
 
-mod projector;
+// mod projector;
 
-// TODO: Get rid of this
-use holodekk::utils::libsee::prctl;
-use holodekk_projector::server::{ProjectorServer, Service};
+use holodekk_projector::api::server::ApplicationsService;
 use holodekk_projector::Result;
+use holodekk_utils::{libsee::prctl, ApiServer};
+
+use uhura::api::server::UhuraApi;
+use uhura::projector::ProjectorServer;
 
 #[derive(Debug, Serialize)]
 struct MessageProjectorPid<'a> {
@@ -146,6 +148,8 @@ fn main() -> Result<()> {
 
     init_logger(LevelFilter::Debug);
 
+    debug!("uhura coming online with options: {:?}", options);
+
     // Redirect all streams to /dev/null
     let (dev_null_rd, dev_null_wr) = open_dev_null();
     dup2(dev_null_rd, libc::STDIN_FILENO).expect("Failed to redirect stdin to /dev/null");
@@ -167,7 +171,6 @@ fn main() -> Result<()> {
     // fork again
     match unsafe { fork() } {
         Ok(ForkResult::Parent { child, .. }) => {
-            debug!("Second fork complete.  Child pid: {}", child);
             write_pidfile(&options.pidfile, child);
             unsafe { libc::_exit(1) };
         }
@@ -178,33 +181,38 @@ fn main() -> Result<()> {
         }
     };
 
-    // build the admin service
-    let mut admin_service = Service::admin();
-    if options.admin_socket.is_some() {
-        admin_service.listen_uds(options.admin_socket.as_ref().unwrap());
+    // build the api service
+    let api_service = UhuraApi::default();
+    let api_server = if options.admin_socket.is_some() {
+        ApiServer::listen_uds(api_service, options.admin_socket.as_ref().unwrap())
     } else {
-        admin_service.listen_tcp(
+        ApiServer::listen_tcp(
+            api_service,
             options.admin_port.as_ref().unwrap(),
             options.admin_address.as_ref(),
-        );
-    }
+        )
+    };
 
-    // build the projector service
-    let mut projector_service = Service::projector();
-    if options.projector_socket.is_some() {
-        projector_service.listen_uds(options.projector_socket.as_ref().unwrap());
+    // build the application service
+    let projector_service = ApplicationsService::default();
+    let projector_server = if options.projector_socket.is_some() {
+        ApiServer::listen_uds(
+            projector_service,
+            options.projector_socket.as_ref().unwrap(),
+        )
     } else {
-        projector_service.listen_tcp(
+        ApiServer::listen_tcp(
+            projector_service,
             options.projector_port.as_ref().unwrap(),
             options.projector_address.as_ref(),
-        );
-    }
+        )
+    };
 
     // Start a projector
     let projector = ProjectorServer::build()
         .for_namespace(&options.namespace)
-        .with_admin_service(admin_service)
-        .with_projector_service(projector_service)
+        .with_uhura_api(api_server)
+        .with_projector_api(projector_server)
         .build();
 
     projector.start()?;
@@ -293,11 +301,8 @@ fn main_loop() -> std::io::Result<()> {
 
     let mut events = Events::with_capacity(1024);
 
-    debug!("entering main poll loop");
     loop {
-        debug!("loop");
         poll.poll(&mut events, None)?;
-        debug!("poll returned");
 
         for event in &events {
             if event.token() == Token(0) && event.is_readable() {

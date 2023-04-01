@@ -7,9 +7,9 @@ license-file.workspace = true
 
 [dependencies]
 async-trait.workspace = true
-futures-util.workspace = true
 holodekk-engine.workspace = true
 holodekk-projector.workspace = true
+holodekk-utils.workspace = true
 libc.workspace = true
 log.workspace = true
 mio.workspace = true
