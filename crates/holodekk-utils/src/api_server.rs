@@ -60,6 +60,10 @@ where
         }
     }
 
+    pub fn listener(&self) -> ApiListenerKind {
+        self.listener.clone()
+    }
+
     pub fn listen_tcp(service: S, port: &u16, addr: Option<&Ipv4Addr>) -> Self
     where
         S: ApiService,

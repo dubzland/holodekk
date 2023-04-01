@@ -6,7 +6,7 @@ use std::os::unix::io::FromRawFd;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use log::{debug, warn};
+use log::{debug, info, warn};
 
 use nix::{
     fcntl::OFlag,
@@ -55,7 +55,7 @@ pub struct ProjectorHandle {
     pub namespace: String,
     pub pidfile: PathBuf,
     pub pid: Pid,
-    pub admin_listener: Listener,
+    pub uhura_listener: Listener,
     pub projector_listener: Listener,
 }
 
@@ -71,9 +71,9 @@ struct MessageProjectorPidParent {
     projector_port: Option<u16>,
     projector_address: Option<Ipv4Addr>,
     projector_socket: Option<PathBuf>,
-    admin_port: Option<u16>,
-    admin_address: Option<Ipv4Addr>,
-    admin_socket: Option<PathBuf>,
+    uhura_port: Option<u16>,
+    uhura_address: Option<Ipv4Addr>,
+    uhura_socket: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug)]
@@ -85,7 +85,7 @@ impl Projector {
     pub fn new(
         namespace: &str,
         pidfile: &PathBuf,
-        admin_listener: Listener,
+        uhura_listener: Listener,
         projector_listener: Listener,
         pid: Pid,
     ) -> Self {
@@ -94,7 +94,7 @@ impl Projector {
                 id: Uuid::new_v4(),
                 namespace: namespace.to_string(),
                 pidfile: pidfile.to_owned(),
-                admin_listener,
+                uhura_listener,
                 projector_listener,
                 pid,
             },
@@ -121,8 +121,8 @@ impl Projector {
         &self.handle.pid
     }
 
-    pub fn admin_listener(&self) -> &Listener {
-        &self.handle.admin_listener
+    pub fn uhura_listener(&self) -> &Listener {
+        &self.handle.uhura_listener
     }
 
     pub fn projector_listener(&self) -> &Listener {
@@ -133,9 +133,10 @@ impl Projector {
         namespace: &str,
         root_path: P,
         bin_path: P,
-        admin_port: Option<u16>,
+        uhura_port: Option<u16>,
         projector_port: Option<u16>,
     ) -> Result<Projector> {
+        debug!("inside spawn()");
         // Setup a pipe so we can be notified when the projector is fully up
         let (parent_fd, child_fd) = pipe2(OFlag::empty()).unwrap();
         let mut sync_pipe = unsafe { File::from_raw_fd(parent_fd) };
@@ -159,13 +160,13 @@ impl Projector {
         command.arg("--sync-pipe");
         command.arg(child_fd.to_string());
 
-        if let Some(port) = admin_port {
-            command.arg("--admin-port");
+        if let Some(port) = uhura_port {
+            command.arg("--uhura-port");
             command.arg(port.to_string());
         } else {
             let mut socket = root_path.as_ref().to_path_buf();
-            socket.push("admin.sock");
-            command.arg("--admin-socket");
+            socket.push("uhura.sock");
+            command.arg("--uhura-socket");
             command.arg(socket);
         }
 
@@ -179,6 +180,7 @@ impl Projector {
             command.arg(socket);
         }
 
+        info!("Launching uhura with: {:?}", command);
         let status = command
             .stdin(Stdio::null())
             .stdout(Stdio::null())
@@ -190,10 +192,10 @@ impl Projector {
             let mut buf = [0; 256];
             let bytes_read = sync_pipe.read(&mut buf)?;
             let msg: MessageProjectorPidParent = serde_json::from_slice(&buf[0..bytes_read])?;
-            let admin_listener = Listener::new(
-                msg.admin_port.as_ref(),
-                msg.admin_address.as_ref(),
-                msg.admin_socket.as_ref(),
+            let uhura_listener = Listener::new(
+                msg.uhura_port.as_ref(),
+                msg.uhura_address.as_ref(),
+                msg.uhura_socket.as_ref(),
             );
             let projector_listener = Listener::new(
                 msg.projector_port.as_ref(),
@@ -203,7 +205,7 @@ impl Projector {
             let p = Self::new(
                 namespace,
                 &pidfile,
-                admin_listener,
+                uhura_listener,
                 projector_listener,
                 Pid::from_raw(msg.pid),
             );
@@ -220,7 +222,6 @@ impl Projector {
 impl Drop for Projector {
     fn drop(&mut self) {
         // TODO: check to see if uhura is still running before blindly killing it
-        println!("stopping in Drop");
         match kill(self.handle.pid, SIGINT) {
             Ok(_) => debug!(
                 "stopped uhura running for namespace {} with pid {}",

@@ -30,7 +30,7 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 
 use holodekk_projector::api::server::ApplicationsService;
 use holodekk_projector::Result;
-use holodekk_utils::{libsee::prctl, ApiServer};
+use holodekk_utils::{libsee::prctl, ApiListenerKind, ApiServer};
 
 use uhura::api::server::UhuraApi;
 use uhura::projector::ProjectorServer;
@@ -41,9 +41,9 @@ struct MessageProjectorPid<'a> {
     projector_port: Option<u16>,
     projector_address: Option<Ipv4Addr>,
     projector_socket: Option<&'a PathBuf>,
-    admin_port: Option<u16>,
-    admin_address: Option<Ipv4Addr>,
-    admin_socket: Option<&'a PathBuf>,
+    uhura_port: Option<u16>,
+    uhura_address: Option<Ipv4Addr>,
+    uhura_socket: Option<&'a PathBuf>,
 }
 
 impl<'a> MessageProjectorPid<'a> {
@@ -53,9 +53,9 @@ impl<'a> MessageProjectorPid<'a> {
             projector_port: None,
             projector_address: None,
             projector_socket: None,
-            admin_port: None,
-            admin_address: None,
-            admin_socket: None,
+            uhura_port: None,
+            uhura_address: None,
+            uhura_socket: None,
         }
     }
 
@@ -78,15 +78,15 @@ impl<'a> MessageProjectorPid<'a> {
     /// `port` - Port number we are listening on
     /// `address` - IPV4 address
     /// `socket` - Unix socket path
-    pub fn with_admin_listener(
+    pub fn with_uhura_listener(
         &mut self,
         port: Option<u16>,
         address: Option<Ipv4Addr>,
         socket: Option<&'a PathBuf>,
     ) -> &mut Self {
-        self.admin_port = port;
-        self.admin_address = address;
-        self.admin_socket = socket.to_owned();
+        self.uhura_port = port;
+        self.uhura_address = address;
+        self.uhura_socket = socket.to_owned();
         self
     }
 }
@@ -114,17 +114,17 @@ pub struct Options {
     #[arg(long, conflicts_with_all = ["projector_port", "projector_address"])]
     projector_socket: Option<PathBuf>,
 
-    /// Admin port
+    /// Uhura API port
     #[arg(long)]
-    admin_port: Option<u16>,
+    uhura_port: Option<u16>,
 
-    /// Admin listen address (IP)
+    /// Uhura API listen address (IP)
     #[arg(long)]
-    admin_address: Option<Ipv4Addr>,
+    uhura_address: Option<Ipv4Addr>,
 
-    /// Admin listen socket (UDS)
-    #[arg(long, conflicts_with_all = ["admin_port", "admin_address"])]
-    admin_socket: Option<PathBuf>,
+    /// Uhura API listen socket (UDS)
+    #[arg(long, conflicts_with_all = ["uhura_port", "uhura_address"])]
+    uhura_socket: Option<PathBuf>,
 
     /// Sync pipe FD
     #[arg(long = "sync-pipe")]
@@ -183,13 +183,13 @@ fn main() -> Result<()> {
 
     // build the api service
     let api_service = UhuraApi::default();
-    let api_server = if options.admin_socket.is_some() {
-        ApiServer::listen_uds(api_service, options.admin_socket.as_ref().unwrap())
+    let api_server = if options.uhura_socket.is_some() {
+        ApiServer::listen_uds(api_service, options.uhura_socket.as_ref().unwrap())
     } else {
         ApiServer::listen_tcp(
             api_service,
-            options.admin_port.as_ref().unwrap(),
-            options.admin_address.as_ref(),
+            options.uhura_port.as_ref().unwrap(),
+            options.uhura_address.as_ref(),
         )
     };
 
@@ -217,6 +217,15 @@ fn main() -> Result<()> {
 
     projector.start()?;
 
+    match projector.uhura_listener() {
+        ApiListenerKind::Tcp { addr, port } => {
+            debug!("Uhura listening via tcp at {}:{}", addr, port);
+        }
+        ApiListenerKind::Uds { socket } => {
+            debug!("Uhura listing via socket {}", socket.display());
+        }
+    };
+
     // Notify the holodekk of our state
     if options.syncpipe_fd.is_some() {
         send_status_update(&options);
@@ -232,8 +241,8 @@ fn main() -> Result<()> {
 }
 
 fn cleanup(options: &Options) {
-    if options.admin_socket.is_some() {
-        let admin_socket = options.admin_socket.as_ref().unwrap();
+    if options.uhura_socket.is_some() {
+        let admin_socket = options.uhura_socket.as_ref().unwrap();
         if admin_socket.exists() {
             match std::fs::remove_file(admin_socket) {
                 Ok(_) => {}
@@ -258,11 +267,12 @@ fn cleanup(options: &Options) {
 }
 
 fn send_status_update(options: &Options) {
+    debug!("Sending status update with options: {:?}", options);
     let mut status = MessageProjectorPid::new(std::process::id());
-    status.with_admin_listener(
-        options.admin_port,
-        options.admin_address,
-        options.admin_socket.as_ref(),
+    status.with_uhura_listener(
+        options.uhura_port,
+        options.uhura_address,
+        options.uhura_socket.as_ref(),
     );
     status.with_projector_listener(
         options.projector_port,

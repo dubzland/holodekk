@@ -1,6 +1,6 @@
 mod api_server;
 pub mod libsee;
-pub use api_server::{ApiServer, ApiService};
+pub use api_server::{ApiListenerKind, ApiServer, ApiService};
 pub mod signals;
 pub mod errors {
     use std::{error, fmt};

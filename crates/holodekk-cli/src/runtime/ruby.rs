@@ -12,6 +12,7 @@ use holodekk_engine::{docker, Build, ImageKind};
 // use holodekk::projector::server::ProjectorServer;
 use holodekk::subroutine::{ContainerManifest, SubroutineManifest};
 use holodekk::Holodekk;
+use uhura::api::client::UhuraClient;
 
 use super::CliRuntime;
 
@@ -81,7 +82,22 @@ impl CliRuntime for RubyCliRuntime {
 
         // Start a projector
         self.holodekk.projector_for_namespace("local")?;
-        let _projector = self.holodekk.projector_for_namespace("local")?;
+        let projector = self.holodekk.projector_for_namespace("local")?;
+        let uhura_listener = &projector.uhura_listener;
+        let client = if uhura_listener.port().is_some() {
+            UhuraClient::connect_tcp(
+                uhura_listener.port().unwrap().to_owned(),
+                uhura_listener.address().unwrap().to_owned(),
+            )
+            .await
+            .unwrap()
+        } else {
+            UhuraClient::connect_uds(uhura_listener.socket().unwrap())
+                .await
+                .unwrap()
+        };
+        let response = client.core().status().await.unwrap();
+        println!("Server response: {:?}", response);
         // self.holodekk.stop_projector(projector)?;
 
         // holodekk.stop_projector(projector)?;

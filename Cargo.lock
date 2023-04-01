@@ -664,6 +664,7 @@ dependencies = [
  "tar",
  "thiserror",
  "tokio",
+ "uhura",
 ]
 
 [[package]]
@@ -1904,10 +1905,12 @@ dependencies = [
  "serde",
  "serde_json",
  "syslog",
+ "thiserror",
  "tokio",
  "tokio-stream",
  "tonic",
  "tonic-build",
+ "tower",
 ]
 
 [[package]]

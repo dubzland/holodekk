@@ -3,7 +3,7 @@ use std::fmt;
 use std::sync::Arc;
 // use std::thread::JoinHandle;
 
-use holodekk_utils::ApiServer;
+use holodekk_utils::{ApiListenerKind, ApiServer};
 
 use super::builder::ProjectorServerBuilder;
 use crate::api::server::UhuraApi;
@@ -44,6 +44,10 @@ impl ProjectorServer {
             uhura_api: Arc::new(uhura_api),
             projector_api: Arc::new(projector_api),
         }
+    }
+
+    pub fn uhura_listener(&self) -> ApiListenerKind {
+        self.uhura_api.listener()
     }
 
     pub fn start(&self) -> Result<()> {

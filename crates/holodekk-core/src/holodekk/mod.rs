@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use log::warn;
+use log::{debug, warn};
 
 use uuid::Uuid;
 
@@ -12,15 +12,12 @@ pub mod subroutine;
 
 use crate::{Error, Result};
 
-#[derive(Debug)]
+// #[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Holodekk {
     root_path: PathBuf,
     bin_path: PathBuf,
     projectors: Arc<RwLock<HashMap<Uuid, Projector>>>,
-}
-
-impl Drop for Holodekk {
-    fn drop(&mut self) {}
 }
 
 impl Holodekk {
@@ -58,6 +55,7 @@ impl Holodekk {
     /// let projector = holodekk.projector_for_namespace("local").unwrap();
     /// ```
     pub fn projector_for_namespace(&self, namespace: &str) -> Result<ProjectorHandle> {
+        debug!("Inside projector_for_namespace()");
         let projectors = self.projectors.read().unwrap();
         if let Some((_, projector)) = projectors.iter().find(|(_, p)| p.namespace().eq(namespace)) {
             Ok(projector.handle())
