@@ -27,6 +27,7 @@ holodekk-repository = { path = "./crates/holodekk-repository" }
 holodekk-utils = { path = "./crates/holodekk-utils" }
 clap = { version = "4.1.6", features = ["derive"] }
 dirs = "5.0.0"
+env_logger = "0.10.0"
 futures-core = "0.3.28"
 futures-util = "0.3.27"
 libc = "0.2.139"

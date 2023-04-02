@@ -14,7 +14,6 @@ message RpcEmpty {}
 
 message RpcProjectorStatus {
 	int32 pid = 1;
-	int32 port = 2;
 }
 
 message RpcSubroutine {

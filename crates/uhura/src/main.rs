@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-use log::{debug, error, warn, LevelFilter};
+use log::{error, info, warn, LevelFilter};
 
 use mio::{unix::SourceFd, Events, Interest, Poll, Token};
 
@@ -34,6 +34,7 @@ use holodekk_utils::{libsee::prctl, ApiListenerKind, ApiServer};
 
 use uhura::api::server::UhuraApi;
 use uhura::projector::ProjectorServer;
+use uhura::services::CoreService;
 
 #[derive(Debug, Serialize)]
 struct MessageProjectorPid<'a> {
@@ -148,7 +149,7 @@ fn main() -> Result<()> {
 
     init_logger(LevelFilter::Debug);
 
-    debug!("uhura coming online with options: {:?}", options);
+    info!("uhura coming online with options: {:?}", options);
 
     // Redirect all streams to /dev/null
     let (dev_null_rd, dev_null_wr) = open_dev_null();
@@ -182,7 +183,8 @@ fn main() -> Result<()> {
     };
 
     // build the api service
-    let api_service = UhuraApi::default();
+    let core_service = CoreService::new();
+    let api_service = UhuraApi::new(core_service);
     let api_server = if options.uhura_socket.is_some() {
         ApiServer::listen_uds(api_service, options.uhura_socket.as_ref().unwrap())
     } else {
@@ -219,10 +221,10 @@ fn main() -> Result<()> {
 
     match projector.uhura_listener() {
         ApiListenerKind::Tcp { addr, port } => {
-            debug!("Uhura listening via tcp at {}:{}", addr, port);
+            info!("Uhura listening via tcp at {}:{}", addr, port);
         }
         ApiListenerKind::Uds { socket } => {
-            debug!("Uhura listing via socket {}", socket.display());
+            info!("Uhura listing via socket {}", socket.display());
         }
     };
 
@@ -233,10 +235,10 @@ fn main() -> Result<()> {
 
     main_loop()?;
 
-    debug!("Shutdown triggered.  Stopping background processes...");
+    info!("Shutdown triggered.  Stopping background processes...");
     projector.stop()?;
     cleanup(&options);
-    debug!("Shutdown complete.");
+    info!("Shutdown complete.");
     Ok(())
 }
 
@@ -267,7 +269,6 @@ fn cleanup(options: &Options) {
 }
 
 fn send_status_update(options: &Options) {
-    debug!("Sending status update with options: {:?}", options);
     let mut status = MessageProjectorPid::new(std::process::id());
     status.with_uhura_listener(
         options.uhura_port,
@@ -331,7 +332,7 @@ fn main_loop() -> std::io::Result<()> {
 }
 
 fn write_pidfile(pidfile: &PathBuf, pid: Pid) {
-    debug!("forked worker with pid: {}", pid);
+    info!("forked worker with pid: {}", pid);
     if let Err(err) = fs::write(pidfile, format!("{}", pid)) {
         panic!("write() to pidfile {} failed: {}", pidfile.display(), err);
     }

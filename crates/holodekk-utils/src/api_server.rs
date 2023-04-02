@@ -1,30 +1,22 @@
 use std::{
-    cell::RefCell,
     net::{Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
+    sync::{Arc, RwLock},
 };
 
 use futures_util::FutureExt;
 
+use log::error;
+
 use tokio::{
     net::UnixListener,
-    sync::{
-        mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
-        oneshot,
-    },
+    sync::oneshot::{channel, Sender},
     task::JoinHandle,
 };
 
 use tokio_stream::wrappers::UnixListenerStream;
 
 use tonic::transport::server::TcpIncoming;
-
-#[derive(Debug)]
-pub enum ApiServerCommand {
-    Stop {
-        completion: Option<oneshot::Sender<()>>,
-    },
-}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ApiListenerKind {
@@ -43,8 +35,7 @@ where
 {
     service: S,
     listener: ApiListenerKind,
-    cmd_tx: RefCell<Option<UnboundedSender<ApiServerCommand>>>,
-    handle: RefCell<Option<JoinHandle<std::result::Result<(), tonic::transport::Error>>>>,
+    cmd_tx: Arc<RwLock<Option<Sender<()>>>>,
 }
 
 impl<S> ApiServer<S>
@@ -55,8 +46,7 @@ where
         Self {
             service,
             listener,
-            cmd_tx: RefCell::new(None),
-            handle: RefCell::new(None),
+            cmd_tx: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -89,60 +79,42 @@ where
         Self::new(service, listener)
     }
 
-    pub fn start(&self) {
-        let (cmd_tx, cmd_rx) = unbounded_channel();
-        self.cmd_tx.borrow_mut().replace(cmd_tx);
-        let shutdown = shutdown_signal(cmd_rx);
+    pub fn start(&self) -> JoinHandle<std::result::Result<(), tonic::transport::Error>> {
+        let (cmd_tx, cmd_rx) = channel();
+        self.cmd_tx.write().unwrap().replace(cmd_tx);
 
         let router = self.service.to_router();
 
-        let handle = match self.listener.clone() {
+        let handle = tokio::runtime::Handle::current();
+        match self.listener.clone() {
             ApiListenerKind::Tcp { port, addr } => {
                 let listen_address: SocketAddr = format!("{}:{}", addr, port).parse().unwrap();
                 let listener = TcpIncoming::new(listen_address, true, None).unwrap();
-                tokio::spawn(router.serve_with_incoming_shutdown(listener, shutdown.map(drop)))
+                handle.spawn(router.serve_with_incoming_shutdown(listener, cmd_rx.map(drop)))
             }
             ApiListenerKind::Uds { socket } => {
                 let uds = UnixListener::bind(socket).unwrap();
                 let listener = UnixListenerStream::new(uds);
-                tokio::spawn(router.serve_with_incoming_shutdown(listener, shutdown.map(drop)))
-            }
-        };
-
-        self.handle.borrow_mut().replace(handle);
-    }
-
-    pub async fn stop(&self) -> std::result::Result<(), tokio::sync::oneshot::error::RecvError> {
-        let (status_tx, status_rx) = oneshot::channel();
-        let cmd_tx = self.cmd_tx.borrow_mut().take().unwrap();
-        cmd_tx
-            .send(ApiServerCommand::Stop {
-                completion: Some(status_tx),
-            })
-            .expect("Failed to send shutdown request to server");
-        status_rx.await?;
-        let handle = self.handle.replace(None).unwrap();
-        let res = handle.await;
-        match res {
-            Ok(res) => {
-                res.unwrap();
-            }
-            Err(err) => {
-                tracing::warn!("Error waiting for ApiServer to shutdown: {}", err);
+                handle.spawn(router.serve_with_incoming_shutdown(listener, cmd_rx.map(drop)))
             }
         }
-        Ok(())
+    }
+
+    pub fn stop(&self) {
+        if let Some(cmd_tx) = self.cmd_tx.write().unwrap().take() {
+            if cmd_tx.send(()).is_err() {
+                error!("Failed to send shutdown request to server");
+            }
+        }
     }
 }
 
-async fn shutdown_signal(cmd_rx: UnboundedReceiver<ApiServerCommand>) {
-    let mut cmd_rx = cmd_rx;
-    let cmd = cmd_rx.recv().await.unwrap();
-    match cmd {
-        ApiServerCommand::Stop { completion } => {
-            if let Some(tx) = completion {
-                let _ = tx.send(());
-            }
-        }
-    };
+impl<S> Drop for ApiServer<S>
+where
+    S: ApiService + Send + Sync + 'static,
+{
+    fn drop(&mut self) {
+        // call stop just to be sure
+        self.stop();
+    }
 }

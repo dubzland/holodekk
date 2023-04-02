@@ -18,6 +18,6 @@ impl CoreClient {
         let mut client = self.inner.clone();
         let request = tonic::Request::new(RpcEmpty {});
         let response = client.status(request).await?;
-        Ok(response.into_inner().into())
+        Ok(ProjectorStatus::from(response.into_inner()))
     }
 }
