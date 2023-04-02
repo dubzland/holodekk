@@ -1,8 +1,10 @@
-pub mod engine;
+//! The Holodekk.
+
+pub mod api;
 mod errors;
 pub use errors::{Error, Result};
-pub mod libsee;
+
+mod holodekk;
+pub use crate::holodekk::*;
+
 pub mod logger;
-pub mod pipes;
-pub mod streams;
-pub mod subroutine;

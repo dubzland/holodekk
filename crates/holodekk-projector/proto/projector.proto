@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package projector;
+
+service RpcApplications {
+  rpc List (RpcEmpty) returns (RpcListReply) {}
+}
+
+message RpcEmpty {}
+
+message RpcListReply {
+  string message = 1;
+}

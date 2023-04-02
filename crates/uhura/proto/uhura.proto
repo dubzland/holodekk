@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package uhura;
+
+service RpcCore {
+	rpc Status(RpcEmpty) returns (RpcProjectorStatus) {}
+}
+
+service RpcSubroutines {
+	rpc List(RpcEmpty) returns (RpcSubroutineList) {}
+}
+
+message RpcEmpty {}
+
+message RpcProjectorStatus {
+	int32 pid = 1;
+	int32 port = 2;
+}
+
+message RpcSubroutine {
+	string name = 1;
+	int32 pid = 2;
+}
+
+message RpcSubroutineList {
+	repeated RpcSubroutine subroutines = 1;
+}

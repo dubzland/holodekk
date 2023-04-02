@@ -1,51 +1,31 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
-use clap::error::ErrorKind;
-use clap::{CommandFactory, Parser};
+use clap::Parser;
 
-use nix::unistd::Gid;
-
-use users::get_group_by_name;
-
-use holodekkd::api;
+use holodekk::{api, Holodekk};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Options {
-    /// Path to the unix socket
-    #[arg(
-        long = "socket",
-        value_name = "file",
-        default_value = "/var/run/holodekk.sock"
-    )]
-    socket_path: PathBuf,
+    /// Port to listen on
+    #[arg(long, short, default_value = "6080")]
+    port: u16,
 
-    /// Group for the unix socket (default: root)
-    #[arg(
-        short = 'G',
-        long = "group",
-        value_name = "group",
-        default_value = "docker"
-    )]
-    socket_group: String,
+    /// Root path
+    #[arg(long, default_value = "/var/lib/holodekk")]
+    root: PathBuf,
 }
 
-#[actix_web::main]
-async fn main() -> api::server::InitResult {
+const TEMPORARY_BIN: &str = "/home/jdubz/code/gitlab/holodekk/holodekk/target/debug";
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
     let options = Options::parse();
 
-    // map the requested group name to id
-    let socket_gid = match get_group_by_name(&options.socket_group) {
-        Some(group) => Gid::from_raw(group.gid()),
-        None => {
-            let mut cmd = Options::command();
-            cmd.error(
-                ErrorKind::InvalidValue,
-                format!("group {} not found.", &options.socket_group).to_string(),
-            )
-            .exit();
-        }
-    };
-
-    api::server::run(socket_gid, &options.socket_path).await
+    let bin = PathBuf::from(TEMPORARY_BIN);
+    let holodekk = Arc::new(Holodekk::new(&options.root, &bin));
+    holodekk.init()?;
+    api::server::run(holodekk, options.port.to_owned()).await;
+    Ok(())
 }

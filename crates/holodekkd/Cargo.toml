@@ -9,24 +9,24 @@ license-file.workspace = true
 
 [dependencies]
 clap.workspace = true
-holodekk-core.workspace = true
+futures-util.workspace = true
+holodekk.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-actix-http = "3.3.1"
-actix-web = "4"
-async-stream = "0.3.4"
-awc = "3.1.1"
-awc-uds = "0.1.1"
-futures-util = "0.3.27"
+tokio.workspace = true
+# actix-web = "4"
+# async-stream = "0.3.4"
+# awc = "3.1.1"
+# awc-uds = "0.1.1"
+# bytes = "1.4.0"
+# chrono = "0.4.24"
+# env_logger = "0.10.0"
+# lazy_static = "1.4.0"
+# log = "0.4.17"
 nix = "0.26.2"
-tokio-stream = "0.1.12"
+# tokio-stream = "0.1.12"
 users = "0.11.0"
-walkdir = "2.3.3"
-chrono = "0.4.24"
-lazy_static = "1.4.0"
-bytes = "1.4.0"
-env_logger = "0.10.0"
-log = "0.4.17"
+# walkdir = "2.3.3"
 
 [dev-dependencies]
 tempfile = "3.4.0"

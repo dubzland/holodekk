@@ -1,0 +1,17 @@
+[package]
+name = "holodekk-utils"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license-file.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+futures-core.workspace = true
+futures-util.workspace = true
+libc.workspace = true
+nix.workspace = true
+tokio.workspace = true
+tokio-stream.workspace = true
+tonic.workspace = true
+tracing.workspace = true
