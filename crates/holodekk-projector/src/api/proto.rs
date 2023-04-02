@@ -3,10 +3,12 @@ mod projector_proto {
 }
 
 pub mod entities {
-    pub use super::projector_proto::{Empty, ListReply};
+    pub use super::projector_proto::{RpcEmpty, RpcListReply};
 }
 
 pub mod applications {
-    pub use super::projector_proto::applications_client::ApplicationsClient;
-    pub use super::projector_proto::applications_server::{Applications, ApplicationsServer};
+    pub use super::projector_proto::rpc_applications_client::RpcApplicationsClient;
+    pub use super::projector_proto::rpc_applications_server::{
+        RpcApplications, RpcApplicationsServer,
+    };
 }

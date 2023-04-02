@@ -2,26 +2,26 @@ syntax = "proto3";
 
 package uhura;
 
-service Core {
-	rpc Status(Empty) returns (ProjectorStatus) {}
+service RpcCore {
+	rpc Status(RpcEmpty) returns (RpcProjectorStatus) {}
 }
 
-service Subroutines {
-	rpc List(Empty) returns (SubroutineList) {}
+service RpcSubroutines {
+	rpc List(RpcEmpty) returns (RpcSubroutineList) {}
 }
 
-message Empty {}
+message RpcEmpty {}
 
-message ProjectorStatus {
+message RpcProjectorStatus {
 	int32 pid = 1;
 	int32 port = 2;
 }
 
-message Subroutine {
+message RpcSubroutine {
 	string name = 1;
 	int32 pid = 2;
 }
 
-message SubroutineList {
-	repeated Subroutine subroutines = 1;
+message RpcSubroutineList {
+	repeated RpcSubroutine subroutines = 1;
 }

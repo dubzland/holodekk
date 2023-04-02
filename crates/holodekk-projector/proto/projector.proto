@@ -2,12 +2,12 @@ syntax = "proto3";
 
 package projector;
 
-service Applications {
-  rpc List (Empty) returns (ListReply) {}
+service RpcApplications {
+  rpc List (RpcEmpty) returns (RpcListReply) {}
 }
 
-message Empty {}
+message RpcEmpty {}
 
-message ListReply {
+message RpcListReply {
   string message = 1;
 }

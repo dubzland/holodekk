@@ -2,26 +2,26 @@ use tonic::{Request, Response, Status};
 
 use holodekk_utils::ApiService;
 
-use super::proto::core::{Core, CoreServer};
-use super::proto::entities::{Empty, ProjectorStatus, SubroutineList};
-use super::proto::subroutines::{Subroutines, SubroutinesServer};
+use super::proto::core::{RpcCore, RpcCoreServer};
+use super::proto::entities::{RpcEmpty, RpcProjectorStatus, RpcSubroutineList};
+use super::proto::subroutines::{RpcSubroutines, RpcSubroutinesServer};
 
 #[derive(Clone, Debug, Default)]
 pub struct CoreService {}
 
 impl CoreService {
-    fn to_server() -> CoreServer<Self> {
-        CoreServer::new(Self::default())
+    fn to_server() -> RpcCoreServer<Self> {
+        RpcCoreServer::new(Self::default())
     }
 }
 
 #[tonic::async_trait]
-impl Core for CoreService {
+impl RpcCore for CoreService {
     async fn status(
         &self,
-        _request: Request<Empty>,
-    ) -> std::result::Result<Response<ProjectorStatus>, Status> {
-        let reply = ProjectorStatus { pid: 1, port: 1234 };
+        _request: Request<RpcEmpty>,
+    ) -> std::result::Result<Response<RpcProjectorStatus>, Status> {
+        let reply = RpcProjectorStatus { pid: 1, port: 1234 };
         Ok(Response::new(reply))
     }
 }
@@ -30,18 +30,18 @@ impl Core for CoreService {
 pub struct SubroutinesService {}
 
 impl SubroutinesService {
-    fn to_server() -> SubroutinesServer<Self> {
-        SubroutinesServer::new(Self::default())
+    fn to_server() -> RpcSubroutinesServer<Self> {
+        RpcSubroutinesServer::new(Self::default())
     }
 }
 
 #[tonic::async_trait]
-impl Subroutines for SubroutinesService {
+impl RpcSubroutines for SubroutinesService {
     async fn list(
         &self,
-        _request: Request<Empty>,
-    ) -> std::result::Result<Response<SubroutineList>, Status> {
-        let reply = SubroutineList {
+        _request: Request<RpcEmpty>,
+    ) -> std::result::Result<Response<RpcSubroutineList>, Status> {
+        let reply = RpcSubroutineList {
             subroutines: vec![],
         };
         Ok(Response::new(reply))

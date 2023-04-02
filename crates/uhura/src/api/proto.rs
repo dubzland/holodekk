@@ -3,15 +3,15 @@ mod uhura_proto {
 }
 
 pub mod entities {
-    pub use super::uhura_proto::{Empty, ProjectorStatus, Subroutine, SubroutineList};
+    pub use super::uhura_proto::{RpcEmpty, RpcProjectorStatus, RpcSubroutine, RpcSubroutineList};
 }
 
 pub mod core {
-    pub use super::uhura_proto::core_client::CoreClient;
-    pub use super::uhura_proto::core_server::{Core, CoreServer};
+    pub use super::uhura_proto::rpc_core_client::RpcCoreClient;
+    pub use super::uhura_proto::rpc_core_server::{RpcCore, RpcCoreServer};
 }
 
 pub mod subroutines {
-    pub use super::uhura_proto::subroutines_client::SubroutinesClient;
-    pub use super::uhura_proto::subroutines_server::{Subroutines, SubroutinesServer};
+    pub use super::uhura_proto::rpc_subroutines_client::RpcSubroutinesClient;
+    pub use super::uhura_proto::rpc_subroutines_server::{RpcSubroutines, RpcSubroutinesServer};
 }

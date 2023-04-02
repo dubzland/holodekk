@@ -1,15 +1,15 @@
 use tonic::{Request, Response, Status};
 
-use super::proto::applications::{Applications, ApplicationsServer};
-use super::proto::entities::{Empty, ListReply};
+use super::proto::applications::{RpcApplications, RpcApplicationsServer};
+use super::proto::entities::{RpcEmpty, RpcListReply};
 use holodekk_utils::ApiService;
 
 #[derive(Clone, Debug, Default)]
 pub struct ApplicationsService {}
 
 impl ApplicationsService {
-    fn to_server(&self) -> ApplicationsServer<Self> {
-        ApplicationsServer::new(Self::default())
+    fn to_server(&self) -> RpcApplicationsServer<Self> {
+        RpcApplicationsServer::new(Self::default())
     }
 }
 
@@ -20,12 +20,12 @@ impl ApiService for ApplicationsService {
 }
 
 #[tonic::async_trait]
-impl Applications for ApplicationsService {
+impl RpcApplications for ApplicationsService {
     async fn list(
         &self,
-        _request: Request<Empty>,
-    ) -> std::result::Result<Response<ListReply>, Status> {
-        let reply = ListReply {
+        _request: Request<RpcEmpty>,
+    ) -> std::result::Result<Response<RpcListReply>, Status> {
+        let reply = RpcListReply {
             message: "Hello!".to_string(),
         };
         Ok(Response::new(reply))
