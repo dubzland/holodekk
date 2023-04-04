@@ -8,8 +8,9 @@ use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::server::TcpIncoming;
 
 use crate::fs::cleanup;
+use crate::server::ListenerConfig;
 
-use super::{ListenerConfig, TonicResult};
+use super::TonicResult;
 
 /// Wraps a Tonic RPC service in a manageable component
 ///

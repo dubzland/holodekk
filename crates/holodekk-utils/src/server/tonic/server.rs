@@ -2,7 +2,8 @@ pub use futures_core::future::BoxFuture;
 
 use tokio::sync::oneshot::channel;
 
-use super::{ListenerConfig, Server, TonicServerHandle, TonicService};
+use super::{TonicServerHandle, TonicService};
+use crate::server::{ListenerConfig, Server};
 
 pub struct TonicServer {
     listener_config: ListenerConfig,

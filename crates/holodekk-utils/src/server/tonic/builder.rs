@@ -1,8 +1,10 @@
-pub use futures_core::future::BoxFuture;
-
 use std::{net::Ipv4Addr, path::Path};
 
-use super::{ListenerConfig, TonicServer, TonicService};
+pub use futures_core::future::BoxFuture;
+
+use super::{TonicServer, TonicService};
+
+use crate::server::ListenerConfig;
 
 pub struct TonicServerBuilder<T>
 where
