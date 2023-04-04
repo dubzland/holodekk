@@ -8,23 +8,16 @@ license-file.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-trait.workspace = true
 clap.workspace = true
-dirs.workspace = true
 holodekk.workspace = true
 holodekk-engine.workspace = true
-mio.workspace = true
-serde.workspace = true
 serde_json.workspace = true
+tar.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 uhura.workspace = true
-async-trait = "0.1.67"
 colored = "2.0.0"
-flate2 = "1.0.25"
-hyper = "0.14.24"
-hyperlocal = "0.8.0"
-tar = "0.4.38"
-dialoguer = "0.10.3"
 
 [[bin]]
 name = "holodekk"

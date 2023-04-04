@@ -3,14 +3,20 @@ use crate::api::proto::entities::{RpcProjectorStatus, RpcSubroutine};
 #[derive(Clone, Copy, Debug)]
 pub struct ProjectorStatus {
     pub pid: u32,
-    pub port: u16,
 }
 
 impl From<RpcProjectorStatus> for ProjectorStatus {
     fn from(status: RpcProjectorStatus) -> Self {
         Self {
             pid: status.pid as u32,
-            port: status.port as u16,
+        }
+    }
+}
+
+impl From<ProjectorStatus> for RpcProjectorStatus {
+    fn from(status: ProjectorStatus) -> Self {
+        Self {
+            pid: status.pid as i32,
         }
     }
 }

@@ -12,6 +12,8 @@ use nix::{
     unistd::Pid,
 };
 
+use holodekk_utils::libsee;
+
 type ExitCode = i32;
 
 #[derive(Copy, Clone, Debug)]
@@ -60,7 +62,7 @@ impl SignalHandler {
     /// Attempts to read the actual signal from the underlying OS.
     fn read_signal(&mut self) -> nix::Result<Signal> {
         match self.fd.read_signal() {
-            Ok(Some(sinfo)) => Signal::try_from(sinfo.ssi_signo as libc::c_int),
+            Ok(Some(sinfo)) => Signal::try_from(sinfo.ssi_signo as libsee::c_int),
             Ok(None) => panic!("wtf? We are in blocking mode"),
             Err(err) => panic!("read(signalfd) failed {}", err),
         }

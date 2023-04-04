@@ -9,14 +9,11 @@ license-file.workspace = true
 async-trait.workspace = true
 futures-util.workspace = true
 holodekk-utils.workspace = true
-# libc.workspace = true
-# log.workspace = true
-# mio.workspace = true
-# nix.workspace = true
 serde.workspace = true
-# serde_json.workspace = true
-# syslog.workspace = true
 thiserror.workspace = true
-# uuid.workspace = true
 bollard = "0.14.0"
 regex = "1.7.1"
+
+[dev-dependencies]
+tar.workspace = true
+tokio.workspace = true

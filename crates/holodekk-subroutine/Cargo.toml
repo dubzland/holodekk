@@ -7,14 +7,11 @@ license-file.workspace = true
 
 [dependencies]
 clap.workspace = true
-holodekk.workspace = true
 holodekk-utils.workspace = true
 log.workspace = true
 mio.workspace = true
+nix.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 syslog.workspace = true
-libc = "0.2.139"
-nix = "0.26.2"
 chrono = "0.4.24"
-thiserror.workspace = true
