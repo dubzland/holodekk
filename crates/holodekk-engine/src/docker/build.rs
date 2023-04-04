@@ -57,8 +57,7 @@ impl Build for Docker {
     ///
     /// ```rust
     /// # use tar::{Builder, Header};
-    /// # use holodekk::Result;
-    /// # use holodekk::engine::{docker::Docker, Build, ImageKind};
+    /// # use holodekk_engine::{docker::Docker, Build, ImageKind};
     /// # async fn create_archive() -> Vec<u8> {
     /// #     let dockerfile = r#"FROM scratch"#;
     /// #     let mut header = Header::new_gnu();
@@ -71,7 +70,7 @@ impl Build for Docker {
     /// #     data
     /// # }
     /// # #[tokio::main]
-    /// # async fn main() -> Result<()> {
+    /// # async fn main() {
     /// # let data = create_archive().await;
     /// # let engine = Docker::new();
     /// let image = engine.build(
@@ -80,8 +79,7 @@ impl Build for Docker {
     ///     "latest",
     ///     data,
     ///     Some("Dockerfile.v1")
-    /// ).await?;
-    /// # Ok(())
+    /// ).await.unwrap();
     /// # }
     /// ```
     async fn build(

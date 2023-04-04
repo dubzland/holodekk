@@ -9,10 +9,13 @@ license-file.workspace = true
 async-trait.workspace = true
 futures-core.workspace = true
 futures-util.workspace = true
-libc.workspace = true
 log.workspace = true
-nix.workspace = true
 tokio.workspace = true
 tokio-stream.workspace = true
 tonic.workspace = true
+thiserror.workspace = true
 tracing.workspace = true
+libc = "0.2.139"
+
+[dev-dependencies]
+tempfile.workspace = true

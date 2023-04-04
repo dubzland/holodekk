@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tonic::{Request, Response, Status};
 
-use holodekk_utils::ApiService;
+use holodekk_utils::server::tonic::{TonicServerBuilder, TonicService};
 
 use crate::services::CoreService;
 
@@ -59,7 +59,7 @@ impl RpcSubroutines for SubroutinesApi {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct UhuraApi {
     core_service: Arc<CoreService>,
 }
@@ -70,9 +70,13 @@ impl UhuraApi {
             core_service: Arc::new(core_service),
         }
     }
+
+    pub fn build(self) -> TonicServerBuilder<Self> {
+        TonicServerBuilder::new(self)
+    }
 }
 
-impl ApiService for UhuraApi {
+impl TonicService for UhuraApi {
     fn to_router(&self) -> tonic::transport::server::Router {
         tonic::transport::Server::builder()
             .add_service(CoreApi::to_server(self.core_service.clone()))

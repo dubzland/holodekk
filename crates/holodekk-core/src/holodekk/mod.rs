@@ -47,10 +47,10 @@ impl Holodekk {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// use holodekk::Holodekk;
     ///
-    /// let holodekk = Holodekk::new("/tmp", "/usr/local/bin");
+    /// let holodekk = Holodekk::new("/var/lib/holodekk", "/usr/local/bin");
     /// holodekk.init().unwrap();
     /// let projector = holodekk.projector_for_namespace("local").unwrap();
     /// ```

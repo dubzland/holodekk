@@ -6,20 +6,11 @@ repository.workspace = true
 license-file.workspace = true
 
 [dependencies]
-async-trait.workspace = true
-holodekk-engine.workspace = true
+env_logger.workspace = true
 holodekk-projector.workspace = true
-holodekk-utils.workspace = true
-libc.workspace = true
 log.workspace = true
-mio.workspace = true
-nix.workspace = true
 serde.workspace = true
-serde_json.workspace = true
 syslog.workspace = true
 thiserror.workspace = true
 uuid.workspace = true
-bollard = "0.14.0"
-env_logger = "0.10.0"
-regex = "1.7.1"
 axum = "0.6.12"

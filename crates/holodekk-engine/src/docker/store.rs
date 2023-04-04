@@ -102,13 +102,11 @@ impl Store for Docker {
     /// # Examples
     ///
     /// ```
-    /// # use holodekk::Result;
-    /// use holodekk::engine::{docker, ImageKind, Store};
+    /// use holodekk_engine::{docker, ImageKind, Store};
     /// # #[tokio::main]
-    /// # async fn main() -> Result<()> {
+    /// # async fn main() {
     /// let engine = docker::Docker::new();
-    /// let images = engine.images(ImageKind::Subroutine).await?;
-    /// # Ok(())
+    /// let images = engine.images(ImageKind::Subroutine).await.unwrap();
     /// # }
     /// ```
     async fn images(&self, kind: ImageKind) -> crate::Result<Vec<Image>> {
@@ -122,15 +120,13 @@ impl Store for Docker {
     /// # Examples
     ///
     /// ```
-    /// # use holodekk::Result;
-    /// # use holodekk::engine::{docker, ImageKind, Store};
+    /// # use holodekk_engine::{docker, ImageKind, Store};
     /// # #[tokio::main]
-    /// # async fn main() -> Result<()> {
+    /// # async fn main() {
     /// let engine = docker::Docker::new();
-    /// if engine.image_exists(ImageKind::Application, "acme/widget-api").await? {
+    /// if engine.image_exists(ImageKind::Application, "acme/widget-api").await.unwrap() {
     ///     println!("Image exists!");
     /// }
-    /// # Ok(())
     /// # }
     /// ```
     async fn image_exists(&self, kind: ImageKind, name: &str) -> crate::Result<bool> {

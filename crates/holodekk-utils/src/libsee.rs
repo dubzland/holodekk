@@ -1,6 +1,10 @@
 use std::ffi::{CStr, CString};
 
-use libc::{c_char, c_int, c_ulong};
+pub use libc::{c_char, c_int, c_ulong};
+
+pub use libc::{
+    PR_SET_CHILD_SUBREAPER, PR_SET_PDEATHSIG, STDERR_FILENO, STDIN_FILENO, STDOUT_FILENO,
+};
 
 macro_rules! syscall {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
