@@ -72,7 +72,7 @@ impl Build for Docker {
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let data = create_archive().await;
-    /// # let engine = Docker::new();
+    /// # let engine = Docker::connect();
     /// let image = engine.build(
     ///     ImageKind::Application,
     ///     "testing",

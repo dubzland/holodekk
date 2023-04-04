@@ -1,9 +1,12 @@
 //! Tooling to interact with a [Docker](https://docker.com) daemon for container management.
 //!
 //! Utilizes the awesome [bollard](https://github.com/fussybeaver/bollard) crate.
-
 mod build;
 mod store;
+
+use log::debug;
+
+use url::Url;
 
 use super::{Engine, Identity};
 
@@ -16,7 +19,7 @@ pub(crate) const DOCKER_PREFIX: &str = "holodekk";
 /// ```rust
 /// use holodekk_engine::docker::Docker;
 ///
-/// let engine = Docker::new();
+/// let engine = Docker::connect();
 /// ```
 pub struct Docker {
     client: bollard::Docker,
@@ -25,16 +28,48 @@ pub struct Docker {
 
 impl Default for Docker {
     fn default() -> Self {
-        Self {
-            client: bollard::Docker::connect_with_socket_defaults().unwrap(),
-            prefix: DOCKER_PREFIX.to_string(),
-        }
+        Self::connect_local()
     }
 }
 
 impl Docker {
-    pub fn new() -> Self {
-        Default::default()
+    fn new(client: bollard::Docker) -> Self {
+        Self {
+            client,
+            prefix: DOCKER_PREFIX.into(),
+        }
+    }
+
+    pub fn connect_local() -> Self {
+        Self::new(bollard::Docker::connect_with_socket_defaults().unwrap())
+    }
+
+    pub fn connect_http() -> Self {
+        Self::new(bollard::Docker::connect_with_http_defaults().unwrap())
+    }
+
+    pub fn connect_https() -> Self {
+        Self::new(bollard::Docker::connect_with_ssl_defaults().unwrap())
+    }
+
+    pub fn connect() -> Self {
+        if let Ok(url) = std::env::var("DOCKER_HOST") {
+            let docker_url = Url::parse(&url).unwrap();
+            match docker_url.scheme() {
+                "http" => {
+                    debug!("Connecting to Docker via HTTP: {}", url);
+                    Self::connect_http()
+                }
+                "https" => {
+                    debug!("Connecting to Docker via HTTPS: {}", url);
+                    Self::connect_https()
+                }
+                &_ => panic!("Invalid DOCKER_HOST specified: {}", url),
+            }
+        } else {
+            println!("Connecting via local socket");
+            Self::connect_local()
+        }
     }
 }
 

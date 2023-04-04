@@ -56,7 +56,7 @@ impl CliRuntime for RubyCliRuntime {
             subroutine.name().to_string().white().bold(),
             "via Docker.".cyan()
         );
-        let engine = docker::Docker::new();
+        let engine = docker::Docker::connect_local();
         let mut bytes = Vec::default();
         match subroutine.container() {
             ContainerManifest::FromDockerContext { context, .. } => {

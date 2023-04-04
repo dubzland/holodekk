@@ -105,7 +105,7 @@ impl Store for Docker {
     /// use holodekk_engine::{docker, ImageKind, Store};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let engine = docker::Docker::new();
+    /// let engine = docker::Docker::connect();
     /// let images = engine.images(ImageKind::Subroutine).await.unwrap();
     /// # }
     /// ```
@@ -123,7 +123,7 @@ impl Store for Docker {
     /// # use holodekk_engine::{docker, ImageKind, Store};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let engine = docker::Docker::new();
+    /// let engine = docker::Docker::connect();
     /// if engine.image_exists(ImageKind::Application, "acme/widget-api").await.unwrap() {
     ///     println!("Image exists!");
     /// }
