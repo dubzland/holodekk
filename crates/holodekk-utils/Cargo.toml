@@ -18,4 +18,5 @@ tracing.workspace = true
 libc = "0.2.139"
 
 [dev-dependencies]
+clap.workspace = true
 tempfile.workspace = true

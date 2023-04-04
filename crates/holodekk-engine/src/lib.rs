@@ -34,16 +34,15 @@ use serde::{Deserialize, Serialize};
 /// The actual type of image being managed.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum ImageKind {
-    /// Subroutine images are meant to be run as [Subroutine](crate::subroutine::Subroutine)s
-    /// directly by the [Projector](crate::projector::Projector).
+    /// Subroutine images are meant to be run as Subroutines
+    /// directly by the Projector.
     Subroutine,
     /// Services represent anything provided as a dependency, such as:
     ///  - Databases
     ///  - Caches
     ///  - Proxies
     Service,
-    /// The actual [Application](crate::subroutine::Application) being managed by
-    /// a [Subroutine](crate::subroutine::Subroutine).
+    /// The actual Application being managed by a Subroutine.
     Application,
 }
 
@@ -110,7 +109,7 @@ impl Image {
 
 /// Trait implemented by engines to provide container image build.
 ///
-/// See [Docker](crate::engine::docker::Docker) for examples.
+/// See [Docker](crate::docker::Docker) for examples.
 #[async_trait]
 pub trait Build {
     /// Build a container image using the supplied context data.
@@ -134,7 +133,7 @@ pub trait Build {
 
 /// Trait implemented by engines to provide image management capabilities.
 ///
-/// See [Docker](crate::engine::docker::Docker) for examples.
+/// See [Docker](crate::docker::Docker) for examples.
 #[async_trait]
 pub trait Store {
     async fn images(&self, kind: ImageKind) -> crate::Result<Vec<Image>>;
