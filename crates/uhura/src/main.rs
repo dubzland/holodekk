@@ -242,7 +242,7 @@ async fn main_loop(
     // Notify the holodekk of our state
     debug!("Sending status update to parent");
     if options.syncpipe_fd.is_some() {
-        send_status_update(&options);
+        send_status_update(options);
     }
 
     let (projector_shutdown_tx, projector_shutdown_rx) = channel();

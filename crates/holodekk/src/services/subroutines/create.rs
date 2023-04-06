@@ -7,7 +7,7 @@ use crate::services::{Error, Result};
 use super::SubroutinesService;
 
 #[derive(Clone, Debug)]
-pub struct CreateSubroutineInput {
+pub struct SubroutineCreateInput {
     pub name: String,
     pub path: PathBuf,
 }
@@ -17,7 +17,7 @@ where
     T: Repository,
 {
     /// Creates a Subroutine entry in the repository.
-    pub async fn create(&self, input: CreateSubroutineInput) -> Result<Subroutine> {
+    pub async fn create(&self, input: SubroutineCreateInput) -> Result<Subroutine> {
         // make sure this subroutine does not already exist
         println!("Checking for subroutine with name: {}", input.name);
         if self.repo.subroutine_get_by_name(&input.name).await.is_ok() {
@@ -63,7 +63,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn creates_subroutine(mut repository: MockRepository, subroutine: Subroutine) {
-        let input = CreateSubroutineInput {
+        let input = SubroutineCreateInput {
             name: "test".into(),
             path: "/tmp".into(),
         };
@@ -95,7 +95,7 @@ mod tests {
         mut repository: MockRepository,
         subroutine: Subroutine,
     ) {
-        let input = CreateSubroutineInput {
+        let input = SubroutineCreateInput {
             name: "test".into(),
             path: "/tmp".into(),
         };

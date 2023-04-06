@@ -5,6 +5,8 @@ pub use subroutines::SubroutinesService;
 pub enum Error {
     #[error("Entity already exists")]
     Duplicate,
+    #[error("Entity not found")]
+    NotFound,
     #[error("Repository Error")]
     Repository(#[from] crate::repositories::Error),
 }
