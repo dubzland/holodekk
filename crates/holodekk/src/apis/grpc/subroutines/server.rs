@@ -1,7 +1,9 @@
 use tonic::{Request, Response, Status};
 
-use super::proto::{entities::RpcSubroutineList, RpcSubroutines, RpcSubroutinesServer};
-use crate::proto::common::RpcEmpty;
+use super::proto::{
+    entities::{RpcEmpty, RpcSubroutineList},
+    RpcSubroutines, RpcSubroutinesServer,
+};
 
 #[derive(Clone, Debug, Default)]
 pub struct SubroutinesApi {}

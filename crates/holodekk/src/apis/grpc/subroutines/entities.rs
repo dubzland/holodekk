@@ -1,10 +1,8 @@
 use std::path::PathBuf;
 
 use crate::entities::{Subroutine, SubroutineStatus};
-pub use crate::proto::common::RpcEmpty;
-pub use crate::proto::subroutines::{
-    rpc_subroutine::RpcSubroutineStatus, RpcSubroutine, RpcSubroutineList,
-};
+
+pub use super::proto::entities::{RpcEmpty, RpcSubroutine, RpcSubroutineList, RpcSubroutineStatus};
 
 impl From<RpcSubroutine> for Subroutine {
     fn from(subroutine: RpcSubroutine) -> Self {

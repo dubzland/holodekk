@@ -20,7 +20,7 @@ where
     pub async fn create(&self, input: CreateSubroutineInput) -> Result<Subroutine> {
         // make sure this subroutine does not already exist
         println!("Checking for subroutine with name: {}", input.name);
-        if self.repo.get_subroutine_by_name(&input.name).await.is_ok() {
+        if self.repo.subroutine_get_by_name(&input.name).await.is_ok() {
             return Err(Error::Duplicate);
         }
 
@@ -29,7 +29,7 @@ where
             path: input.path.to_owned(),
             status: SubroutineStatus::Stopped,
         };
-        let subroutine = self.repo.create_subroutine(&subroutine).await?;
+        let subroutine = self.repo.subroutine_create(&subroutine).await?;
         Ok(subroutine)
     }
 }
@@ -69,14 +69,14 @@ mod tests {
         };
 
         repository
-            .expect_get_subroutine_by_name()
+            .expect_subroutine_get_by_name()
             .with(eq("test"))
             .returning(|_| Err(crate::repositories::Error::NotFound));
 
         let sub_result = subroutine.clone();
 
         repository
-            .expect_create_subroutine()
+            .expect_subroutine_create()
             .withf(|new_sub: &Subroutine| {
                 (*new_sub).name.eq("test") && (*new_sub).path.eq(&PathBuf::from("/tmp"))
             })
@@ -101,7 +101,7 @@ mod tests {
         };
 
         repository
-            .expect_get_subroutine_by_name()
+            .expect_subroutine_get_by_name()
             .with(eq("test"))
             .returning(move |_| Ok(subroutine.clone()));
 

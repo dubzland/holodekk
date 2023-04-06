@@ -1,9 +1,9 @@
 [workspace]
 members = [
-    "crates/holodekkd",
+    "crates/holodekk",
     "crates/holodekk-cli",
-    "crates/holodekk-core",
     "crates/holodekk-subroutine",
+    "crates/holodekkd",
     "crates/uhura"
 ]
 
@@ -15,7 +15,7 @@ license = "MIT"
 license-file = "LICENSE"
 
 [workspace.dependencies]
-holodekk = { path = "./crates/holodekk-core" }
+holodekk = { path = "./crates/holodekk" }
 uhura = { path = "./crates/uhura" }
 async-trait = "0.1.67"
 clap = { version = "4.1.6", features = ["derive"] }

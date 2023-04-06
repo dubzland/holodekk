@@ -5,7 +5,6 @@ pub mod errors;
 mod holodekk;
 pub use self::holodekk::{Holodekk, HolodekkResult};
 pub mod projector;
-pub mod proto;
 pub mod repositories;
 pub mod services;
 pub mod utils;
