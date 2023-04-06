@@ -10,7 +10,7 @@ use std::{
 
 use clap::Parser;
 use futures_util::FutureExt;
-use log::{error, info, warn, LevelFilter};
+use log::{debug, error, info, warn, LevelFilter};
 use nix::{
     fcntl::{open, OFlag},
     sys::{
@@ -31,8 +31,10 @@ use tonic::transport::server::TcpIncoming;
 use holodekk::{
     apis::grpc::{applications::applications_api, subroutines::subroutines_api},
     utils::{
-        fs::cleanup as cleanup_socket, libsee, signals::Signals, ListenerConfig,
-        ListenerConfigError,
+        fs::cleanup as cleanup_socket,
+        libsee,
+        signals::{SignalKind, Signals},
+        ListenerConfig, ListenerConfigError,
     },
 };
 
@@ -45,6 +47,8 @@ enum Error {
     InvalidListenOptions(#[from] ListenerConfigError),
     #[error("General IO error occurred")]
     Io(#[from] std::io::Error),
+    #[error("General OS error occurred")]
+    Nix(#[from] nix::Error),
 }
 
 type Result<T> = std::result::Result<T, Error>;
@@ -154,8 +158,8 @@ fn main() -> Result<()> {
             libsee::_exit(0);
         }
         Ok(ForkResult::Child) => (),
-        Err(_) => {
-            eprintln!("Fork failed");
+        Err(err) => {
+            error!("Failed to fork from main thres: {}", err);
             libsee::_exit(1);
         }
     }
@@ -173,10 +177,6 @@ fn main() -> Result<()> {
     // new session
     setsid().expect("Failed to create new session");
 
-    // make us a subreaper
-    libsee::prctl(libsee::PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0)
-        .expect("Unable to set ourselves as subreaper");
-
     // block signals (until we're ready)
     let mut oldmask = SigSet::empty();
     let signals = signal_mask(&[SIGCHLD, SIGINT, SIGQUIT, SIGTERM]);
@@ -191,7 +191,7 @@ fn main() -> Result<()> {
         }
         Ok(ForkResult::Child) => {}
         Err(err) => {
-            error!("Fork failed");
+            error!("Failed to fork worker: {}", err);
             panic!("fork() of the subroutine process failed: {}", err);
         }
     };
@@ -204,10 +204,8 @@ fn main() -> Result<()> {
 
     let projector_server = tonic::transport::Server::builder().add_service(applications_api());
 
-    // Notify the holodekk of our state
-    if options.syncpipe_fd.is_some() {
-        send_status_update(&options);
-    }
+    // re-enable signals
+    sigprocmask(SigmaskHow::SIG_SETMASK, Some(&oldmask), None)?;
 
     main_loop(&options, uhura_server, projector_server)?;
 
@@ -241,6 +239,12 @@ async fn main_loop(
         run_server(uhura_listener_config, uhura_server, uhura_shutdown_rx).await
     });
 
+    // Notify the holodekk of our state
+    debug!("Sending status update to parent");
+    if options.syncpipe_fd.is_some() {
+        send_status_update(&options);
+    }
+
     let (projector_shutdown_tx, projector_shutdown_rx) = channel();
 
     let projector_handle = tokio::spawn(async {
@@ -252,13 +256,21 @@ async fn main_loop(
         .await
     });
 
-    let _ = Signals::new().await;
+    let signal = Signals::new().await;
+    match signal {
+        SignalKind::Int => {
+            debug!("SIGINT received.  Processing shutdown.");
 
-    uhura_shutdown_tx.send(()).unwrap();
-    projector_shutdown_tx.send(()).unwrap();
+            uhura_shutdown_tx.send(()).unwrap();
+            projector_shutdown_tx.send(()).unwrap();
 
-    uhura_handle.await.unwrap().unwrap();
-    projector_handle.await.unwrap().unwrap();
+            uhura_handle.await.unwrap().unwrap();
+            projector_handle.await.unwrap().unwrap();
+        }
+        SignalKind::Quit | SignalKind::Term => {
+            debug!("Unexpected {} received.  Terminating immediately", signal);
+        }
+    }
     Ok(())
 }
 
@@ -339,46 +351,6 @@ fn send_status_update(options: &Options) {
         }
     }
 }
-
-// fn main_loop() -> std::io::Result<()> {
-//     let mut sigset = SigSet::empty();
-//     sigset.add(SIGINT);
-//     sigset.add(SIGQUIT);
-//     sigset.add(SIGTERM);
-//     let mut signal_fd = SignalFd::new(&sigset)?;
-
-//     let mut poll = Poll::new()?;
-//     poll.registry().register(
-//         &mut SourceFd(&signal_fd.as_raw_fd()),
-//         Token(0),
-//         Interest::READABLE,
-//     )?;
-
-//     let mut events = Events::with_capacity(1024);
-
-//     loop {
-//         debug!("loop");
-//         poll.poll(&mut events, None)?;
-//         debug!("poll returned");
-
-//         for event in &events {
-//             debug!("event: {:?}", event);
-//             if event.token() == Token(0) && event.is_readable() {
-//                 // Received a signal.  see what it is.
-//                 let signal = match signal_fd.read_signal() {
-//                     Ok(Some(sinfo)) => Signal::try_from(sinfo.ssi_signo as libsee::c_int),
-//                     Ok(None) => panic!("signal fired, but nothing was available"),
-//                     Err(err) => panic!("read(signalfd) failed {}", err),
-//                 }?;
-
-//                 debug!("Signal received: {}", signal);
-
-//                 // If we're here, we got one of SIGINT, SIGQUIT, or SIGTERM
-//                 return Ok(());
-//             }
-//         }
-//     }
-// }
 
 fn write_pidfile(pidfile: &PathBuf, pid: Pid) {
     info!("forked worker with pid: {}", pid);
