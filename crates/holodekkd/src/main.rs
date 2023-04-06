@@ -3,7 +3,9 @@ use std::sync::Arc;
 
 use clap::Parser;
 
-use holodekk::{api, Holodekk};
+use holodekk::Holodekk;
+
+use holodekkd::api;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]

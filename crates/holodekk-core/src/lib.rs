@@ -1,10 +1,11 @@
-//! The Holodekk.
-
-pub mod api;
-mod errors;
-pub use errors::{Error, Result};
-
+pub mod apis;
+pub mod engines;
+pub mod entities;
+pub mod errors;
 mod holodekk;
-pub use crate::holodekk::*;
-
-pub mod logger;
+pub use self::holodekk::{Holodekk, HolodekkResult};
+pub mod projector;
+pub mod proto;
+pub mod repositories;
+pub mod services;
+pub mod utils;

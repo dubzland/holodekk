@@ -8,10 +8,9 @@ use colored::*;
 
 use tar::Builder as TarBuilder;
 
-use holodekk_engine::{docker, Build, ImageKind};
-// use holodekk::projector::server::ProjectorServer;
-use holodekk::subroutine::{ContainerManifest, SubroutineManifest};
-use holodekk::Holodekk;
+use holodekk::engines::{docker, Build, ImageKind};
+use holodekk::entities::{ContainerManifest, SubroutineManifest};
+use holodekk::{Holodekk, HolodekkResult};
 use uhura::api::client::UhuraClient;
 
 use super::CliRuntime;
@@ -77,7 +76,7 @@ impl CliRuntime for RubyCliRuntime {
         println!("{}", "Build complete.".cyan());
     }
     fn manifest(&self) {}
-    async fn project(&self) -> holodekk::Result<()> {
+    async fn project(&self) -> HolodekkResult<()> {
         // let manifest = self.subroutine();
 
         // Start a projector

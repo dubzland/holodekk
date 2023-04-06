@@ -3,11 +3,7 @@ members = [
     "crates/holodekkd",
     "crates/holodekk-cli",
     "crates/holodekk-core",
-    "crates/holodekk-engine",
-    "crates/holodekk-projector",
-    "crates/holodekk-repository",
     "crates/holodekk-subroutine",
-    "crates/holodekk-utils",
     "crates/uhura"
 ]
 
@@ -20,10 +16,6 @@ license-file = "LICENSE"
 
 [workspace.dependencies]
 holodekk = { path = "./crates/holodekk-core" }
-holodekk-engine = { path = "./crates/holodekk-engine" }
-holodekk-projector = { path = "./crates/holodekk-projector" }
-holodekk-repository = { path = "./crates/holodekk-repository" }
-holodekk-utils = { path = "./crates/holodekk-utils" }
 uhura = { path = "./crates/uhura" }
 async-trait = "0.1.67"
 clap = { version = "4.1.6", features = ["derive"] }

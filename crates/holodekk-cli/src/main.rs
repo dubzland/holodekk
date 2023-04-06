@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
 
-use holodekk::{Holodekk, Result};
+use holodekk::{Holodekk, HolodekkResult};
 use holodekk_cli::{runtime, CliRuntimeError};
 
 #[derive(Parser)]
@@ -29,7 +29,7 @@ pub enum Commands {
 const TEMPORARY_BIN: &str = "/home/jdubz/code/gitlab/holodekk/holodekk/target/debug";
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> HolodekkResult<()> {
     let options = Options::parse();
 
     // Start a Holodekk

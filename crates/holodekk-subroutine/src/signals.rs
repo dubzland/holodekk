@@ -12,7 +12,7 @@ use nix::{
     unistd::Pid,
 };
 
-use holodekk_utils::libsee;
+use holodekk::utils::libsee;
 
 type ExitCode = i32;
 

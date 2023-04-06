@@ -1,38 +1,42 @@
-use std::fs::{self, File};
-use std::io::Write;
-use std::net::Ipv4Addr;
-use std::os::fd::{AsRawFd, RawFd};
-use std::os::unix::io::FromRawFd;
-use std::panic;
-use std::path::PathBuf;
+use std::{
+    fs::{self, File},
+    io::Write,
+    net::{Ipv4Addr, SocketAddr},
+    os::{fd::RawFd, unix::io::FromRawFd},
+    panic,
+    path::PathBuf,
+    sync::Arc,
+};
 
 use clap::Parser;
-
-use log::{debug, error, info, warn, LevelFilter};
-
-use mio::{unix::SourceFd, Events, Interest, Poll, Token};
-
+use futures_util::FutureExt;
+use log::{error, info, warn, LevelFilter};
 use nix::{
     fcntl::{open, OFlag},
     sys::{
         signal::{sigprocmask, SigSet, SigmaskHow, Signal, SIGCHLD, SIGINT, SIGQUIT, SIGTERM},
-        signalfd::SignalFd,
         stat::Mode,
     },
     unistd::{dup2, fork, setsid, ForkResult, Pid},
 };
-
 use serde::Serialize;
-
 use syslog::{BasicLogger, Facility, Formatter3164};
+use tokio::{
+    net::UnixListener,
+    sync::oneshot::{channel, Receiver},
+};
+use tokio_stream::wrappers::UnixListenerStream;
+use tonic::transport::server::TcpIncoming;
 
-use holodekk_projector::api::server::ProjectorApi;
-use holodekk_utils::{
-    libsee,
-    server::{tonic::TonicServerManager, ListenerConfigError, ServerManager},
+use holodekk::{
+    apis::grpc::{applications::applications_api, subroutines::subroutines_api},
+    utils::{
+        fs::cleanup as cleanup_socket, libsee, signals::Signals, ListenerConfig,
+        ListenerConfigError,
+    },
 };
 
-use uhura::api::server::UhuraApi;
+use uhura::api::server::core_api;
 use uhura::services::CoreService;
 
 #[derive(thiserror::Error, Debug)]
@@ -193,34 +197,93 @@ fn main() -> Result<()> {
     };
 
     // build the api service
-    let core_service = CoreService::new();
-    let uhura_api = UhuraApi::new(core_service).build().listen(
-        options.uhura_port.as_ref(),
-        options.uhura_address.as_ref(),
-        options.uhura_socket.as_ref(),
-    );
+    let core_service = Arc::new(CoreService::new());
+    let uhura_server = tonic::transport::Server::builder()
+        .add_service(core_api(core_service))
+        .add_service(subroutines_api());
 
-    let projector_api = ProjectorApi::default().build().listen(
-        options.projector_port.as_ref(),
-        options.projector_address.as_ref(),
-        options.projector_socket.as_ref(),
-    );
-
-    let servers = vec![uhura_api, projector_api];
-    let manager = TonicServerManager::start(servers);
+    let projector_server = tonic::transport::Server::builder().add_service(applications_api());
 
     // Notify the holodekk of our state
     if options.syncpipe_fd.is_some() {
         send_status_update(&options);
     }
 
-    main_loop()?;
+    main_loop(&options, uhura_server, projector_server)?;
 
-    info!("Shutdown triggered.  Stopping background processes...");
-    manager.stop();
     cleanup(&options);
     info!("Shutdown complete.");
     Ok(())
+}
+
+#[tokio::main]
+async fn main_loop(
+    options: &Options,
+    uhura_server: tonic::transport::server::Router,
+    projector_server: tonic::transport::server::Router,
+) -> std::result::Result<(), std::io::Error> {
+    let uhura_listener_config = ListenerConfig::from_options(
+        options.uhura_port.as_ref(),
+        options.uhura_address.as_ref(),
+        options.uhura_socket.as_ref(),
+    )
+    .unwrap();
+    let projector_listener_config = ListenerConfig::from_options(
+        options.projector_port.as_ref(),
+        options.projector_address.as_ref(),
+        options.projector_socket.as_ref(),
+    )
+    .unwrap();
+
+    let (uhura_shutdown_tx, uhura_shutdown_rx) = channel();
+
+    let uhura_handle = tokio::spawn(async {
+        run_server(uhura_listener_config, uhura_server, uhura_shutdown_rx).await
+    });
+
+    let (projector_shutdown_tx, projector_shutdown_rx) = channel();
+
+    let projector_handle = tokio::spawn(async {
+        run_server(
+            projector_listener_config,
+            projector_server,
+            projector_shutdown_rx,
+        )
+        .await
+    });
+
+    let _ = Signals::new().await;
+
+    uhura_shutdown_tx.send(()).unwrap();
+    projector_shutdown_tx.send(()).unwrap();
+
+    uhura_handle.await.unwrap().unwrap();
+    projector_handle.await.unwrap().unwrap();
+    Ok(())
+}
+
+async fn run_server(
+    listener_config: ListenerConfig,
+    server: tonic::transport::server::Router,
+    shutdown: Receiver<()>,
+) -> std::result::Result<(), tonic::transport::Error> {
+    match listener_config {
+        ListenerConfig::Tcp { port, addr } => {
+            let listen_address: SocketAddr = format!("{}:{}", addr, port).parse().unwrap();
+            let listener = TcpIncoming::new(listen_address, true, None).unwrap();
+            server
+                .serve_with_incoming_shutdown(listener, shutdown.map(drop))
+                .await
+        }
+        ListenerConfig::Uds { socket } => {
+            cleanup_socket(&socket).unwrap();
+            let uds = UnixListener::bind(socket).unwrap();
+            let listener = UnixListenerStream::new(uds);
+            server
+                .serve_with_incoming_shutdown(listener, shutdown.map(drop))
+                .await
+        }
+    }
 }
 
 fn cleanup(options: &Options) {
@@ -277,45 +340,45 @@ fn send_status_update(options: &Options) {
     }
 }
 
-fn main_loop() -> std::io::Result<()> {
-    let mut sigset = SigSet::empty();
-    sigset.add(SIGINT);
-    sigset.add(SIGQUIT);
-    sigset.add(SIGTERM);
-    let mut signal_fd = SignalFd::new(&sigset)?;
+// fn main_loop() -> std::io::Result<()> {
+//     let mut sigset = SigSet::empty();
+//     sigset.add(SIGINT);
+//     sigset.add(SIGQUIT);
+//     sigset.add(SIGTERM);
+//     let mut signal_fd = SignalFd::new(&sigset)?;
 
-    let mut poll = Poll::new()?;
-    poll.registry().register(
-        &mut SourceFd(&signal_fd.as_raw_fd()),
-        Token(0),
-        Interest::READABLE,
-    )?;
+//     let mut poll = Poll::new()?;
+//     poll.registry().register(
+//         &mut SourceFd(&signal_fd.as_raw_fd()),
+//         Token(0),
+//         Interest::READABLE,
+//     )?;
 
-    let mut events = Events::with_capacity(1024);
+//     let mut events = Events::with_capacity(1024);
 
-    loop {
-        debug!("loop");
-        poll.poll(&mut events, None)?;
-        debug!("poll returned");
+//     loop {
+//         debug!("loop");
+//         poll.poll(&mut events, None)?;
+//         debug!("poll returned");
 
-        for event in &events {
-            debug!("event: {:?}", event);
-            if event.token() == Token(0) && event.is_readable() {
-                // Received a signal.  see what it is.
-                let signal = match signal_fd.read_signal() {
-                    Ok(Some(sinfo)) => Signal::try_from(sinfo.ssi_signo as libsee::c_int),
-                    Ok(None) => panic!("signal fired, but nothing was available"),
-                    Err(err) => panic!("read(signalfd) failed {}", err),
-                }?;
+//         for event in &events {
+//             debug!("event: {:?}", event);
+//             if event.token() == Token(0) && event.is_readable() {
+//                 // Received a signal.  see what it is.
+//                 let signal = match signal_fd.read_signal() {
+//                     Ok(Some(sinfo)) => Signal::try_from(sinfo.ssi_signo as libsee::c_int),
+//                     Ok(None) => panic!("signal fired, but nothing was available"),
+//                     Err(err) => panic!("read(signalfd) failed {}", err),
+//                 }?;
 
-                debug!("Signal received: {}", signal);
+//                 debug!("Signal received: {}", signal);
 
-                // If we're here, we got one of SIGINT, SIGQUIT, or SIGTERM
-                return Ok(());
-            }
-        }
-    }
-}
+//                 // If we're here, we got one of SIGINT, SIGQUIT, or SIGTERM
+//                 return Ok(());
+//             }
+//         }
+//     }
+// }
 
 fn write_pidfile(pidfile: &PathBuf, pid: Pid) {
     info!("forked worker with pid: {}", pid);
