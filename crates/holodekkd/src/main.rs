@@ -3,7 +3,9 @@ use std::sync::Arc;
 
 use clap::Parser;
 
-use holodekk::{api, Holodekk};
+use holodekk::{Holodekk, HolodekkOptions};
+
+use holodekkd::api;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -23,8 +25,13 @@ const TEMPORARY_BIN: &str = "/home/jdubz/code/gitlab/holodekk/holodekk/target/de
 async fn main() -> std::io::Result<()> {
     let options = Options::parse();
 
-    let bin = PathBuf::from(TEMPORARY_BIN);
-    let holodekk = Arc::new(Holodekk::new(&options.root, &bin));
+    let holodekk_options = HolodekkOptions {
+        fleet: "local".to_string(),
+        root_path: options.root,
+        bin_path: TEMPORARY_BIN.into(),
+    };
+
+    let holodekk = Arc::new(Holodekk::new(&holodekk_options));
     holodekk.init()?;
     api::server::run(holodekk, options.port.to_owned()).await;
     Ok(())

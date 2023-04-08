@@ -8,11 +8,10 @@ use colored::*;
 
 use tar::Builder as TarBuilder;
 
-use holodekk_engine::{docker, Build, ImageKind};
-// use holodekk::projector::server::ProjectorServer;
-use holodekk::subroutine::{ContainerManifest, SubroutineManifest};
-use holodekk::Holodekk;
-use uhura::api::client::UhuraClient;
+use holodekk::engines::{docker, Build, ImageKind};
+use holodekk::entities::{ContainerManifest, SubroutineManifest};
+use holodekk::{Holodekk, HolodekkResult};
+// use uhura::api::client::UhuraClient;
 
 use super::CliRuntime;
 
@@ -56,7 +55,7 @@ impl CliRuntime for RubyCliRuntime {
             subroutine.name().to_string().white().bold(),
             "via Docker.".cyan()
         );
-        let engine = docker::Docker::new();
+        let engine = docker::Docker::connect_local();
         let mut bytes = Vec::default();
         match subroutine.container() {
             ContainerManifest::FromDockerContext { context, .. } => {
@@ -77,79 +76,17 @@ impl CliRuntime for RubyCliRuntime {
         println!("{}", "Build complete.".cyan());
     }
     fn manifest(&self) {}
-    async fn project(&self) -> holodekk::Result<()> {
+    async fn project(&self) -> HolodekkResult<()> {
         // let manifest = self.subroutine();
 
         // Start a projector
         self.holodekk.projector_for_namespace("local")?;
         let projector = self.holodekk.projector_for_namespace("local")?;
-        let uhura_listener = &projector.uhura_listener;
-        let client = if uhura_listener.port().is_some() {
-            UhuraClient::connect_tcp(
-                uhura_listener.port().unwrap().to_owned(),
-                uhura_listener.address().unwrap().to_owned(),
-            )
-            .await
-            .unwrap()
-        } else {
-            UhuraClient::connect_uds(uhura_listener.socket().unwrap())
-                .await
-                .unwrap()
-        };
-        let response = client.core().status().await.unwrap();
+        let client = projector.client().await?;
+        let response = client.uhura().status().await.unwrap();
         println!("Server response: {:?}", response);
-        // self.holodekk.stop_projector(projector)?;
+        self.holodekk.stop_projector(projector.id)?;
 
-        // holodekk.stop_projector(projector)?;
-
-        // holodekk.stop()?;
-
-        // Create the subroutine
-        // let sub = Subroutine::new(
-        //     manifest.name(),
-        //     &self.directory,
-        //     self.file.as_path().file_stem().unwrap().to_str().unwrap(),
-        // );
-        // let projector = ProjectorServer::new().listen_tcp(None, None).unwrap();
-        // let port = projector.port();
-        // println!("Projector running on port {}.", port);
-
-        // // Check to see if an image exists
-        // print!("Checking for application image ...");
-        // let engine = docker::Docker::new();
-        // if engine
-        //     .image_exists(ImageKind::Application, subroutine.name())
-        //     .await
-        //     .unwrap()
-        // {
-        //     println!(" ok.");
-        // } else {
-        //     println!(" not found.");
-        //     self.build().await;
-        // }
-
-        // println!(
-        //     "{} {} {}",
-        //     "Launching subroutine".green(),
-        //     subroutine.name().to_string().white().bold(),
-        //     "on the Holodekk.".green()
-        // );
-
-        // // Start a projector
-        // let projector = ProjectorServer::new().listen_tcp(None, None).unwrap();
-        // let port = projector.port();
-        // println!("Projector running on port {}.", port);
-
-        // // Launch the subroutine
-        // Command::new(&self.file)
-        //     .current_dir(&self.directory)
-        //     .arg("start")
-        //     .arg("--projector-port")
-        //     .arg(port.to_string())
-        //     .status()
-        //     .unwrap();
-
-        // projector.stop();
         Ok(())
     }
 }

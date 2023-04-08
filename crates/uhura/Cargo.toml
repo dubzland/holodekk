@@ -8,8 +8,10 @@ license-file.workspace = true
 [dependencies]
 async-trait.workspace = true
 clap.workspace = true
-holodekk-projector.workspace = true
-holodekk-utils.workspace = true
+futures-util.workspace = true
+# holodekk-projector.workspace = true
+# holodekk-utils.workspace = true
+holodekk.workspace = true
 log.workspace = true
 mio.workspace = true
 nix.workspace = true
@@ -19,6 +21,7 @@ serde_json.workspace = true
 syslog.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+tokio-stream.workspace = true
 tonic.workspace = true
 tower.workspace = true
 

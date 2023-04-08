@@ -30,7 +30,7 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 
 use serde::{Deserialize, Serialize};
 
-use holodekk_utils::libsee;
+use holodekk::utils::libsee;
 
 use server::Server;
 use signals::signal_mask;

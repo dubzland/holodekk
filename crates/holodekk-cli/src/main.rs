@@ -1,9 +1,8 @@
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
 
-use holodekk::{Holodekk, Result};
+use holodekk::{Holodekk, HolodekkOptions, HolodekkResult};
 use holodekk_cli::{runtime, CliRuntimeError};
 
 #[derive(Parser)]
@@ -29,14 +28,16 @@ pub enum Commands {
 const TEMPORARY_BIN: &str = "/home/jdubz/code/gitlab/holodekk/holodekk/target/debug";
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> HolodekkResult<()> {
     let options = Options::parse();
 
     // Start a Holodekk
-    let holodekk = Arc::new(Holodekk::new(
-        &PathBuf::from("~/.holodekk"),
-        &PathBuf::from(TEMPORARY_BIN),
-    ));
+    let holodekk_options = HolodekkOptions {
+        fleet: "local".to_string(),
+        root_path: "~/.holodekk".into(),
+        bin_path: TEMPORARY_BIN.into(),
+    };
+    let holodekk = Arc::new(Holodekk::new(&holodekk_options));
     holodekk.init()?;
 
     match &options.command {

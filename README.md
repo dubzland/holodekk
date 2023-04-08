@@ -1,4 +1,10 @@
+Holodekk
+====
+![Pipeline](https://img.shields.io/gitlab/pipeline-status/holodekk/holodekk?branch=main&gitlab_url=https%3A%2F%2Fgit.dubzland.net)
+
 Central repo for holodekk related spikes.
+
+---
 
 # Roadmap
 

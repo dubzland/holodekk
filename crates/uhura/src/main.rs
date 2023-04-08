@@ -1,46 +1,46 @@
-use std::fs::{self, File};
-use std::io::Write;
-use std::net::Ipv4Addr;
-use std::os::fd::{AsRawFd, RawFd};
-use std::os::unix::io::FromRawFd;
-use std::panic;
-use std::path::PathBuf;
+use std::{
+    fs::{self, File},
+    io::Write,
+    net::Ipv4Addr,
+    os::{fd::RawFd, unix::io::FromRawFd},
+    panic,
+    path::PathBuf,
+    sync::Arc,
+};
 
 use clap::Parser;
-
 use log::{debug, error, info, warn, LevelFilter};
-
-use mio::{unix::SourceFd, Events, Interest, Poll, Token};
-
 use nix::{
     fcntl::{open, OFlag},
     sys::{
         signal::{sigprocmask, SigSet, SigmaskHow, Signal, SIGCHLD, SIGINT, SIGQUIT, SIGTERM},
-        signalfd::SignalFd,
         stat::Mode,
     },
     unistd::{dup2, fork, setsid, ForkResult, Pid},
 };
-
 use serde::Serialize;
-
 use syslog::{BasicLogger, Facility, Formatter3164};
 
-use holodekk_projector::api::server::ProjectorApi;
-use holodekk_utils::{
-    libsee,
-    server::{tonic::TonicServerManager, ListenerConfigError, ServerManager},
+use holodekk::{
+    repositories::{memory::MemoryRepository, Repository},
+    servers::{ProjectorServer, UhuraServer},
+    utils::{
+        // fs::cleanup as cleanup_socket,
+        libsee,
+        signals::{SignalKind, Signals},
+        ConnectionInfo,
+        ConnectionInfoError,
+    },
 };
-
-use uhura::api::server::UhuraApi;
-use uhura::services::CoreService;
 
 #[derive(thiserror::Error, Debug)]
 enum Error {
     #[error("Invalid listener configuration")]
-    InvalidListenOptions(#[from] ListenerConfigError),
+    InvalidListenOptions(#[from] ConnectionInfoError),
     #[error("General IO error occurred")]
     Io(#[from] std::io::Error),
+    #[error("General OS error occurred")]
+    Nix(#[from] nix::Error),
 }
 
 type Result<T> = std::result::Result<T, Error>;
@@ -104,6 +104,10 @@ impl<'a> MessageProjectorPid<'a> {
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Options {
+    /// Fleet this projector belongs to
+    #[arg(long)]
+    fleet: String,
+
     /// Namespace this projector is responsible for
     #[arg(long, short, required = true)]
     namespace: String,
@@ -150,8 +154,8 @@ fn main() -> Result<()> {
             libsee::_exit(0);
         }
         Ok(ForkResult::Child) => (),
-        Err(_) => {
-            eprintln!("Fork failed");
+        Err(err) => {
+            error!("Failed to fork from main thres: {}", err);
             libsee::_exit(1);
         }
     }
@@ -169,10 +173,6 @@ fn main() -> Result<()> {
     // new session
     setsid().expect("Failed to create new session");
 
-    // make us a subreaper
-    libsee::prctl(libsee::PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0)
-        .expect("Unable to set ourselves as subreaper");
-
     // block signals (until we're ready)
     let mut oldmask = SigSet::empty();
     let signals = signal_mask(&[SIGCHLD, SIGINT, SIGQUIT, SIGTERM]);
@@ -187,39 +187,76 @@ fn main() -> Result<()> {
         }
         Ok(ForkResult::Child) => {}
         Err(err) => {
-            error!("Fork failed");
+            error!("Failed to fork worker: {}", err);
             panic!("fork() of the subroutine process failed: {}", err);
         }
     };
 
-    // build the api service
-    let core_service = CoreService::new();
-    let uhura_api = UhuraApi::new(core_service).build().listen(
+    // build the servers
+    let repo = Arc::new(MemoryRepository::default());
+    let uhura_server = UhuraServer::new(&options.fleet, &options.namespace, repo.clone());
+    let uhura_listener_config = ConnectionInfo::from_options(
         options.uhura_port.as_ref(),
         options.uhura_address.as_ref(),
         options.uhura_socket.as_ref(),
-    );
-
-    let projector_api = ProjectorApi::default().build().listen(
+    )
+    .unwrap();
+    let projector_server = ProjectorServer::new(&options.fleet, &options.namespace, repo);
+    let projector_listener_config = ConnectionInfo::from_options(
         options.projector_port.as_ref(),
         options.projector_address.as_ref(),
         options.projector_socket.as_ref(),
-    );
+    )
+    .unwrap();
 
-    let servers = vec![uhura_api, projector_api];
-    let manager = TonicServerManager::start(servers);
+    // re-enable signals
+    sigprocmask(SigmaskHow::SIG_SETMASK, Some(&oldmask), None)?;
 
-    // Notify the holodekk of our state
-    if options.syncpipe_fd.is_some() {
-        send_status_update(&options);
-    }
+    main_loop(
+        &options,
+        uhura_server,
+        uhura_listener_config,
+        projector_server,
+        projector_listener_config,
+    )?;
 
-    main_loop()?;
-
-    info!("Shutdown triggered.  Stopping background processes...");
-    manager.stop();
     cleanup(&options);
     info!("Shutdown complete.");
+    Ok(())
+}
+
+#[tokio::main]
+async fn main_loop<T>(
+    options: &Options,
+    mut uhura_server: UhuraServer<T>,
+    uhura_config: ConnectionInfo,
+    mut projector_server: ProjectorServer<T>,
+    projector_config: ConnectionInfo,
+) -> std::result::Result<(), std::io::Error>
+where
+    T: Repository,
+{
+    uhura_server.start(uhura_config);
+    projector_server.start(projector_config);
+
+    // Notify the holodekk of our state
+    debug!("Sending status update to parent");
+    if options.syncpipe_fd.is_some() {
+        send_status_update(options);
+    }
+
+    let signal = Signals::new().await;
+    match signal {
+        SignalKind::Int => {
+            debug!("SIGINT received.  Processing shutdown.");
+
+            uhura_server.stop().await;
+            projector_server.stop().await;
+        }
+        SignalKind::Quit | SignalKind::Term => {
+            debug!("Unexpected {} received.  Terminating immediately", signal);
+        }
+    }
     Ok(())
 }
 
@@ -273,46 +310,6 @@ fn send_status_update(options: &Options) {
         }
         Err(err) => {
             warn!("Failed to serialize JSON for sync update: {}", err);
-        }
-    }
-}
-
-fn main_loop() -> std::io::Result<()> {
-    let mut sigset = SigSet::empty();
-    sigset.add(SIGINT);
-    sigset.add(SIGQUIT);
-    sigset.add(SIGTERM);
-    let mut signal_fd = SignalFd::new(&sigset)?;
-
-    let mut poll = Poll::new()?;
-    poll.registry().register(
-        &mut SourceFd(&signal_fd.as_raw_fd()),
-        Token(0),
-        Interest::READABLE,
-    )?;
-
-    let mut events = Events::with_capacity(1024);
-
-    loop {
-        debug!("loop");
-        poll.poll(&mut events, None)?;
-        debug!("poll returned");
-
-        for event in &events {
-            debug!("event: {:?}", event);
-            if event.token() == Token(0) && event.is_readable() {
-                // Received a signal.  see what it is.
-                let signal = match signal_fd.read_signal() {
-                    Ok(Some(sinfo)) => Signal::try_from(sinfo.ssi_signo as libsee::c_int),
-                    Ok(None) => panic!("signal fired, but nothing was available"),
-                    Err(err) => panic!("read(signalfd) failed {}", err),
-                }?;
-
-                debug!("Signal received: {}", signal);
-
-                // If we're here, we got one of SIGINT, SIGQUIT, or SIGTERM
-                return Ok(());
-            }
         }
     }
 }
