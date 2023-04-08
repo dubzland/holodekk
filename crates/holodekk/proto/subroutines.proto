@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package subroutines;
 
-import "common.proto";
-
 service RpcSubroutines {
 	rpc Status(RpcStatusRequest) returns (RpcSubroutineStatus) {}
 }

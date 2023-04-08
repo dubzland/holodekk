@@ -806,7 +806,6 @@ dependencies = [
  "tar",
  "thiserror",
  "tokio",
- "uhura",
 ]
 
 [[package]]
