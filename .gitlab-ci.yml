@@ -55,7 +55,6 @@ test:
   before_script:
     - rustc --version
     - cargo --version
-    - curl -v http://registry:5000/v2/
   script:
     - cargo test --verbose
 
