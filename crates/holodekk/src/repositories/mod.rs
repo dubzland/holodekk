@@ -1,8 +1,10 @@
+pub mod memory;
+
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
-use super::entities::{Subroutine, SubroutineStatus};
+use super::entities::Subroutine;
 
 #[derive(thiserror::Error, Clone, Copy, Debug, PartialEq)]
 pub enum Error {
@@ -10,14 +12,20 @@ pub enum Error {
     General,
     #[error("Entity not found")]
     NotFound,
+    #[error("Record already exists")]
+    AlreadyExists,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait Repository {
-    async fn subroutine_create(&'life0 self, subroutine: &Subroutine) -> Result<Subroutine>;
-    async fn subroutine_get_by_name(&'life0 self, name: &str) -> Result<Subroutine>;
-    async fn subroutine_status(&'life0 self, name: &str) -> Result<SubroutineStatus>;
+pub trait Repository: Send + Sync + 'static {
+    async fn subroutine_create(&self, subroutine: Subroutine) -> Result<Subroutine>;
+    async fn subroutine_get<'a>(
+        &self,
+        fleet: &'a str,
+        namespace: &'a str,
+        name: &'a str,
+    ) -> Result<Subroutine>;
 }

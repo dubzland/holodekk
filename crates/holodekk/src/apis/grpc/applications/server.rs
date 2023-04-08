@@ -4,10 +4,10 @@ use super::proto::entities::{RpcEmpty, RpcListReply};
 use super::proto::{RpcApplications, RpcApplicationsServer};
 
 #[derive(Clone, Debug, Default)]
-pub struct ApplicationsApi {}
+pub struct ApplicationsApiServer {}
 
 #[tonic::async_trait]
-impl RpcApplications for ApplicationsApi {
+impl RpcApplications for ApplicationsApiServer {
     async fn list(
         &self,
         _request: Request<RpcEmpty>,
@@ -19,6 +19,6 @@ impl RpcApplications for ApplicationsApi {
     }
 }
 
-pub fn applications_api() -> RpcApplicationsServer<ApplicationsApi> {
-    RpcApplicationsServer::new(ApplicationsApi::default())
+pub fn applications_api_server() -> RpcApplicationsServer<ApplicationsApiServer> {
+    RpcApplicationsServer::new(ApplicationsApiServer::default())
 }

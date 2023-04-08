@@ -5,22 +5,29 @@ package subroutines;
 import "common.proto";
 
 service RpcSubroutines {
-	rpc List(common.RpcEmpty) returns (RpcSubroutineList) {}
+	rpc Status(RpcStatusRequest) returns (RpcSubroutineStatus) {}
+}
+
+enum RpcSubroutineStatusCode {
+	UNKNOWN_SUBROUTINE_STATUS = 0;
+	STOPPED = 1;
+	RUNNING = 2;
+	CRASHED = 3;
 }
 
 message RpcSubroutine {
-	enum RpcSubroutineStatus {
-		STOPPED = 0;
-		RUNNING = 1;
-		CRASHED = 2;
-	}
+	string fleet = 1;
+	string namespace = 2;
+	string name = 3;
+	string path = 4;
+	RpcSubroutineStatus status = 5;
+}
+
+message RpcStatusRequest {
 	string name = 1;
-	string path = 2;
-	RpcSubroutineStatus status = 3;
-	int32 pid = 4;
 }
 
-message RpcSubroutineList {
-	repeated RpcSubroutine subroutines = 1;
+message RpcSubroutineStatus {
+	RpcSubroutineStatusCode code = 1;
+	optional int32 pid = 2;
 }
-

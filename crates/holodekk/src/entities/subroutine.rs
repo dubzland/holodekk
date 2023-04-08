@@ -6,8 +6,9 @@ use serde::{Deserialize, Serialize};
 
 use super::ContainerManifest;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum SubroutineStatus {
+    Unknown,
     Stopped,
     Running(u32),
     Crashed,
@@ -28,6 +29,8 @@ pub enum SubroutineStatus {
 /// let manifest: SubroutineManifest = serde_json::from_str(&json).unwrap();
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SubroutineManifest {
+    fleet: String,
+    namespace: String,
     name: String,
     container: ContainerManifest,
     environment: Option<HashMap<String, String>>,
@@ -64,16 +67,24 @@ impl fmt::Display for SubroutineManifest {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Subroutine {
+    pub fleet: String,
+    pub namespace: String,
     pub name: String,
     pub path: PathBuf,
     pub status: SubroutineStatus,
 }
 
 impl Subroutine {
-    pub fn new<S: AsRef<String>, P: AsRef<Path>>(name: S, path: P) -> Self {
+    pub fn new<S, P>(fleet: S, namespace: S, name: S, path: P) -> Self
+    where
+        P: AsRef<Path> + Into<PathBuf>,
+        S: AsRef<str> + Into<String>,
+    {
         Self {
-            name: name.as_ref().to_owned(),
-            path: path.as_ref().to_owned(),
+            fleet: fleet.into(),
+            namespace: namespace.into(),
+            name: name.into(),
+            path: path.into(),
             status: SubroutineStatus::Stopped,
         }
     }

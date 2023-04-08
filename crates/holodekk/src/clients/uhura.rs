@@ -1,14 +1,16 @@
-use std::{net::Ipv4Addr, path::Path, sync::Arc};
+use std::{
+    net::Ipv4Addr,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use tokio::net::UnixStream;
 use tonic::transport::{Channel, Endpoint, Uri};
 use tower::service_fn;
 
-use holodekk::apis::grpc::subroutines::SubroutinesClient;
-use holodekk::errors::grpc::GrpcClientResult;
-
-mod core;
-pub use self::core::*;
+use crate::apis::grpc::subroutines::SubroutinesApiClient;
+use crate::apis::grpc::uhura::UhuraApiClient;
+use crate::errors::grpc::GrpcClientResult;
 
 #[derive(Clone, Debug)]
 pub struct UhuraClient {
@@ -26,8 +28,11 @@ impl UhuraClient {
         Ok(Self::new(channel))
     }
 
-    pub async fn connect_uds<P: AsRef<Path>>(socket: P) -> GrpcClientResult<UhuraClient> {
-        let socket = Arc::new(socket.as_ref().to_owned());
+    pub async fn connect_unix<P>(socket: P) -> GrpcClientResult<UhuraClient>
+    where
+        P: AsRef<Path> + Into<PathBuf> + Sync + Sync,
+    {
+        let socket: Arc<PathBuf> = Arc::new(socket.into());
         let channel = Endpoint::try_from("http://[::]:50051")?
             .connect_with_connector(service_fn(move |_: Uri| {
                 let socket = Arc::clone(&socket);
@@ -37,11 +42,11 @@ impl UhuraClient {
         Ok(Self::new(channel))
     }
 
-    pub fn core(&self) -> CoreClient {
-        CoreClient::new(self.channel.clone())
+    pub fn uhura(&self) -> UhuraApiClient {
+        UhuraApiClient::new(self.channel.clone())
     }
 
-    pub fn subroutines(&self) -> SubroutinesClient {
-        SubroutinesClient::new(self.channel.clone())
+    pub fn subroutines(&self) -> SubroutinesApiClient {
+        SubroutinesApiClient::new(self.channel.clone())
     }
 }

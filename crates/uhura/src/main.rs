@@ -1,7 +1,7 @@
 use std::{
     fs::{self, File},
     io::Write,
-    net::{Ipv4Addr, SocketAddr},
+    net::Ipv4Addr,
     os::{fd::RawFd, unix::io::FromRawFd},
     panic,
     path::PathBuf,
@@ -9,7 +9,6 @@ use std::{
 };
 
 use clap::Parser;
-use futures_util::FutureExt;
 use log::{debug, error, info, warn, LevelFilter};
 use nix::{
     fcntl::{open, OFlag},
@@ -21,30 +20,23 @@ use nix::{
 };
 use serde::Serialize;
 use syslog::{BasicLogger, Facility, Formatter3164};
-use tokio::{
-    net::UnixListener,
-    sync::oneshot::{channel, Receiver},
-};
-use tokio_stream::wrappers::UnixListenerStream;
-use tonic::transport::server::TcpIncoming;
 
 use holodekk::{
-    apis::grpc::{applications::applications_api, subroutines::subroutines_api},
+    repositories::{memory::MemoryRepository, Repository},
+    servers::{ProjectorServer, UhuraServer},
     utils::{
-        fs::cleanup as cleanup_socket,
+        // fs::cleanup as cleanup_socket,
         libsee,
         signals::{SignalKind, Signals},
-        ListenerConfig, ListenerConfigError,
+        ConnectionInfo,
+        ConnectionInfoError,
     },
 };
-
-use uhura::api::server::core_api;
-use uhura::services::CoreService;
 
 #[derive(thiserror::Error, Debug)]
 enum Error {
     #[error("Invalid listener configuration")]
-    InvalidListenOptions(#[from] ListenerConfigError),
+    InvalidListenOptions(#[from] ConnectionInfoError),
     #[error("General IO error occurred")]
     Io(#[from] std::io::Error),
     #[error("General OS error occurred")]
@@ -112,6 +104,10 @@ impl<'a> MessageProjectorPid<'a> {
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Options {
+    /// Fleet this projector belongs to
+    #[arg(long)]
+    fleet: String,
+
     /// Namespace this projector is responsible for
     #[arg(long, short, required = true)]
     namespace: String,
@@ -196,18 +192,33 @@ fn main() -> Result<()> {
         }
     };
 
-    // build the api service
-    let core_service = Arc::new(CoreService::new());
-    let uhura_server = tonic::transport::Server::builder()
-        .add_service(core_api(core_service))
-        .add_service(subroutines_api());
-
-    let projector_server = tonic::transport::Server::builder().add_service(applications_api());
+    // build the servers
+    let repo = Arc::new(MemoryRepository::default());
+    let uhura_server = UhuraServer::new(&options.fleet, &options.namespace, repo.clone());
+    let uhura_listener_config = ConnectionInfo::from_options(
+        options.uhura_port.as_ref(),
+        options.uhura_address.as_ref(),
+        options.uhura_socket.as_ref(),
+    )
+    .unwrap();
+    let projector_server = ProjectorServer::new(&options.fleet, &options.namespace, repo);
+    let projector_listener_config = ConnectionInfo::from_options(
+        options.projector_port.as_ref(),
+        options.projector_address.as_ref(),
+        options.projector_socket.as_ref(),
+    )
+    .unwrap();
 
     // re-enable signals
     sigprocmask(SigmaskHow::SIG_SETMASK, Some(&oldmask), None)?;
 
-    main_loop(&options, uhura_server, projector_server)?;
+    main_loop(
+        &options,
+        uhura_server,
+        uhura_listener_config,
+        projector_server,
+        projector_listener_config,
+    )?;
 
     cleanup(&options);
     info!("Shutdown complete.");
@@ -215,29 +226,18 @@ fn main() -> Result<()> {
 }
 
 #[tokio::main]
-async fn main_loop(
+async fn main_loop<T>(
     options: &Options,
-    uhura_server: tonic::transport::server::Router,
-    projector_server: tonic::transport::server::Router,
-) -> std::result::Result<(), std::io::Error> {
-    let uhura_listener_config = ListenerConfig::from_options(
-        options.uhura_port.as_ref(),
-        options.uhura_address.as_ref(),
-        options.uhura_socket.as_ref(),
-    )
-    .unwrap();
-    let projector_listener_config = ListenerConfig::from_options(
-        options.projector_port.as_ref(),
-        options.projector_address.as_ref(),
-        options.projector_socket.as_ref(),
-    )
-    .unwrap();
-
-    let (uhura_shutdown_tx, uhura_shutdown_rx) = channel();
-
-    let uhura_handle = tokio::spawn(async {
-        run_server(uhura_listener_config, uhura_server, uhura_shutdown_rx).await
-    });
+    mut uhura_server: UhuraServer<T>,
+    uhura_config: ConnectionInfo,
+    mut projector_server: ProjectorServer<T>,
+    projector_config: ConnectionInfo,
+) -> std::result::Result<(), std::io::Error>
+where
+    T: Repository,
+{
+    uhura_server.start(uhura_config);
+    projector_server.start(projector_config);
 
     // Notify the holodekk of our state
     debug!("Sending status update to parent");
@@ -245,57 +245,19 @@ async fn main_loop(
         send_status_update(options);
     }
 
-    let (projector_shutdown_tx, projector_shutdown_rx) = channel();
-
-    let projector_handle = tokio::spawn(async {
-        run_server(
-            projector_listener_config,
-            projector_server,
-            projector_shutdown_rx,
-        )
-        .await
-    });
-
     let signal = Signals::new().await;
     match signal {
         SignalKind::Int => {
             debug!("SIGINT received.  Processing shutdown.");
 
-            uhura_shutdown_tx.send(()).unwrap();
-            projector_shutdown_tx.send(()).unwrap();
-
-            uhura_handle.await.unwrap().unwrap();
-            projector_handle.await.unwrap().unwrap();
+            uhura_server.stop().await;
+            projector_server.stop().await;
         }
         SignalKind::Quit | SignalKind::Term => {
             debug!("Unexpected {} received.  Terminating immediately", signal);
         }
     }
     Ok(())
-}
-
-async fn run_server(
-    listener_config: ListenerConfig,
-    server: tonic::transport::server::Router,
-    shutdown: Receiver<()>,
-) -> std::result::Result<(), tonic::transport::Error> {
-    match listener_config {
-        ListenerConfig::Tcp { port, addr } => {
-            let listen_address: SocketAddr = format!("{}:{}", addr, port).parse().unwrap();
-            let listener = TcpIncoming::new(listen_address, true, None).unwrap();
-            server
-                .serve_with_incoming_shutdown(listener, shutdown.map(drop))
-                .await
-        }
-        ListenerConfig::Uds { socket } => {
-            cleanup_socket(&socket).unwrap();
-            let uds = UnixListener::bind(socket).unwrap();
-            let listener = UnixListenerStream::new(uds);
-            server
-                .serve_with_incoming_shutdown(listener, shutdown.map(drop))
-                .await
-        }
-    }
 }
 
 fn cleanup(options: &Options) {

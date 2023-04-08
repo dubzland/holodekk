@@ -10,65 +10,36 @@ use std::net::Ipv4Addr;
 use std::path::{Path, PathBuf};
 
 #[derive(thiserror::Error, Debug)]
-pub enum ListenerConfigError {
+pub enum ConnectionInfoError {
     #[error("Options for both TCP and UDS were supplied")]
     TooManyValues,
     #[error("Neither options were provided")]
     NotEnoughValues,
 }
 
-/// Configuration values necessary to construct a Listener
-///
-/// Rather than passing around raw values, it is easier to store them in their "final", validated
-/// form in a way that can be matched on.  This makes constructing the actual listeners easier.
 #[derive(Clone, Debug, PartialEq)]
-pub enum ListenerConfig {
+pub enum ConnectionInfo {
     /// TCP based socket
     Tcp { port: u16, addr: Ipv4Addr },
     /// Unix domain socket
-    Uds { socket: PathBuf },
+    Unix { socket: PathBuf },
 }
 
-impl ListenerConfig {
-    /// Create a listener config from a set of CLI arguments
-    ///
-    ///
-    /// # Example
-    ///
-    /// ```rust,ignore
-    /// use std::{net::Ipv4Addr, path::PathBuf};
-    /// use clap::Parser;
-    /// use holodekk_utils::server::ListenerConfig;
-    ///
-    /// #[derive(Parser)]
-    /// pub struct Options {
-    ///     port: Option<u16>,
-    ///     address: Option<Ipv4Addr>,
-    ///     #[arg(conflicts_with_all = ["port", "address"])]
-    ///     socket: Option<PathBuf>
-    /// }
-    ///
-    /// fn main() {
-    ///     let options = Options::parse();
-    ///     let config = ListenerConfig::from_options(
-    ///         options.port.as_ref(),
-    ///         options.address.as_ref(),
-    ///         options.socket.as_ref()
-    ///     ).unwrap();
-    /// }
-    ///
-    /// ```
-    pub fn from_options<P: AsRef<Path>>(
+impl ConnectionInfo {
+    pub fn from_options<P>(
         port: Option<&u16>,
         addr: Option<&Ipv4Addr>,
         socket: Option<P>,
-    ) -> Result<Self, ListenerConfigError> {
+    ) -> Result<Self, ConnectionInfoError>
+    where
+        P: AsRef<Path> + Into<PathBuf>,
+    {
         if let Some(port) = port {
             Ok(Self::tcp(port, addr))
         } else if let Some(socket) = socket {
-            Ok(Self::uds(socket))
+            Ok(Self::unix(socket))
         } else {
-            Err(ListenerConfigError::NotEnoughValues)
+            Err(ConnectionInfoError::NotEnoughValues)
         }
     }
 
@@ -79,18 +50,21 @@ impl ListenerConfig {
         }
     }
 
-    pub fn uds<P: AsRef<Path>>(socket: P) -> Self {
-        Self::Uds {
-            socket: socket.as_ref().to_owned(),
+    pub fn unix<P>(socket: P) -> Self
+    where
+        P: AsRef<Path> + Into<PathBuf>,
+    {
+        Self::Unix {
+            socket: socket.into(),
         }
     }
 }
 
-impl fmt::Display for ListenerConfig {
+impl fmt::Display for ConnectionInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ListenerConfig::Tcp { port, addr } => write!(f, "Port: {}, Address: {}", port, addr),
-            ListenerConfig::Uds { socket } => write!(f, "Path: {}", socket.display()),
+            ConnectionInfo::Tcp { port, addr } => write!(f, "Port: {}, Address: {}", port, addr),
+            ConnectionInfo::Unix { socket } => write!(f, "Path: {}", socket.display()),
         }
     }
 }

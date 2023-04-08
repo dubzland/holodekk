@@ -12,9 +12,8 @@ use tokio_stream::wrappers::UnixListenerStream;
 
 use holodekk::errors::grpc::GrpcClientResult;
 
-use uhura::{
-    api::{client::UhuraClient, server::core_api},
-    services::CoreService,
+use holodekk::{
+    apis::grpc::uhura::uhura_api_server, clients::uhura::UhuraClient, services::UhuraService,
 };
 
 #[cfg(test)]
@@ -37,10 +36,10 @@ mod test {
         let uds = UnixListener::bind(&socket).unwrap();
         let listener = UnixListenerStream::new(uds);
 
-        let core_service = Arc::new(CoreService::new());
+        let uhura_service = Arc::new(UhuraService::new());
         let handle = tokio::spawn(async move {
             tonic::transport::Server::builder()
-                .add_service(core_api(core_service))
+                .add_service(uhura_api_server(uhura_service))
                 .serve_with_incoming_shutdown(listener, shutdown_rx.map(drop))
                 .await
         });
@@ -50,7 +49,7 @@ mod test {
     }
 
     async fn setup_uhura_client<P: AsRef<Path>>(socket: P) -> GrpcClientResult<UhuraClient> {
-        UhuraClient::connect_uds(socket.as_ref()).await
+        UhuraClient::connect_unix(socket.as_ref()).await
     }
 
     #[tokio::test]
@@ -60,7 +59,7 @@ mod test {
 
         let (shutdown_tx, handle, socket) = launch_uhura_server(root.path()).await;
         let client = setup_uhura_client(&socket).await.unwrap();
-        let result = client.core().status().await.unwrap();
+        let result = client.uhura().status().await.unwrap();
         shutdown_tx.send(()).unwrap();
         handle.await.unwrap().unwrap();
         assert_eq!(result.pid, std::process::id());
