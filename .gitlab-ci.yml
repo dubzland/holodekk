@@ -33,7 +33,7 @@ clippy:
   before_script:
     - rustc --version
     - cargo --version
-    - rustup component add clippy
+    - protoc --version
   script:
     - cargo clippy --verbose
 
