@@ -18,7 +18,6 @@ default:
 
 variables:
   CARGO_HOME: $CI_PROJECT_DIR/cargo
-  CI_DEBUG_SERVICES: "true"
   DOCKER_TLS_CERTDIR: "/certs"
 
 clippy:
