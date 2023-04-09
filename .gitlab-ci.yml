@@ -6,20 +6,20 @@ stages:
   - test
   - build
 
-default:
-  cache: &global_cache
-    key:
-      files:
-        - Cargo.lock
-    paths:
-      - .cargo/.crates.toml
-      - .cargo/.crates2.json
-      - .cargo/bin/
-      - .cargo/registry/index/
-      - .cargo/registry/cache/
-      - .cargo/git/db/
-      - target/
-    policy: pull-push
+cache: &global_cache
+  key:
+    files:
+      - Cargo.lock
+  paths:
+    - .cargo/.crates.toml
+    - .cargo/.crates2.json
+    - .cargo/bin/
+    - .cargo/registry/index/
+    - .cargo/registry/cache/
+    - .cargo/git/db/
+    - target/debug/deps
+    - target/debug/build
+  policy: pull-push
 
 variables:
   CARGO_HOME: $CI_PROJECT_DIR/.cargo
@@ -27,13 +27,6 @@ variables:
 
 clippy:
   stage: lint
-  cache:
-    <<: *global_cache
-    key:
-      files:
-        - Cargo.lock
-      prefix: clippy
-    when: 'always'
   before_script:
     - rustc --version
     - cargo --version
@@ -45,10 +38,7 @@ test:
   stage: test
   cache:
     <<: *global_cache
-    key:
-      files:
-        - Cargo.lock
-      prefix: test
+    policy: pull
   services:
     # Use alternate dind image
     # see here: https://gitlab.com/gitlab-org/gitlab-runner/-/issues/29130#note_1075191809
@@ -70,11 +60,7 @@ build:
   stage: build
   cache:
     <<: *global_cache
-    key:
-    key:
-      files:
-        - Cargo.lock
-      prefix: build
+    policy: pull
   before_script:
     - rustc --version
     - cargo --version
