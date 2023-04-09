@@ -12,12 +12,17 @@ default:
       files:
         - Cargo.lock
     paths:
-      - cargo/
+      - .cargo/.crates.toml
+      - .cargo/.crates2.json
+      - .cargo/bin/
+      - .cargo/registry/index/
+      - .cargo/registry/cache/
+      - .cargo/git/db/
       - target/
     policy: pull-push
 
 variables:
-  CARGO_HOME: $CI_PROJECT_DIR/cargo
+  CARGO_HOME: $CI_PROJECT_DIR/.cargo
   DOCKER_TLS_CERTDIR: "/certs"
 
 clippy:
