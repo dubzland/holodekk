@@ -13,12 +13,25 @@ enum RpcSubroutineStatusCode {
 	CRASHED = 3;
 }
 
+enum RpcSubroutineKind {
+	UNKNOWN_SUBROUTINE_KIND = 0;
+	RUBY = 1;
+}
+
 message RpcSubroutine {
+	string id = 1;
+	string name = 2;
+	string path = 3;
+	RpcSubroutineKind kind = 4;
+	repeated RpcSubroutineInstance instances = 5;
+}
+
+message RpcSubroutineInstance {
 	string fleet = 1;
 	string namespace = 2;
-	string name = 3;
-	string path = 4;
-	RpcSubroutineStatus status = 5;
+	string path = 3;
+	RpcSubroutineStatus status = 4;
+	string subroutine_id = 5;
 }
 
 message RpcStatusRequest {

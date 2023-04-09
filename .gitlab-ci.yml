@@ -2,52 +2,38 @@ image:
   name: gitlab-registry.dubzland.net/holodekk/rust-docker-ci:latest
 
 stages:
-  - lint
   - test
+  - lint
   - build
 
-default:
-  cache: &global_cache
-    key:
-      files:
-        - Cargo.lock
-    paths:
-      - cargo/
-      - target/
-    policy: pull-push
+cache: &global_cache
+  key:
+    files:
+      - Cargo.lock
+  paths:
+    - .cargo/.crates.toml
+    - .cargo/.crates2.json
+    - .cargo/bin/
+    - .cargo/registry/index/
+    - .cargo/registry/cache/
+    - .cargo/git/db/
+    - target/debug/deps
+    - target/debug/build
+  policy: pull-push
 
 variables:
-  CARGO_HOME: $CI_PROJECT_DIR/cargo
-  CI_DEBUG_SERVICES: "true"
+  CARGO_HOME: $CI_PROJECT_DIR/.cargo
   DOCKER_TLS_CERTDIR: "/certs"
-
-clippy:
-  stage: lint
-  cache:
-    <<: *global_cache
-    key:
-      files:
-        - Cargo.lock
-      prefix: clippy
-    when: 'always'
-  before_script:
-    - rustc --version
-    - cargo --version
-    - protoc --version
-  script:
-    - cargo clippy --verbose
 
 test:
   stage: test
-  cache:
-    <<: *global_cache
-    key:
-      files:
-        - Cargo.lock
-      prefix: test
   services:
-    - name: docker:23.0.1-dind
-    - name: registry
+    # Use alternate dind image
+    # see here: https://gitlab.com/gitlab-org/gitlab-runner/-/issues/29130#note_1075191809
+    # - name: docker:23.0.1-dind
+    - name: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/serversideup/docker-utility
+      alias: docker
+    - name: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/registry
   variables:
     DOCKER_HOST: "https://docker:2376"
     DOCKER_CERT_PATH: "/certs/client"
@@ -58,15 +44,23 @@ test:
   script:
     - cargo test --verbose
 
+clippy:
+  stage: lint
+  cache:
+    <<: *global_cache
+    policy: pull
+  before_script:
+    - rustc --version
+    - cargo --version
+    - protoc --version
+  script:
+    - cargo clippy --verbose
+
 build:
   stage: build
   cache:
     <<: *global_cache
-    key:
-    key:
-      files:
-        - Cargo.lock
-      prefix: build
+    policy: pull
   before_script:
     - rustc --version
     - cargo --version

@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::entities::Subroutine;
-use crate::repositories::{Repository, Result};
+pub(self) use crate::entities::Subroutine;
+pub(self) use crate::repositories::{Repository, Result};
 
-use super::{subroutine_key, MemoryRepository};
+pub(self) use super::MemoryRepository;
 
 #[async_trait]
 impl Repository for MemoryRepository {
@@ -12,14 +12,32 @@ impl Repository for MemoryRepository {
         Ok(subroutine)
     }
 
-    async fn subroutine_get<'a>(
+    async fn subroutine_get(&self, id: &str, include_instances: bool) -> Result<Subroutine> {
+        let mut subroutine = self.db.subroutines().get(id)?;
+        if include_instances {
+            let instances = self
+                .db
+                .subroutine_instances()
+                .get_all_by_subroutine(&subroutine)?;
+            subroutine.instances = Some(instances);
+        }
+        Ok(subroutine)
+    }
+
+    async fn subroutine_get_by_name(
         &self,
-        fleet: &'a str,
-        namespace: &'a str,
-        name: &'a str,
+        name: &str,
+        include_instances: bool,
     ) -> Result<Subroutine> {
-        let key = subroutine_key(fleet, namespace, name);
-        self.db.subroutines().get(&key)
+        let mut subroutine = self.db.subroutines().get_by_name(name)?;
+        if include_instances {
+            let instances = self
+                .db
+                .subroutine_instances()
+                .get_all_by_subroutine(&subroutine)?;
+            subroutine.instances = Some(instances);
+        }
+        Ok(subroutine)
     }
 }
 
@@ -29,6 +47,7 @@ mod tests {
 
     use rstest::*;
 
+    use crate::entities::fixtures::subroutine;
     use crate::repositories::memory::{MemoryDatabase, MemoryDatabaseKey};
 
     use super::*;
@@ -38,14 +57,9 @@ mod tests {
         Arc::new(MemoryDatabase::new())
     }
 
-    #[fixture]
-    fn subroutine() -> Subroutine {
-        Subroutine::new("test-fleet", "test-namespace", "test/sub", "/tmp")
-    }
-
     #[rstest]
     #[tokio::test]
-    async fn creates_subroutine(db: Arc<MemoryDatabase>, subroutine: Subroutine) -> Result<()> {
+    async fn creates_subroutine(db: Arc<MemoryDatabase>, subroutine: &Subroutine) -> Result<()> {
         let repo = MemoryRepository::new(db.clone());
 
         let result = repo.subroutine_create(subroutine.clone()).await;
@@ -53,20 +67,32 @@ mod tests {
         assert!(result.is_ok());
 
         let new_sub = db.subroutines().get(&subroutine.db_key())?;
-        assert_eq!(new_sub.name, subroutine.name);
+        assert_eq!(new_sub.id, subroutine.id);
         Ok(())
     }
 
     #[rstest]
     #[tokio::test]
-    async fn retrieves_subroutine(db: Arc<MemoryDatabase>, subroutine: Subroutine) -> Result<()> {
+    async fn retrieves_subroutine(db: Arc<MemoryDatabase>, subroutine: &Subroutine) -> Result<()> {
         db.subroutines().add(subroutine.clone())?;
         let repo = MemoryRepository::new(db.clone());
 
-        let sub = repo
-            .subroutine_get(&subroutine.fleet, &subroutine.namespace, &subroutine.name)
-            .await?;
-        assert_eq!(sub.name, subroutine.name);
+        let sub = repo.subroutine_get(&subroutine.id, false).await?;
+        assert_eq!(sub.id, subroutine.id);
+        Ok(())
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn retrieves_subroutine_by_name(
+        db: Arc<MemoryDatabase>,
+        subroutine: &Subroutine,
+    ) -> Result<()> {
+        db.subroutines().add(subroutine.clone())?;
+        let repo = MemoryRepository::new(db.clone());
+
+        let sub = repo.subroutine_get_by_name(&subroutine.name, false).await?;
+        assert_eq!(sub.id, subroutine.id);
         Ok(())
     }
 }

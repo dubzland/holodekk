@@ -1,18 +1,9 @@
 use std::collections::HashMap;
 use std::fmt;
-use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use super::ContainerManifest;
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum SubroutineStatus {
-    Unknown,
-    Stopped,
-    Running(u32),
-    Crashed,
-}
+use crate::entities::ContainerManifest;
 
 /// Object derived from dumping the subroutine configured by an extension.
 ///
@@ -62,30 +53,5 @@ impl SubroutineManifest {
 impl fmt::Display for SubroutineManifest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Name: {}", self.name)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Subroutine {
-    pub fleet: String,
-    pub namespace: String,
-    pub name: String,
-    pub path: PathBuf,
-    pub status: SubroutineStatus,
-}
-
-impl Subroutine {
-    pub fn new<S, P>(fleet: S, namespace: S, name: S, path: P) -> Self
-    where
-        P: AsRef<Path> + Into<PathBuf>,
-        S: AsRef<str> + Into<String>,
-    {
-        Self {
-            fleet: fleet.into(),
-            namespace: namespace.into(),
-            name: name.into(),
-            path: path.into(),
-            status: SubroutineStatus::Stopped,
-        }
     }
 }

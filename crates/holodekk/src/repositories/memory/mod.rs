@@ -1,103 +1,33 @@
+mod data;
+pub use data::*;
 mod subroutines;
 pub use subroutines::*;
 
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-};
+use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
 
-use crate::entities::Subroutine;
-
-use super::{Error, Result};
+use crate::entities::{Subroutine, SubroutineInstance};
 
 pub trait MemoryDatabaseKey {
     fn db_key(&self) -> String;
 }
 
-pub fn subroutine_key(fleet: &str, namespace: &str, name: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(fleet);
-    hasher.update(namespace);
-    hasher.update(name);
-    format!("{:x}", hasher.finalize())
-}
-
 impl MemoryDatabaseKey for Subroutine {
     fn db_key(&self) -> String {
-        subroutine_key(&self.fleet, &self.namespace, &self.name)
+        let mut hasher = Sha256::new();
+        hasher.update(&self.name);
+        format!("{:x}", hasher.finalize())
     }
 }
 
-#[derive(Debug)]
-pub struct RecordSet<T>
-where
-    T: Clone + MemoryDatabaseKey,
-{
-    records: RwLock<HashMap<String, T>>,
-}
-
-impl<T> Default for RecordSet<T>
-where
-    T: Clone + MemoryDatabaseKey,
-{
-    fn default() -> Self {
-        Self {
-            records: RwLock::new(HashMap::new()),
-        }
-    }
-}
-
-impl<T> RecordSet<T>
-where
-    T: Clone + MemoryDatabaseKey,
-{
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    pub fn add(&self, record: T) -> Result<()> {
-        if self.records.read().unwrap().contains_key(&record.db_key()) {
-            Err(Error::AlreadyExists)
-        } else {
-            self.records
-                .write()
-                .unwrap()
-                .insert(record.db_key(), record);
-            Ok(())
-        }
-    }
-
-    pub fn get(&self, key: &str) -> Result<T> {
-        if let Some(record) = self.records.read().unwrap().get(key) {
-            Ok(record.to_owned())
-        } else {
-            Err(Error::NotFound)
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct MemoryDatabase {
-    subroutines: Arc<RecordSet<Subroutine>>,
-}
-
-impl Default for MemoryDatabase {
-    fn default() -> Self {
-        Self {
-            subroutines: Arc::new(RecordSet::new()),
-        }
-    }
-}
-
-impl MemoryDatabase {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    pub fn subroutines(&self) -> Arc<RecordSet<Subroutine>> {
-        self.subroutines.clone()
+impl MemoryDatabaseKey for SubroutineInstance {
+    fn db_key(&self) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(&self.fleet);
+        hasher.update(&self.namespace);
+        hasher.update(&self.subroutine_id);
+        format!("{:x}", hasher.finalize())
     }
 }
 
@@ -122,35 +52,42 @@ impl MemoryRepository {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
     use rstest::*;
+
+    use crate::entities::fixtures::subroutine;
+    use crate::repositories::Result;
 
     use super::*;
 
-    #[fixture]
-    fn subroutine() -> Subroutine {
-        Subroutine::new("test-fleet", "test-namespace", "foo", PathBuf::from("/tmp"))
-    }
-
     #[rstest]
     #[test]
-    fn can_add_subroutine(subroutine: Subroutine) {
+    fn can_add_subroutine(subroutine: &Subroutine) {
         let db = MemoryDatabase::new();
 
-        let result = db.subroutines().add(subroutine);
+        let result = db.subroutines().add(subroutine.to_owned());
         assert!(result.is_ok())
     }
 
     #[rstest]
     #[test]
-    fn can_get_subroutine(subroutine: Subroutine) -> Result<()> {
+    fn can_get_subroutine(subroutine: &Subroutine) -> Result<()> {
         let db = MemoryDatabase::new();
-        let key = subroutine_key(&subroutine.fleet, &subroutine.namespace, &subroutine.name);
-        db.subroutines().add(subroutine)?;
+        // let key = subroutine_key(&subroutine.id);
+        db.subroutines().add(subroutine.clone())?;
 
-        let subroutine = db.subroutines().get(&key)?;
-        assert_eq!(subroutine.name, "foo");
+        let new_sub = db.subroutines().get(&subroutine.db_key())?;
+        assert_eq!(new_sub.path, subroutine.path);
+        Ok(())
+    }
+
+    #[rstest]
+    #[test]
+    fn can_get_subroutine_by_name(subroutine: &Subroutine) -> Result<()> {
+        let db = MemoryDatabase::new();
+        db.subroutines().add(subroutine.to_owned())?;
+
+        let new_sub = db.subroutines().get_by_name(&subroutine.name)?;
+        assert_eq!(new_sub.path, subroutine.path);
         Ok(())
     }
 }

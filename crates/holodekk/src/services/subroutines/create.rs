@@ -1,15 +1,20 @@
 use std::path::PathBuf;
 
-use crate::entities::{Subroutine, SubroutineStatus};
+use crate::entities::{Subroutine, SubroutineKind};
 use crate::repositories::Repository;
 use crate::services::{Error, Result};
 
 use super::SubroutinesService;
 
 #[derive(Clone, Debug)]
-pub struct SubroutineCreateInput {
-    pub name: String,
-    pub path: PathBuf,
+pub struct SubroutineCreateInput<S, P>
+where
+    S: Into<String> + AsRef<str> + std::fmt::Display,
+    P: Into<PathBuf>,
+{
+    pub name: S,
+    pub path: P,
+    pub kind: SubroutineKind,
 }
 
 impl<T> SubroutinesService<T>
@@ -17,25 +22,23 @@ where
     T: Repository,
 {
     /// Creates a Subroutine entry in the repository.
-    pub async fn create(&self, input: SubroutineCreateInput) -> Result<Subroutine> {
+    pub async fn create<S, P>(&self, input: SubroutineCreateInput<S, P>) -> Result<Subroutine>
+    where
+        S: Into<String> + AsRef<str> + std::fmt::Display,
+        P: Into<PathBuf>,
+    {
         // make sure this subroutine does not already exist
-        println!("Checking for subroutine with name: {}", input.name);
+        println!("Checking for subroutine with name: {}", input.name,);
         if self
             .repo
-            .subroutine_get(&self.fleet, &self.namespace, &input.name)
+            .subroutine_get_by_name(input.name.as_ref(), false)
             .await
             .is_ok()
         {
             return Err(Error::Duplicate);
         }
 
-        let subroutine = Subroutine {
-            fleet: self.fleet.clone(),
-            namespace: self.namespace.clone(),
-            name: input.name.to_owned(),
-            path: input.path.to_owned(),
-            status: SubroutineStatus::Stopped,
-        };
+        let subroutine = Subroutine::new(input.name, input.path, input.kind);
         let subroutine = self.repo.subroutine_create(subroutine).await?;
         Ok(subroutine)
     }
@@ -43,63 +46,50 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
     use std::sync::Arc;
 
     use rstest::*;
 
-    use crate::entities::{Subroutine, SubroutineStatus};
+    use crate::entities::fixtures::subroutine;
+    use crate::entities::Subroutine;
+    use crate::repositories::fixtures::repository;
     use crate::repositories::MockRepository;
     use crate::services::Error;
 
     use super::*;
 
-    #[fixture]
-    fn repository() -> MockRepository {
-        MockRepository::default()
-    }
-
-    #[fixture]
-    fn subroutine() -> Subroutine {
-        Subroutine {
-            fleet: "test-fleet".to_string(),
-            namespace: "test-namespace".to_string(),
-            name: "test".to_string(),
-            path: PathBuf::from("/tmp"),
-            status: SubroutineStatus::Stopped,
-        }
-    }
-
     #[rstest]
     #[tokio::test]
     async fn creates_subroutine(
         mut repository: MockRepository,
-        subroutine: Subroutine,
+        subroutine: &Subroutine,
     ) -> Result<()> {
         let input = SubroutineCreateInput {
-            name: subroutine.name.clone(),
+            name: &subroutine.name.clone(),
             path: subroutine.path.clone(),
+            kind: subroutine.kind,
         };
 
         let sub_name = subroutine.name.clone();
         repository
-            .expect_subroutine_get()
-            .withf(move |fleet, namespace, name| {
-                fleet == "test-fleet" && namespace == "test-namespace" && name == &sub_name
-            })
+            .expect_subroutine_get_by_name()
+            .withf(move |name, _inc| name == &sub_name)
             .return_const(Err(crate::repositories::Error::NotFound));
+
+        let sub_path = subroutine.path.clone();
+        let sub_name = subroutine.name.clone();
 
         repository
             .expect_subroutine_create()
-            .withf(|new_sub: &Subroutine| {
-                (*new_sub).name.eq("test") && (*new_sub).path.eq(&PathBuf::from("/tmp"))
+            .withf(move |new_sub: &Subroutine| {
+                (*new_sub).path.eq(&sub_path) && (*new_sub).name.eq(&sub_name)
             })
             .return_const(Ok(subroutine.clone()));
 
         let service = SubroutinesService::new(Arc::new(repository), "test-fleet", "test-namespace");
 
         let sub = service.create(input).await?;
-        assert_eq!(sub, subroutine);
+        assert_eq!(&sub, subroutine);
         Ok(())
     }
 
@@ -107,19 +97,20 @@ mod tests {
     #[tokio::test]
     async fn rejects_duplicate_subroutine_name(
         mut repository: MockRepository,
-        subroutine: Subroutine,
+        subroutine: &Subroutine,
     ) {
         let input = SubroutineCreateInput {
-            name: "test".into(),
-            path: "/tmp".into(),
+            name: &subroutine.name,
+            path: subroutine.path.clone(),
+            kind: subroutine.kind,
         };
 
+        let sub_name = subroutine.name.clone();
+
         repository
-            .expect_subroutine_get()
-            .withf(|fleet, namespace, name| {
-                fleet == "test-fleet" && namespace == "test-namespace" && name == "test"
-            })
-            .return_const(Ok(subroutine.clone()));
+            .expect_subroutine_get_by_name()
+            .withf(move |name, _inc| name == &sub_name)
+            .return_const(Ok(subroutine.to_owned()));
 
         let service = SubroutinesService::new(Arc::new(repository), "test-fleet", "test-namespace");
 

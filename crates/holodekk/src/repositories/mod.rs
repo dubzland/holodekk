@@ -22,10 +22,22 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[async_trait]
 pub trait Repository: Send + Sync + 'static {
     async fn subroutine_create(&self, subroutine: Subroutine) -> Result<Subroutine>;
-    async fn subroutine_get<'a>(
+    async fn subroutine_get(&self, id: &str, include_instances: bool) -> Result<Subroutine>;
+    async fn subroutine_get_by_name(
         &self,
-        fleet: &'a str,
-        namespace: &'a str,
-        name: &'a str,
+        name: &str,
+        include_instances: bool,
     ) -> Result<Subroutine>;
+}
+
+#[cfg(test)]
+pub(crate) mod fixtures {
+    use rstest::*;
+
+    use super::MockRepository;
+
+    #[fixture]
+    pub(crate) fn repository() -> MockRepository {
+        MockRepository::default()
+    }
 }
