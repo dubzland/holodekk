@@ -55,7 +55,6 @@ clippy:
     - protoc --version
   script:
     - cargo clippy --verbose
-    - ls -al .cargo/
 
 build:
   stage: build
