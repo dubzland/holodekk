@@ -36,6 +36,7 @@ where
         &self,
         request: Request<RpcStatusRequest>,
     ) -> std::result::Result<Response<RpcSubroutineStatus>, Status> {
+        // look up the subroutine instance by name
         let status = self.service.status(&request.into_inner().name).await?;
         let response: RpcSubroutineStatus = status.into();
 
