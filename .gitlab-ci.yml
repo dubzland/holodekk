@@ -2,8 +2,8 @@ image:
   name: gitlab-registry.dubzland.net/holodekk/rust-docker-ci:latest
 
 stages:
-  - lint
   - test
+  - lint
   - build
 
 cache: &global_cache
@@ -25,21 +25,8 @@ variables:
   CARGO_HOME: $CI_PROJECT_DIR/.cargo
   DOCKER_TLS_CERTDIR: "/certs"
 
-clippy:
-  stage: lint
-  before_script:
-    - rustc --version
-    - cargo --version
-    - protoc --version
-  script:
-    - cargo clippy --verbose
-    - ls -al .cargo/
-
 test:
   stage: test
-  cache:
-    <<: *global_cache
-    policy: pull
   services:
     # Use alternate dind image
     # see here: https://gitlab.com/gitlab-org/gitlab-runner/-/issues/29130#note_1075191809
@@ -56,6 +43,19 @@ test:
     - cargo --version
   script:
     - cargo test --verbose
+
+clippy:
+  stage: lint
+  cache:
+    <<: *global_cache
+    policy: pull
+  before_script:
+    - rustc --version
+    - cargo --version
+    - protoc --version
+  script:
+    - cargo clippy --verbose
+    - ls -al .cargo/
 
 build:
   stage: build
