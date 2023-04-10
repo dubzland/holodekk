@@ -23,9 +23,11 @@ pub use pb::subroutines::rpc_subroutines_server::{RpcSubroutines, RpcSubroutines
 
 mod status;
 pub use status::*;
+mod subroutine;
+pub use subroutine::*;
 
-use crate::entities::{Subroutine, SubroutineInstance, SubroutineKind, SubroutineStatus};
-use entities::{RpcSubroutine, RpcSubroutineInstance, RpcSubroutineKind};
+use crate::entities::{SubroutineInstance, SubroutineKind, SubroutineStatus};
+use entities::{RpcSubroutineInstance, RpcSubroutineKind};
 
 impl From<SubroutineKind> for RpcSubroutineKind {
     fn from(kind: SubroutineKind) -> Self {
@@ -36,46 +38,12 @@ impl From<SubroutineKind> for RpcSubroutineKind {
     }
 }
 
-impl From<Subroutine> for RpcSubroutine {
-    fn from(subroutine: Subroutine) -> Self {
-        let mut res = Self {
-            id: subroutine.id.clone(),
-            name: subroutine.name.clone(),
-            path: subroutine.path.as_os_str().to_str().unwrap().to_owned(),
-            kind: 0,
-            instances: vec![],
-        };
-
-        match subroutine.kind {
-            SubroutineKind::Ruby => res.set_kind(RpcSubroutineKind::Ruby),
-            SubroutineKind::Unknown => res.set_kind(RpcSubroutineKind::UnknownSubroutineKind),
-        };
-
-        if let Some(instances) = subroutine.instances {
-            res.instances = instances.into_iter().map(|i| i.into()).collect();
+impl From<RpcSubroutineKind> for SubroutineKind {
+    fn from(kind: RpcSubroutineKind) -> Self {
+        match kind {
+            RpcSubroutineKind::Ruby => SubroutineKind::Ruby,
+            RpcSubroutineKind::UnknownSubroutineKind => SubroutineKind::Unknown,
         }
-        res
-    }
-}
-
-impl From<RpcSubroutine> for Subroutine {
-    fn from(subroutine: RpcSubroutine) -> Self {
-        let kind = match RpcSubroutineKind::from_i32(subroutine.kind) {
-            Some(RpcSubroutineKind::Ruby) => SubroutineKind::Ruby,
-            Some(RpcSubroutineKind::UnknownSubroutineKind) => SubroutineKind::Unknown,
-            None => SubroutineKind::Unknown,
-        };
-        let mut res = Self {
-            id: subroutine.id,
-            name: subroutine.name,
-            path: subroutine.path.into(),
-            kind,
-            instances: None,
-        };
-        if subroutine.instances.is_empty() {
-            res.instances = Some(subroutine.instances.into_iter().map(|i| i.into()).collect());
-        }
-        res
     }
 }
 
