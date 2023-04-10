@@ -20,7 +20,7 @@ pub trait CliRuntime: Send + Sync + 'static {
         let repo = Arc::new(MemoryRepository::default());
         Arc::new(SubroutinesService::new(
             self.holodekk().config.clone(),
-            repo.clone(),
+            repo,
             namespace,
         ))
     }

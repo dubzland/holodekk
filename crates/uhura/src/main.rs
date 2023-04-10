@@ -213,7 +213,7 @@ fn main() -> Result<()> {
 
     // build the servers
     let repo = Arc::new(MemoryRepository::default());
-    let uhura_server = UhuraServer::new(config.clone(), &options.namespace, repo.clone());
+    let uhura_server = UhuraServer::new(config, &options.namespace, repo.clone());
     let uhura_listener_config = ConnectionInfo::from_options(
         options.uhura_port.as_ref(),
         options.uhura_address.as_ref(),

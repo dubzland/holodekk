@@ -38,7 +38,7 @@ impl From<RpcSubroutine> for Subroutine {
             kind,
             instances: None,
         };
-        if subroutine.instances.len() > 0 {
+        if !subroutine.instances.is_empty() {
             res.instances = Some(subroutine.instances.into_iter().map(|i| i.into()).collect());
         }
         res
