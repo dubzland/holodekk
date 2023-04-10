@@ -49,11 +49,14 @@ impl From<RpcSubroutine> for Subroutine {
 mod tests {
     use std::path::PathBuf;
 
+    use rstest::*;
+
     use super::*;
     use crate::apis::grpc::subroutines::proto::entities::{
         RpcSubroutineInstance, RpcSubroutineStatus, RpcSubroutineStatusCode,
     };
-    use crate::entities::{SubroutineInstance, SubroutineStatus};
+    use crate::entities::subroutine::instance::fixtures::subroutine_instance;
+    use crate::entities::SubroutineInstance;
 
     #[test]
     fn converts_to_subroutine_from_rpc_subroutine() {
@@ -73,7 +76,7 @@ mod tests {
             name: "test".to_owned(),
             path: "/tmp".into(),
             kind: RpcSubroutineKind::Ruby as i32,
-            instances: vec![rpc_subroutine_instance],
+            instances: vec![rpc_subroutine_instance.clone()],
         };
 
         let mut subroutine: Subroutine = rpc_subroutine.into();
@@ -86,32 +89,25 @@ mod tests {
         assert!(subroutine.instances.is_some());
 
         let instances = subroutine.instances.take().unwrap();
-        assert_eq!(instances[0].fleet, "test");
-        assert_eq!(instances[0].namespace, "test");
-        assert_eq!(instances[0].path, PathBuf::from("/tmp"));
-        assert!(matches!(instances[0].status, SubroutineStatus::Stopped));
-        assert_eq!(instances[0].subroutine_id, "abc123");
+        assert_eq!(instances.len(), 1);
+        assert_eq!(
+            instances[0],
+            SubroutineInstance::from(rpc_subroutine_instance)
+        );
     }
 
+    #[rstest]
     #[test]
-    fn converts_to_rpc_subroutine_from_subroutine() {
+    fn converts_to_rpc_subroutine_from_subroutine(subroutine_instance: SubroutineInstance) {
         let mut status = RpcSubroutineStatus::default();
         status.set_code(RpcSubroutineStatusCode::Stopped);
-
-        let subroutine_instance = SubroutineInstance {
-            fleet: "test".into(),
-            namespace: "test".into(),
-            path: "/tmp".into(),
-            status: SubroutineStatus::Stopped,
-            subroutine_id: "abc123".into(),
-        };
 
         let subroutine = Subroutine {
             id: "abc123".to_owned(),
             name: "test".to_owned(),
             path: "/tmp".into(),
             kind: SubroutineKind::Ruby,
-            instances: Some(vec![subroutine_instance]),
+            instances: Some(vec![subroutine_instance.clone()]),
         };
         let rpc_subroutine: RpcSubroutine = subroutine.into();
 
@@ -121,16 +117,10 @@ mod tests {
         assert_eq!(rpc_subroutine.kind, RpcSubroutineKind::Ruby as i32);
 
         let instances = rpc_subroutine.instances;
-        assert_eq!(instances[0].fleet, "test");
-        assert_eq!(instances[0].namespace, "test");
-        assert_eq!(instances[0].path, "/tmp");
+        assert_eq!(instances.len(), 1);
         assert_eq!(
-            instances[0].status,
-            Some(RpcSubroutineStatus {
-                code: RpcSubroutineStatusCode::Stopped as i32,
-                pid: None,
-            })
+            instances[0],
+            RpcSubroutineInstance::from(subroutine_instance)
         );
-        assert_eq!(instances[0].subroutine_id, "abc123");
     }
 }
