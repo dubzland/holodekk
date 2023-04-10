@@ -19,6 +19,40 @@ impl<T> Status for SubroutinesService<T>
 where
     T: Repository,
 {
+    /// Retrieves the status for a subroutine instance.
+    ///
+    /// Scopes to the fleet/namespace of the service.
+    ///
+    /// # Arguments
+    ///
+    /// `name` - Name of the subroutine
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// # use std::sync::Arc;
+    /// # use holodekk::entities::SubroutineKind;
+    /// # use holodekk::services::subroutines::{Create, SubroutineCreateInput};
+    /// use holodekk::HolodekkConfig;
+    /// use holodekk::services::subroutines::{Status, SubroutinesService};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let config = HolodekkConfig {
+    ///     fleet: "test".into(),
+    ///     root_path: "/tmp".into(),
+    ///     bin_path: "/tmp".into(),
+    /// };
+    /// let repo = holodekk::repositories::memory::MemoryRepository::default();
+    /// let service = SubroutinesService::new(Arc::new(config), Arc::new(repo), "test");
+    /// # service.create(SubroutineCreateInput {
+    /// #     name: "acme/widget-app".into(),
+    /// #     path: "/tmp".into(),
+    /// #     kind: SubroutineKind::Ruby,
+    /// #  }).await.unwrap();
+    /// let status = service.status("acme/widget-app").await.unwrap();
+    /// # }
+    /// ```
     async fn status(&self, name: &str) -> Result<SubroutineStatus> {
         let subroutine =
             self.repo
@@ -32,11 +66,10 @@ where
         if let Some(instances) = subroutine.instances {
             println!("instances: {:#?}", instances);
             // Scan the instances for one matching our fleet/namespace
-            if let Some(instance) = instances.iter().find(|i| {
-                println!("i.fleet:      {}", i.fleet);
-                println!("config.fleet: {}", self.config.fleet);
-                i.fleet == self.config.fleet && i.namespace == self.namespace
-            }) {
+            if let Some(instance) = instances
+                .iter()
+                .find(|i| i.fleet == self.config.fleet && i.namespace == self.namespace)
+            {
                 Ok(instance.status)
             } else {
                 Err(Error::NotFound)
@@ -53,10 +86,6 @@ mod tests {
 
     use rstest::*;
 
-    // use crate::entities::fixtures::{subroutine, subroutine_instance, subroutine_with_instance};
-    // use crate::entities::{Subroutine, SubroutineInstance, SubroutineStatus};
-    // use crate::repositories::{fixtures::repository, MockRepository};
-    // use crate::services::Error;
     use crate::{
         entities::{
             subroutine::fixtures::{subroutine, subroutine_with_instance},
@@ -119,6 +148,29 @@ mod tests {
             Arc::new(repository),
             namespace.clone(),
         );
+
+        let res = service.status(&subroutine.name).await;
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err(), Error::NotFound);
+        Ok(())
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn returns_not_found_when_no_instances_running(
+        holodekk_config: HolodekkConfig,
+        mut repository: MockRepository,
+        subroutine: Subroutine,
+    ) -> Result<()> {
+        let name = subroutine.name.clone();
+
+        repository
+            .expect_subroutine_get_by_name()
+            .withf(move |sub_name, include| sub_name == &name && include == &true)
+            .return_const(Ok(subroutine.clone()));
+
+        let service =
+            SubroutinesService::new(Arc::new(holodekk_config), Arc::new(repository), "test");
 
         let res = service.status(&subroutine.name).await;
         assert!(res.is_err());

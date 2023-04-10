@@ -67,7 +67,7 @@ impl Docker {
                 &_ => panic!("Invalid DOCKER_HOST specified: {}", url),
             }
         } else {
-            println!("Connecting via local socket");
+            debug!("Connecting via local socket");
             Self::connect_local()
         }
     }
