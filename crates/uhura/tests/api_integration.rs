@@ -13,7 +13,7 @@ use tokio_stream::wrappers::UnixListenerStream;
 use holodekk::errors::grpc::GrpcClientResult;
 
 use holodekk::{
-    apis::grpc::uhura::uhura_api_server, clients::uhura::UhuraClient, services::UhuraService,
+    apis::grpc::uhura::uhura_api_server, clients::uhura::UhuraClient, services::uhura::UhuraService,
 };
 
 #[cfg(test)]
