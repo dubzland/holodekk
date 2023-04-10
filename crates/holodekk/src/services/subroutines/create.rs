@@ -93,7 +93,6 @@ mod tests {
             Arc::new(holodekk_config),
             Arc::new(repository),
             "test-namespace",
-            "/tmp",
         );
 
         let sub = service.create(input).await?;
@@ -125,7 +124,6 @@ mod tests {
             Arc::new(holodekk_config),
             Arc::new(repository),
             "test-namespace",
-            "/tmp",
         );
 
         let res = service.create(input).await;

@@ -21,48 +21,11 @@ pub mod enums {}
 pub use pb::subroutines::rpc_subroutines_client::RpcSubroutinesClient;
 pub use pb::subroutines::rpc_subroutines_server::{RpcSubroutines, RpcSubroutinesServer};
 
+mod status;
+pub use status::*;
+
 use crate::entities::{Subroutine, SubroutineInstance, SubroutineKind, SubroutineStatus};
-use entities::{
-    RpcSubroutine, RpcSubroutineInstance, RpcSubroutineKind, RpcSubroutineStatus,
-    RpcSubroutineStatusCode,
-};
-
-impl From<SubroutineStatus> for RpcSubroutineStatus {
-    fn from(status: SubroutineStatus) -> Self {
-        let mut rpc_status = RpcSubroutineStatus::default();
-
-        match status {
-            SubroutineStatus::Unknown => {
-                rpc_status.set_code(RpcSubroutineStatusCode::UnknownSubroutineStatus);
-            }
-            SubroutineStatus::Stopped => {
-                rpc_status.set_code(RpcSubroutineStatusCode::Stopped);
-            }
-            SubroutineStatus::Running(pid) => {
-                rpc_status.set_code(RpcSubroutineStatusCode::Running);
-                rpc_status.pid = Some(pid as i32);
-            }
-            SubroutineStatus::Crashed => {
-                rpc_status.set_code(RpcSubroutineStatusCode::Crashed);
-            }
-        }
-        rpc_status
-    }
-}
-
-impl From<RpcSubroutineStatus> for SubroutineStatus {
-    fn from(response: RpcSubroutineStatus) -> Self {
-        match RpcSubroutineStatusCode::from_i32(response.code) {
-            Some(RpcSubroutineStatusCode::Stopped) => SubroutineStatus::Stopped,
-            Some(RpcSubroutineStatusCode::Running) => {
-                SubroutineStatus::Running(response.pid.unwrap() as u32)
-            }
-            Some(RpcSubroutineStatusCode::Crashed) => SubroutineStatus::Crashed,
-            Some(RpcSubroutineStatusCode::UnknownSubroutineStatus) => SubroutineStatus::Unknown,
-            None => SubroutineStatus::Unknown,
-        }
-    }
-}
+use entities::{RpcSubroutine, RpcSubroutineInstance, RpcSubroutineKind};
 
 impl From<SubroutineKind> for RpcSubroutineKind {
     fn from(kind: SubroutineKind) -> Self {

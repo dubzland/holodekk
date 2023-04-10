@@ -22,7 +22,6 @@ pub trait CliRuntime: Send + Sync + 'static {
             self.holodekk().config.clone(),
             repo.clone(),
             namespace,
-            &self.holodekk().config.root_path,
         ))
     }
     fn generate_manifest(&self) -> SubroutineManifest;

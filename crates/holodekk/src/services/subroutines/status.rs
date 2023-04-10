@@ -80,7 +80,6 @@ mod tests {
             Arc::new(holodekk_config),
             Arc::new(repository),
             namespace.clone(),
-            "/tmp",
         );
 
         let status = service.status(&subroutine_with_instance.name).await?;
@@ -108,7 +107,6 @@ mod tests {
             Arc::new(holodekk_config),
             Arc::new(repository),
             namespace.clone(),
-            "/tmp",
         );
 
         let res = service.status(&subroutine.name).await;

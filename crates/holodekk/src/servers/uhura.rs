@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use tokio::{
@@ -23,7 +22,6 @@ where
     config: Arc<HolodekkConfig>,
     namespace: String,
     repository: Arc<T>,
-    root: PathBuf,
     server_shutdown: Option<Sender<()>>,
     server_handle: Option<JoinHandle<std::result::Result<(), tonic::transport::Error>>>,
 }
@@ -32,16 +30,14 @@ impl<T> UhuraServer<T>
 where
     T: Repository,
 {
-    pub fn new<S, P>(config: Arc<HolodekkConfig>, namespace: S, repository: Arc<T>, root: P) -> Self
+    pub fn new<S>(config: Arc<HolodekkConfig>, namespace: S, repository: Arc<T>) -> Self
     where
         S: AsRef<str> + Into<String>,
-        P: Into<PathBuf>,
     {
         Self {
             config,
             namespace: namespace.into(),
             repository,
-            root: root.into(),
             server_shutdown: None,
             server_handle: None,
         }
@@ -55,7 +51,6 @@ where
             self.config.clone(),
             self.repository.clone(),
             &self.namespace,
-            &self.root,
         ));
         let uhura_server = tonic::transport::Server::builder()
             .add_service(uhura_api_server(uhura_service))
