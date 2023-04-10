@@ -1,5 +1,5 @@
 mod subroutines;
-pub use subroutines::SubroutinesService;
+pub use subroutines::{SubroutineCreateInput, SubroutinesService};
 mod uhura;
 pub use uhura::UhuraService;
 
@@ -11,6 +11,8 @@ pub enum Error {
     Duplicate,
     #[error("Entity not found")]
     NotFound,
+    #[error("Subroutine is already running")]
+    AlreadyRunning,
     #[error("Repository Error")]
     Repository(#[from] crate::repositories::Error),
 }
@@ -20,6 +22,7 @@ impl From<Error> for Status {
         match err {
             Error::NotFound => Self::not_found(err.to_string()),
             Error::Duplicate => Self::already_exists(err.to_string()),
+            Error::AlreadyRunning => Self::already_exists(err.to_string()),
             Error::Repository(err) => Self::internal(err.to_string()),
         }
     }

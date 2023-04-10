@@ -20,8 +20,8 @@ use crate::entities::ContainerManifest;
 /// let manifest: SubroutineManifest = serde_json::from_str(&json).unwrap();
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SubroutineManifest {
-    fleet: String,
-    namespace: String,
+    // fleet: String,
+    // namespace: String,
     name: String,
     container: ContainerManifest,
     environment: Option<HashMap<String, String>>,

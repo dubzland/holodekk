@@ -1,7 +1,8 @@
-mod instance;
-pub use instance::*;
-mod manifest;
-pub use manifest::*;
+pub(crate) mod instance;
+pub use instance::{SubroutineInstance, SubroutineStatus};
+
+pub(crate) mod manifest;
+pub use manifest::SubroutineManifest;
 
 use std::path::PathBuf;
 
@@ -44,5 +45,38 @@ impl Subroutine {
             kind,
             instances: None,
         }
+    }
+}
+
+#[cfg(test)]
+pub(crate) mod fixtures {
+    use rstest::*;
+
+    use crate::entities::subroutine::instance::fixtures::subroutine_instance;
+    use crate::{fixtures::holodekk_config, HolodekkConfig};
+
+    use super::*;
+
+    #[fixture]
+    pub(crate) fn subroutine() -> Subroutine {
+        Subroutine::new(
+            "test/sub",
+            "/tmp/holodekk/subroutines/test/sub",
+            SubroutineKind::Ruby,
+        )
+    }
+
+    #[fixture]
+    pub(crate) fn subroutine_with_instance(holodekk_config: HolodekkConfig) -> Subroutine {
+        let mut sub = Subroutine::new(
+            "test/sub",
+            "/tmp/holodekk/subroutines/test/sub",
+            SubroutineKind::Ruby,
+        );
+        sub.instances = Some(vec![subroutine_instance(
+            holodekk_config.clone(),
+            sub.clone(),
+        )]);
+        sub
     }
 }

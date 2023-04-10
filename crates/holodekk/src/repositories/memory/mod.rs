@@ -54,14 +54,14 @@ impl MemoryRepository {
 mod tests {
     use rstest::*;
 
-    use crate::entities::fixtures::subroutine;
+    use crate::entities::subroutine::fixtures::subroutine;
     use crate::repositories::Result;
 
     use super::*;
 
     #[rstest]
     #[test]
-    fn can_add_subroutine(subroutine: &Subroutine) {
+    fn can_add_subroutine(subroutine: Subroutine) {
         let db = MemoryDatabase::new();
 
         let result = db.subroutines().add(subroutine.to_owned());
@@ -70,7 +70,7 @@ mod tests {
 
     #[rstest]
     #[test]
-    fn can_get_subroutine(subroutine: &Subroutine) -> Result<()> {
+    fn can_get_subroutine(subroutine: Subroutine) -> Result<()> {
         let db = MemoryDatabase::new();
         // let key = subroutine_key(&subroutine.id);
         db.subroutines().add(subroutine.clone())?;
@@ -82,7 +82,7 @@ mod tests {
 
     #[rstest]
     #[test]
-    fn can_get_subroutine_by_name(subroutine: &Subroutine) -> Result<()> {
+    fn can_get_subroutine_by_name(subroutine: Subroutine) -> Result<()> {
         let db = MemoryDatabase::new();
         db.subroutines().add(subroutine.to_owned())?;
 

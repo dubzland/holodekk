@@ -47,7 +47,7 @@ mod tests {
 
     use rstest::*;
 
-    use crate::entities::fixtures::subroutine;
+    use crate::entities::subroutine::fixtures::subroutine;
     use crate::repositories::memory::{MemoryDatabase, MemoryDatabaseKey};
 
     use super::*;
@@ -59,7 +59,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn creates_subroutine(db: Arc<MemoryDatabase>, subroutine: &Subroutine) -> Result<()> {
+    async fn creates_subroutine(db: Arc<MemoryDatabase>, subroutine: Subroutine) -> Result<()> {
         let repo = MemoryRepository::new(db.clone());
 
         let result = repo.subroutine_create(subroutine.clone()).await;
@@ -73,7 +73,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn retrieves_subroutine(db: Arc<MemoryDatabase>, subroutine: &Subroutine) -> Result<()> {
+    async fn retrieves_subroutine(db: Arc<MemoryDatabase>, subroutine: Subroutine) -> Result<()> {
         db.subroutines().add(subroutine.clone())?;
         let repo = MemoryRepository::new(db.clone());
 
@@ -86,7 +86,7 @@ mod tests {
     #[tokio::test]
     async fn retrieves_subroutine_by_name(
         db: Arc<MemoryDatabase>,
-        subroutine: &Subroutine,
+        subroutine: Subroutine,
     ) -> Result<()> {
         db.subroutines().add(subroutine.clone())?;
         let repo = MemoryRepository::new(db.clone());

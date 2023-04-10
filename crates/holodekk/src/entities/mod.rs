@@ -3,10 +3,10 @@ pub use application::*;
 mod container;
 pub use container::*;
 
-#[cfg(test)]
-pub(crate) mod fixtures;
+pub(crate) mod subroutine;
+pub use subroutine::{
+    Subroutine, SubroutineInstance, SubroutineKind, SubroutineManifest, SubroutineStatus,
+};
 
-mod subroutine;
-pub use subroutine::*;
 mod uhura_status;
 pub use uhura_status::*;

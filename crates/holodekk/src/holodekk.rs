@@ -13,7 +13,8 @@ use crate::errors::HolodekkError;
 
 pub type HolodekkResult<T> = std::result::Result<T, HolodekkError>;
 
-pub struct HolodekkOptions {
+#[derive(Clone, Debug, PartialEq)]
+pub struct HolodekkConfig {
     pub fleet: String,
     pub root_path: PathBuf,
     pub bin_path: PathBuf,
@@ -22,26 +23,22 @@ pub struct HolodekkOptions {
 // #[derive(Debug)]
 #[derive(Clone, Debug)]
 pub struct Holodekk {
-    fleet: String,
-    root_path: PathBuf,
-    bin_path: PathBuf,
-    projectors: Arc<RwLock<HashMap<Uuid, Projector>>>,
+    pub config: Arc<HolodekkConfig>,
+    pub projectors: Arc<RwLock<HashMap<Uuid, Projector>>>,
 }
 
 impl Holodekk {
-    pub fn new(options: &HolodekkOptions) -> Self {
+    pub fn new(config: HolodekkConfig) -> Self {
         Self {
-            fleet: options.fleet.to_owned(),
-            root_path: options.root_path.to_owned(),
-            bin_path: options.bin_path.to_owned(),
+            config: Arc::new(config),
             projectors: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
     pub fn init(&self) -> std::io::Result<()> {
         // ensure the root path exists
-        if !self.root_path.exists() {
-            fs::create_dir_all(&self.root_path)?;
+        if !self.config.root_path.exists() {
+            fs::create_dir_all(&self.config.root_path)?;
         }
         Ok(())
     }
@@ -72,13 +69,13 @@ impl Holodekk {
             projector.handle()
         } else {
             // Spawn a projector
-            let mut projector_root = self.root_path.clone();
+            let mut projector_root = self.config.root_path.clone();
             projector_root.push(namespace);
             let projector = Projector::spawn(
-                &self.fleet,
+                &self.config.fleet,
                 namespace,
                 &projector_root,
-                &self.bin_path,
+                &self.config.bin_path,
                 None,
                 None,
             )?;
@@ -126,5 +123,21 @@ impl Holodekk {
         //     }
         // }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+pub mod fixtures {
+    use rstest::*;
+
+    use super::*;
+
+    #[fixture]
+    pub fn holodekk_config() -> HolodekkConfig {
+        HolodekkConfig {
+            fleet: "test".to_string(),
+            root_path: "/tmp".into(),
+            bin_path: "/bmp".into(),
+        }
     }
 }

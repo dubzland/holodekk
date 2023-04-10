@@ -31,6 +31,7 @@ use holodekk::{
         ConnectionInfo,
         ConnectionInfoError,
     },
+    HolodekkConfig,
 };
 
 #[derive(thiserror::Error, Debug)]
@@ -116,6 +117,10 @@ pub struct Options {
     #[arg(long, value_name = "file", required = true)]
     pidfile: PathBuf,
 
+    /// Root directory
+    #[arg(long = "sync-pipe")]
+    projector_root: PathBuf,
+
     /// Projector port
     #[arg(short, long)]
     projector_port: Option<u16>,
@@ -143,6 +148,14 @@ pub struct Options {
     /// Sync pipe FD
     #[arg(long = "sync-pipe")]
     syncpipe_fd: Option<i32>,
+
+    /// Holodekk root directory
+    #[arg(long, default_value = "/var/lib/holodekkd")]
+    holodekk_root: PathBuf,
+
+    /// Holodekk bin directory
+    #[arg(long, default_value = "/usr/local/bin/")]
+    holodekk_bin: PathBuf,
 }
 
 fn main() -> Result<()> {
@@ -192,9 +205,20 @@ fn main() -> Result<()> {
         }
     };
 
+    let config = Arc::new(HolodekkConfig {
+        fleet: options.fleet.to_owned(),
+        root_path: options.holodekk_root.to_owned(),
+        bin_path: options.holodekk_bin.to_owned(),
+    });
+
     // build the servers
     let repo = Arc::new(MemoryRepository::default());
-    let uhura_server = UhuraServer::new(&options.fleet, &options.namespace, repo.clone());
+    let uhura_server = UhuraServer::new(
+        config.clone(),
+        &options.namespace,
+        repo.clone(),
+        &options.projector_root,
+    );
     let uhura_listener_config = ConnectionInfo::from_options(
         options.uhura_port.as_ref(),
         options.uhura_address.as_ref(),

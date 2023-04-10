@@ -50,19 +50,22 @@ mod tests {
 
     use rstest::*;
 
-    use crate::entities::fixtures::subroutine;
-    use crate::entities::Subroutine;
-    use crate::repositories::fixtures::repository;
-    use crate::repositories::MockRepository;
-    use crate::services::Error;
+    use crate::{
+        entities::{subroutine::fixtures::subroutine, Subroutine},
+        fixtures::holodekk_config,
+        repositories::{fixtures::repository, MockRepository},
+        services::Error,
+        HolodekkConfig,
+    };
 
     use super::*;
 
     #[rstest]
     #[tokio::test]
     async fn creates_subroutine(
+        holodekk_config: HolodekkConfig,
         mut repository: MockRepository,
-        subroutine: &Subroutine,
+        subroutine: Subroutine,
     ) -> Result<()> {
         let input = SubroutineCreateInput {
             name: &subroutine.name.clone(),
@@ -86,18 +89,24 @@ mod tests {
             })
             .return_const(Ok(subroutine.clone()));
 
-        let service = SubroutinesService::new(Arc::new(repository), "test-fleet", "test-namespace");
+        let service = SubroutinesService::new(
+            Arc::new(holodekk_config),
+            Arc::new(repository),
+            "test-namespace",
+            "/tmp",
+        );
 
         let sub = service.create(input).await?;
-        assert_eq!(&sub, subroutine);
+        assert_eq!(&sub, &subroutine);
         Ok(())
     }
 
     #[rstest]
     #[tokio::test]
     async fn rejects_duplicate_subroutine_name(
+        holodekk_config: HolodekkConfig,
         mut repository: MockRepository,
-        subroutine: &Subroutine,
+        subroutine: Subroutine,
     ) {
         let input = SubroutineCreateInput {
             name: &subroutine.name,
@@ -112,7 +121,12 @@ mod tests {
             .withf(move |name, _inc| name == &sub_name)
             .return_const(Ok(subroutine.to_owned()));
 
-        let service = SubroutinesService::new(Arc::new(repository), "test-fleet", "test-namespace");
+        let service = SubroutinesService::new(
+            Arc::new(holodekk_config),
+            Arc::new(repository),
+            "test-namespace",
+            "/tmp",
+        );
 
         let res = service.create(input).await;
         assert!(res.is_err());
