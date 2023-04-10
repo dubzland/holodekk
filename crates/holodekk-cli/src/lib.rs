@@ -9,7 +9,7 @@ use thiserror::Error;
 
 use holodekk::entities::{SubroutineKind, SubroutineManifest};
 use holodekk::repositories::memory::MemoryRepository;
-use holodekk::services::{SubroutineCreateInput, SubroutinesService};
+use holodekk::services::subroutines::{Create, Status, SubroutineCreateInput, SubroutinesService};
 use holodekk::Holodekk;
 
 #[async_trait]
@@ -63,8 +63,8 @@ pub trait CliRuntime: Send + Sync + 'static {
     async fn create_subroutine(&self) -> holodekk::HolodekkResult<()> {
         let manifest = self.generate_manifest();
         let input = SubroutineCreateInput {
-            name: manifest.name(),
-            path: self.path(),
+            name: manifest.name().into(),
+            path: self.path().into(),
             kind: SubroutineKind::Ruby,
         };
         let subroutines_service = self.subroutine_service();

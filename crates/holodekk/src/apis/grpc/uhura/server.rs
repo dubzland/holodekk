@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tonic::{Request, Response, Status};
 
-use crate::services::UhuraService;
+use crate::services::uhura::UhuraService;
 
 use super::proto::entities::{RpcEmpty, RpcUhuraStatus};
 use super::proto::{RpcUhura, RpcUhuraServer};

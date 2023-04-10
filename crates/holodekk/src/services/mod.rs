@@ -1,11 +1,9 @@
-mod subroutines;
-pub use subroutines::{SubroutineCreateInput, SubroutinesService};
-mod uhura;
-pub use uhura::UhuraService;
+pub mod subroutines;
+pub mod uhura;
 
 use tonic::Status;
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Clone, Debug, PartialEq)]
 pub enum Error {
     #[error("Entity already exists")]
     Duplicate,

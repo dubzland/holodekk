@@ -1,5 +1,9 @@
 use std::path::PathBuf;
 
+use async_trait::async_trait;
+#[cfg(test)]
+use mockall::{automock, predicate::*};
+
 use crate::entities::{Subroutine, SubroutineKind};
 use crate::repositories::Repository;
 use crate::services::{Error, Result};
@@ -7,26 +11,25 @@ use crate::services::{Error, Result};
 use super::SubroutinesService;
 
 #[derive(Clone, Debug)]
-pub struct SubroutineCreateInput<S, P>
-where
-    S: Into<String> + AsRef<str> + std::fmt::Display,
-    P: Into<PathBuf>,
-{
-    pub name: S,
-    pub path: P,
+pub struct SubroutineCreateInput {
+    pub name: String,
+    pub path: PathBuf,
     pub kind: SubroutineKind,
 }
 
-impl<T> SubroutinesService<T>
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub trait Create {
+    async fn create(&self, input: SubroutineCreateInput) -> Result<Subroutine>;
+}
+
+#[async_trait]
+impl<T> Create for SubroutinesService<T>
 where
     T: Repository,
 {
     /// Creates a Subroutine entry in the repository.
-    pub async fn create<S, P>(&self, input: SubroutineCreateInput<S, P>) -> Result<Subroutine>
-    where
-        S: Into<String> + AsRef<str> + std::fmt::Display,
-        P: Into<PathBuf>,
-    {
+    async fn create(&self, input: SubroutineCreateInput) -> Result<Subroutine> {
         // make sure this subroutine does not already exist
         println!("Checking for subroutine with name: {}", input.name,);
         if self
@@ -68,7 +71,7 @@ mod tests {
         subroutine: Subroutine,
     ) -> Result<()> {
         let input = SubroutineCreateInput {
-            name: &subroutine.name.clone(),
+            name: subroutine.name.clone(),
             path: subroutine.path.clone(),
             kind: subroutine.kind,
         };
@@ -108,7 +111,7 @@ mod tests {
         subroutine: Subroutine,
     ) {
         let input = SubroutineCreateInput {
-            name: &subroutine.name,
+            name: subroutine.name.clone(),
             path: subroutine.path.clone(),
             kind: subroutine.kind,
         };

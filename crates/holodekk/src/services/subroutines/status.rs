@@ -1,14 +1,25 @@
+use async_trait::async_trait;
+#[cfg(test)]
+use mockall::{automock, predicate::*};
+
 use crate::entities::SubroutineStatus;
 use crate::repositories::Repository;
 use crate::services::{Error, Result};
 
 use super::SubroutinesService;
 
-impl<T> SubroutinesService<T>
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub trait Status: Sync {
+    async fn status(&self, name: &str) -> Result<SubroutineStatus>;
+}
+
+#[async_trait]
+impl<T> Status for SubroutinesService<T>
 where
     T: Repository,
 {
-    pub async fn status(&self, name: &str) -> Result<SubroutineStatus> {
+    async fn status(&self, name: &str) -> Result<SubroutineStatus> {
         let subroutine =
             self.repo
                 .subroutine_get_by_name(name, true)

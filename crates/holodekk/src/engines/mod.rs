@@ -4,7 +4,7 @@
 //! and pulling images to running container instances.
 //!
 //! Currently available engines:
-//!  - [Docker](docker::Docker)
+//!  - [Docker](crate::engines::docker::Docker)
 //!
 //! To add a new engine type to the system, you must first implement the actual
 //! [Image] type, and its associated [ImageTag].  This allows the image itself
@@ -111,7 +111,7 @@ impl Image {
 
 /// Trait implemented by engines to provide container image build.
 ///
-/// See [Docker](crate::docker::Docker) for examples.
+/// See [Docker](crate::engines::docker::Docker) for examples.
 #[async_trait]
 pub trait Build {
     /// Build a container image using the supplied context data.
@@ -135,7 +135,7 @@ pub trait Build {
 
 /// Trait implemented by engines to provide image management capabilities.
 ///
-/// See [Docker](crate::docker::Docker) for examples.
+/// See [Docker](crate::engines::docker::Docker) for examples.
 #[async_trait]
 pub trait Store {
     async fn images(&self, kind: ImageKind) -> Result<Vec<Image>>;

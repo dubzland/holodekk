@@ -8,7 +8,7 @@ use tokio::{
 use crate::{
     apis::grpc::{subroutines::subroutines_api_server, uhura::uhura_api_server},
     repositories::Repository,
-    services::{SubroutinesService, UhuraService},
+    services::{subroutines::SubroutinesService, uhura::UhuraService},
     utils::ConnectionInfo,
     HolodekkConfig,
 };
