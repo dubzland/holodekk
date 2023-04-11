@@ -2,9 +2,9 @@ use async_trait::async_trait;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
-use crate::entities::SubroutineStatus;
-use crate::repositories::SubroutineRepository;
-use crate::services::Result;
+use crate::core::{
+    entities::SubroutineStatus, repositories::SubroutineRepository, services::Result,
+};
 
 use super::{Status, SubroutinesService};
 

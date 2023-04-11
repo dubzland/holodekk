@@ -1,9 +1,9 @@
 use std::{collections::HashMap, sync::RwLock};
 
-use crate::entities::Projector;
-use crate::repositories::{Error, Result};
-
-use crate::repositories::memory::MemoryDatabaseKey;
+use crate::core::{
+    entities::Projector,
+    repositories::{memory::MemoryDatabaseKey, Error, Result},
+};
 
 #[derive(Debug)]
 pub struct ProjectorMemoryStore {

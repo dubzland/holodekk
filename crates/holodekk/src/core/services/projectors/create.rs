@@ -2,9 +2,11 @@ use async_trait::async_trait;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
-use crate::entities::Projector;
-use crate::repositories::ProjectorRepository;
-use crate::services::{Error, Result};
+use crate::core::{
+    entities::{self, Projector},
+    repositories::ProjectorRepository,
+    services::{Error, Result},
+};
 
 use super::ProjectorsService;
 
@@ -25,7 +27,7 @@ where
     T: ProjectorRepository,
 {
     async fn create(&self, input: ProjectorCreateInput) -> Result<Projector> {
-        let id = crate::entities::projector::generate_id(&self.config.fleet, &input.namespace);
+        let id = entities::projector::generate_id(&self.config.fleet, &input.namespace);
         if self.repo.projector_get(&id).await.is_ok() {
             return Err(Error::Duplicate);
         } else {

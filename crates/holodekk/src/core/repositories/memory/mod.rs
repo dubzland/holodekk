@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
 
-use crate::entities::{Projector, Subroutine, SubroutineInstance};
+use crate::core::entities::{Projector, Subroutine, SubroutineInstance};
 
 pub trait MemoryDatabaseKey {
     fn db_key(&self) -> String;
@@ -65,8 +65,8 @@ impl MemoryRepository {
 mod tests {
     use rstest::*;
 
-    use crate::entities::subroutine::fixtures::subroutine;
-    use crate::repositories::Result;
+    use crate::core::entities::subroutine::fixtures::subroutine;
+    use crate::core::repositories::Result;
 
     use super::*;
 

@@ -52,7 +52,7 @@ impl Subroutine {
 pub(crate) mod fixtures {
     use rstest::*;
 
-    use crate::entities::subroutine::instance::fixtures::subroutine_instance;
+    use crate::core::entities::subroutine::instance::fixtures::subroutine_instance;
     use crate::{config::fixtures::holodekk_config, config::HolodekkConfig};
 
     use super::*;

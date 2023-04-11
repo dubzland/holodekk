@@ -3,7 +3,7 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::entities::ContainerManifest;
+use crate::core::entities::ContainerManifest;
 
 /// Object derived from dumping the subroutine configured by an extension.
 ///

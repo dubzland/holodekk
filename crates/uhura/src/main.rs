@@ -23,7 +23,7 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 
 use holodekk::{
     config::HolodekkConfig,
-    repositories::{memory::MemoryRepository, ProjectorRepository, SubroutineRepository},
+    core::repositories::{memory::MemoryRepository, ProjectorRepository, SubroutineRepository},
     servers::{ProjectorConfig, ProjectorServer},
     utils::{
         // fs::cleanup as cleanup_socket,

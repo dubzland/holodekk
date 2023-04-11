@@ -4,9 +4,11 @@ use async_trait::async_trait;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
-use crate::entities::{Subroutine, SubroutineKind};
-use crate::repositories::SubroutineRepository;
-use crate::services::{Error, Result};
+use crate::core::{
+    entities::{Subroutine, SubroutineKind},
+    repositories::SubroutineRepository,
+    services::{Error, Result},
+};
 
 use super::SubroutinesService;
 
@@ -55,9 +57,11 @@ mod tests {
 
     use crate::{
         config::{fixtures::holodekk_config, HolodekkConfig},
-        entities::{subroutine::fixtures::subroutine, Subroutine},
-        repositories::{fixtures::subroutine_repository, MockSubroutineRepository},
-        services::Error,
+        core::{
+            entities::{subroutine::fixtures::subroutine, Subroutine},
+            repositories::{self, fixtures::subroutine_repository, MockSubroutineRepository},
+            services::Error,
+        },
     };
 
     use super::*;
@@ -79,7 +83,7 @@ mod tests {
         subroutine_repository
             .expect_subroutine_get_by_name()
             .withf(move |name, _inc| name == &sub_name)
-            .return_const(Err(crate::repositories::Error::NotFound));
+            .return_const(Err(repositories::Error::NotFound));
 
         let sub_path = subroutine.path.clone();
         let sub_name = subroutine.name.clone();

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
-use crate::entities::Projector;
-use crate::repositories::{Error, ProjectorRepository, Result};
+use crate::core::entities::Projector;
+use crate::core::repositories::{Error, ProjectorRepository, Result};
 
 use super::{MemoryDatabaseKey, MemoryRepository};
 
@@ -28,8 +28,11 @@ mod tests {
 
     use rstest::*;
 
-    use crate::entities::projector::fixtures::projector;
-    use crate::repositories::memory::{MemoryDatabase, MemoryDatabaseKey};
+    use crate::core::entities::projector::fixtures::projector;
+    use crate::core::repositories::{
+        self,
+        memory::{MemoryDatabase, MemoryDatabaseKey},
+    };
 
     use super::*;
 
@@ -66,7 +69,7 @@ mod tests {
         assert!(result.is_err());
 
         let err = result.unwrap_err();
-        assert!(matches!(err, crate::repositories::Error::AlreadyExists));
+        assert!(matches!(err, repositories::Error::AlreadyExists));
         Ok(())
     }
 }

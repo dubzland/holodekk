@@ -1,6 +1,6 @@
 use tonic::transport::Channel;
 
-use crate::entities::SubroutineStatus;
+use crate::core::entities::SubroutineStatus;
 use crate::errors::grpc::GrpcClientResult;
 
 use super::proto::entities::RpcStatusRequest;

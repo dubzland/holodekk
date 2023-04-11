@@ -40,7 +40,7 @@ pub mod fixtures {
     use rstest::*;
 
     use crate::config::{fixtures::holodekk_config, HolodekkConfig};
-    use crate::entities::{subroutine::fixtures::subroutine, Subroutine};
+    use crate::core::entities::{subroutine::fixtures::subroutine, Subroutine};
 
     use super::*;
 

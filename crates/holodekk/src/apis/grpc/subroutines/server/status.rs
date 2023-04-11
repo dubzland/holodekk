@@ -1,6 +1,6 @@
 use tonic::{Request, Response};
 
-use crate::services::subroutines::Status;
+use crate::core::services::subroutines::Status;
 
 use crate::apis::grpc::subroutines::proto::{
     entities::{RpcStatusRequest, RpcSubroutineStatus},
@@ -33,8 +33,8 @@ mod tests {
     use mockall::predicate::*;
     use rstest::*;
 
-    use crate::entities::SubroutineStatus;
-    use crate::services::{subroutines::MockStatus, Error};
+    use crate::core::entities::SubroutineStatus;
+    use crate::core::services::{subroutines::MockStatus, Error};
 
     use super::*;
 

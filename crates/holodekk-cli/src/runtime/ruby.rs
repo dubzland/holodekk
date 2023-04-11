@@ -9,8 +9,8 @@ use colored::*;
 
 use tar::Builder as TarBuilder;
 
+use holodekk::core::entities::{ContainerManifest, SubroutineManifest};
 use holodekk::engines::{docker, Build, ImageKind};
-use holodekk::entities::{ContainerManifest, SubroutineManifest};
 use holodekkd::holodekk::Holodekk;
 
 use super::CliRuntime;

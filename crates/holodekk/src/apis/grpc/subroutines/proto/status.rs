@@ -1,4 +1,4 @@
-use crate::entities::SubroutineStatus;
+use crate::core::entities::SubroutineStatus;
 
 use super::entities::{RpcSubroutineStatus, RpcSubroutineStatusCode};
 

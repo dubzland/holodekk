@@ -1,4 +1,4 @@
-use crate::entities::{Subroutine, SubroutineKind};
+use crate::core::entities::{Subroutine, SubroutineKind};
 
 use super::entities::{RpcSubroutine, RpcSubroutineKind};
 
@@ -51,7 +51,7 @@ mod tests {
 
     use rstest::*;
 
-    use crate::entities::{SubroutineInstance, SubroutineStatus};
+    use crate::core::entities::{SubroutineInstance, SubroutineStatus};
 
     use super::*;
     use crate::apis::grpc::subroutines::proto::entities::{

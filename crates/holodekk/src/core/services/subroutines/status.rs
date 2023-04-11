@@ -2,9 +2,11 @@ use async_trait::async_trait;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
-use crate::entities::SubroutineStatus;
-use crate::repositories::SubroutineRepository;
-use crate::services::{Error, Result};
+use crate::core::{
+    entities::SubroutineStatus,
+    repositories,
+    services::{Error, Result},
+};
 
 use super::SubroutinesService;
 
@@ -17,7 +19,7 @@ pub trait Status: Sync {
 #[async_trait]
 impl<T> Status for SubroutinesService<T>
 where
-    T: SubroutineRepository,
+    T: repositories::SubroutineRepository,
 {
     /// Retrieves the status for a subroutine instance.
     ///
@@ -59,7 +61,7 @@ where
                 .subroutine_get_by_name(name, true)
                 .await
                 .map_err(|e| match e {
-                    crate::repositories::Error::NotFound => Error::NotFound,
+                    repositories::Error::NotFound => Error::NotFound,
                     _ => Error::Repository(e),
                 })?;
 
@@ -88,13 +90,15 @@ mod tests {
 
     use crate::{
         config::{fixtures::holodekk_config, HolodekkConfig},
-        entities::{
-            subroutine::fixtures::{subroutine, subroutine_with_instance},
-            subroutine::instance::fixtures::subroutine_instance,
-            Subroutine, SubroutineInstance, SubroutineStatus,
+        core::{
+            entities::{
+                subroutine::fixtures::{subroutine, subroutine_with_instance},
+                subroutine::instance::fixtures::subroutine_instance,
+                Subroutine, SubroutineInstance, SubroutineStatus,
+            },
+            repositories::{self, fixtures::subroutine_repository, MockSubroutineRepository},
+            services::Error,
         },
-        repositories::{fixtures::subroutine_repository, MockSubroutineRepository},
-        services::Error,
     };
 
     use super::*;
@@ -140,7 +144,7 @@ mod tests {
         subroutine_repository
             .expect_subroutine_get_by_name()
             .withf(move |sub_name, include| sub_name == name && include == &true)
-            .return_const(Err(crate::repositories::Error::NotFound));
+            .return_const(Err(repositories::Error::NotFound));
 
         let service = SubroutinesService::new(
             Arc::new(holodekk_config),

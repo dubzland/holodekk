@@ -3,6 +3,8 @@ pub mod subroutines;
 
 use tonic::Status;
 
+use crate::core::repositories;
+
 #[derive(thiserror::Error, Clone, Debug, PartialEq)]
 pub enum Error {
     #[error("Entity already exists")]
@@ -12,7 +14,7 @@ pub enum Error {
     #[error("Subroutine is already running")]
     AlreadyRunning,
     #[error("Repository Error")]
-    Repository(#[from] crate::repositories::Error),
+    Repository(#[from] repositories::Error),
 }
 
 impl From<Error> for Status {

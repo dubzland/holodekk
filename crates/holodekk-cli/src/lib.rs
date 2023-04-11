@@ -7,9 +7,14 @@ use async_trait::async_trait;
 
 use thiserror::Error;
 
-use holodekk::entities::{SubroutineKind, SubroutineManifest};
-use holodekk::repositories::memory::MemoryRepository;
-use holodekk::services::subroutines::{Create, Status, SubroutineCreateInput, SubroutinesService};
+use holodekk::core::{
+    entities::{SubroutineKind, SubroutineManifest, SubroutineStatus},
+    repositories::memory::MemoryRepository,
+    services::{
+        self,
+        subroutines::{Create, Status, SubroutineCreateInput, SubroutinesService},
+    },
+};
 use holodekkd::holodekk::Holodekk;
 
 #[async_trait]
@@ -34,14 +39,14 @@ pub trait CliRuntime: Send + Sync + 'static {
         let subroutines_service = self.subroutine_service();
         match subroutines_service.status(manifest.name()).await {
             Ok(status) => {
-                if let holodekk::entities::SubroutineStatus::Running(pid) = status {
+                if let SubroutineStatus::Running(pid) = status {
                     println!("Running: {}", pid);
                 } else {
                     println!("Not running");
                     self.start_subroutine().await?;
                 }
             }
-            Err(holodekk::services::Error::NotFound) => {
+            Err(services::Error::NotFound) => {
                 eprintln!("Doesn't exist");
                 self.create_subroutine().await?;
                 self.start_subroutine().await?;

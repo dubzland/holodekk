@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::{
-    apis::grpc::applications::applications_api_server, repositories::SubroutineRepository,
+    apis::grpc::applications::applications_api_server, core::repositories::SubroutineRepository,
     utils::ConnectionInfo,
 };
 

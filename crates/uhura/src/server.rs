@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use holodekk::{
-    apis::grpc::subroutines::subroutines_api_server, config::HolodekkConfig,
-    repositories::SubroutineRepository, services::subroutines::SubroutinesService,
+    apis::grpc::subroutines::subroutines_api_server,
+    config::HolodekkConfig,
+    core::{repositories::SubroutineRepository, services::subroutines::SubroutinesService},
     utils::ConnectionInfo,
 };
 
