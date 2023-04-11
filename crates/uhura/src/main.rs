@@ -22,8 +22,9 @@ use serde::Serialize;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
 use holodekk::{
+    config::HolodekkConfig,
     repositories::{memory::MemoryRepository, Repository},
-    servers::{ProjectorServer, UhuraServer},
+    servers::ProjectorServer,
     utils::{
         // fs::cleanup as cleanup_socket,
         libsee,
@@ -31,8 +32,9 @@ use holodekk::{
         ConnectionInfo,
         ConnectionInfoError,
     },
-    HolodekkConfig,
 };
+
+use uhura::server::UhuraServer;
 
 #[derive(thiserror::Error, Debug)]
 enum Error {

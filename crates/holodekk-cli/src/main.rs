@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
 
-use holodekk::{Holodekk, HolodekkConfig, HolodekkResult};
+use holodekk::config::HolodekkConfig;
 use holodekk_cli::{runtime, CliRuntimeError};
+use holodekkd::holodekk::{Holodekk, HolodekkResult};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]

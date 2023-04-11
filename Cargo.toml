@@ -16,6 +16,8 @@ license-file = "LICENSE"
 
 [workspace.dependencies]
 holodekk = { path = "./crates/holodekk" }
+holodekkd = { path = "./crates/holodekkd" }
+uhura = { path = "./crates/uhura" }
 async-trait = "0.1.67"
 clap = { version = "4.1.6", features = ["derive"] }
 env_logger = "0.10.0"

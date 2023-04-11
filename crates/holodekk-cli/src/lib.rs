@@ -10,7 +10,7 @@ use thiserror::Error;
 use holodekk::entities::{SubroutineKind, SubroutineManifest};
 use holodekk::repositories::memory::MemoryRepository;
 use holodekk::services::subroutines::{Create, Status, SubroutineCreateInput, SubroutinesService};
-use holodekk::Holodekk;
+use holodekkd::holodekk::Holodekk;
 
 #[async_trait]
 pub trait CliRuntime: Send + Sync + 'static {
@@ -27,7 +27,7 @@ pub trait CliRuntime: Send + Sync + 'static {
     fn generate_manifest(&self) -> SubroutineManifest;
     fn path(&self) -> &Path;
     async fn build(&self);
-    async fn project(&self) -> holodekk::HolodekkResult<()> {
+    async fn project(&self) -> holodekkd::holodekk::HolodekkResult<()> {
         let manifest = self.generate_manifest();
 
         // Start a projector
@@ -60,7 +60,7 @@ pub trait CliRuntime: Send + Sync + 'static {
         Ok(())
     }
 
-    async fn create_subroutine(&self) -> holodekk::HolodekkResult<()> {
+    async fn create_subroutine(&self) -> holodekkd::holodekk::HolodekkResult<()> {
         let manifest = self.generate_manifest();
         let input = SubroutineCreateInput {
             name: manifest.name().into(),
@@ -80,7 +80,7 @@ pub trait CliRuntime: Send + Sync + 'static {
         }
     }
 
-    async fn start_subroutine(&self) -> holodekk::HolodekkResult<()> {
+    async fn start_subroutine(&self) -> holodekkd::holodekk::HolodekkResult<()> {
         Ok(())
     }
 }

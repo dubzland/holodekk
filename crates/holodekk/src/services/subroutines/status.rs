@@ -87,15 +87,14 @@ mod tests {
     use rstest::*;
 
     use crate::{
+        config::{fixtures::holodekk_config, HolodekkConfig},
         entities::{
             subroutine::fixtures::{subroutine, subroutine_with_instance},
             subroutine::instance::fixtures::subroutine_instance,
             Subroutine, SubroutineInstance, SubroutineStatus,
         },
-        fixtures::holodekk_config,
         repositories::{fixtures::repository, MockRepository},
         services::Error,
-        HolodekkConfig,
     };
 
     use super::*;

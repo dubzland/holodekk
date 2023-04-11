@@ -1,6 +1,4 @@
 pub mod grpc;
-mod holodekk;
-pub use self::holodekk::HolodekkError;
 
 use std::{error, fmt};
 

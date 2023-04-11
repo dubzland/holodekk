@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package uhura;
 
-import "common.proto";
-
 service RpcUhura {
-	rpc Status(common.RpcEmpty) returns (RpcUhuraStatus) {}
+	rpc Status(RpcUhuraStatusRequest) returns (RpcUhuraStatus) {}
 }
+
+message RpcUhuraStatusRequest {}
 
 message RpcUhuraStatus {
 	int32 pid = 1;

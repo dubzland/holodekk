@@ -1,6 +1,5 @@
 pub mod projector;
 pub mod subroutines;
-pub mod uhura;
 
 use tonic::Status;
 

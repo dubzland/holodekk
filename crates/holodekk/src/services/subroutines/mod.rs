@@ -9,8 +9,8 @@ pub use status::*;
 
 use std::sync::Arc;
 
+use crate::config::HolodekkConfig;
 use crate::repositories::Repository;
-use crate::HolodekkConfig;
 
 #[derive(Clone, Debug)]
 pub struct SubroutinesService<T>

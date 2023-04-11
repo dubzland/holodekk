@@ -1,9 +1,9 @@
 use std::fmt;
 use uuid::Uuid;
 
-use crate::clients::uhura::UhuraClient;
-use crate::errors::grpc::GrpcClientResult;
-use crate::utils::ConnectionInfo;
+use holodekk::errors::grpc::GrpcClientResult;
+use holodekk::utils::ConnectionInfo;
+use uhura::client::UhuraClient;
 
 #[derive(Clone, Debug)]
 pub struct ProjectorHandle {

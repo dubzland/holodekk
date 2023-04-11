@@ -1,5 +1,6 @@
-use super::entities::RpcSubroutineKind;
 use crate::entities::SubroutineKind;
+
+use super::entities::RpcSubroutineKind;
 
 impl From<SubroutineKind> for RpcSubroutineKind {
     fn from(kind: SubroutineKind) -> Self {
@@ -21,8 +22,9 @@ impl From<RpcSubroutineKind> for SubroutineKind {
 
 #[cfg(test)]
 mod tests {
-    use crate::apis::grpc::subroutines::proto::entities::RpcSubroutineKind;
     use crate::entities::SubroutineKind;
+
+    use crate::apis::grpc::subroutines::proto::entities::RpcSubroutineKind;
 
     #[test]
     fn converts_to_ruby_from_rpc_ruby() {

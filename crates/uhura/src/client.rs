@@ -8,9 +8,10 @@ use tokio::net::UnixStream;
 use tonic::transport::{Channel, Endpoint, Uri};
 use tower::service_fn;
 
-use crate::apis::grpc::subroutines::SubroutinesApiClient;
+use holodekk::apis::grpc::subroutines::SubroutinesApiClient;
+use holodekk::errors::grpc::GrpcClientResult;
+
 use crate::apis::grpc::uhura::UhuraApiClient;
-use crate::errors::grpc::GrpcClientResult;
 
 #[derive(Clone, Debug)]
 pub struct UhuraClient {

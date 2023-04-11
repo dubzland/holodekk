@@ -2,7 +2,7 @@ use std::fmt;
 
 use uuid::Uuid;
 
-use super::{error_chain_fmt, grpc::GrpcClientError};
+use holodekk::errors::{error_chain_fmt, grpc::GrpcClientError};
 
 #[derive(thiserror::Error)]
 pub enum HolodekkError {

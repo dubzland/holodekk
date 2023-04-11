@@ -1,7 +1,5 @@
 mod projector;
 pub use projector::*;
-mod uhura;
-pub use uhura::*;
 
 use std::net::SocketAddr;
 
@@ -12,7 +10,7 @@ use tonic::transport::server::TcpIncoming;
 
 use crate::utils::{fs::cleanup, ConnectionInfo};
 
-async fn run_server(
+pub async fn run_server(
     listener_config: ConnectionInfo,
     server: tonic::transport::server::Router,
     shutdown: Receiver<()>,

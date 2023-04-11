@@ -36,11 +36,11 @@ impl SubroutineInstance {
 }
 
 #[cfg(test)]
-pub(crate) mod fixtures {
+pub mod fixtures {
     use rstest::*;
 
+    use crate::config::{fixtures::holodekk_config, HolodekkConfig};
     use crate::entities::{subroutine::fixtures::subroutine, Subroutine};
-    use crate::{fixtures::holodekk_config, HolodekkConfig};
 
     use super::*;
 

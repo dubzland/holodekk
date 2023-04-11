@@ -16,8 +16,8 @@ use nix::{
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::errors::error_chain_fmt;
-use crate::utils::ConnectionInfo;
+use holodekk::errors::error_chain_fmt;
+use holodekk::utils::ConnectionInfo;
 
 pub use handle::*;
 

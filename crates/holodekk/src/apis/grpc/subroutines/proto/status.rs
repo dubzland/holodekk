@@ -1,5 +1,6 @@
-use super::entities::{RpcSubroutineStatus, RpcSubroutineStatusCode};
 use crate::entities::SubroutineStatus;
+
+use super::entities::{RpcSubroutineStatus, RpcSubroutineStatusCode};
 
 impl From<SubroutineStatus> for RpcSubroutineStatus {
     fn from(status: SubroutineStatus) -> Self {

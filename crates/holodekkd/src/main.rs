@@ -3,7 +3,8 @@ use std::sync::Arc;
 
 use clap::Parser;
 
-use holodekk::{Holodekk, HolodekkConfig};
+use holodekk::config::HolodekkConfig;
+use holodekkd::holodekk::Holodekk;
 
 use holodekkd::api;
 

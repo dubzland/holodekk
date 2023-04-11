@@ -11,7 +11,7 @@ use tar::Builder as TarBuilder;
 
 use holodekk::engines::{docker, Build, ImageKind};
 use holodekk::entities::{ContainerManifest, SubroutineManifest};
-use holodekk::Holodekk;
+use holodekkd::holodekk::Holodekk;
 
 use super::CliRuntime;
 

@@ -1,4 +1,4 @@
-use crate::services::Result;
+use holodekk::services::Result;
 
 use crate::entities::UhuraStatus;
 

@@ -1,15 +1,10 @@
 mod pb {
-    pub(crate) mod common {
-        tonic::include_proto!("common");
-    }
-
     pub(crate) mod subroutines {
         tonic::include_proto!("subroutines");
     }
 }
 
 pub mod entities {
-    pub use super::pb::common::RpcEmpty;
     pub use super::pb::subroutines::{
         RpcStatusRequest, RpcSubroutine, RpcSubroutineInstance, RpcSubroutineKind,
         RpcSubroutineStatus, RpcSubroutineStatusCode,

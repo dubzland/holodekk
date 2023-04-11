@@ -1,24 +1,17 @@
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use log::{debug, warn};
-
 use uuid::Uuid;
+
+use holodekk::config::HolodekkConfig;
 
 pub use crate::projector::{Projector, ProjectorHandle};
 
 use crate::errors::HolodekkError;
 
 pub type HolodekkResult<T> = std::result::Result<T, HolodekkError>;
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct HolodekkConfig {
-    pub fleet: String,
-    pub root_path: PathBuf,
-    pub bin_path: PathBuf,
-}
 
 // #[derive(Debug)]
 #[derive(Clone, Debug)]
@@ -123,21 +116,5 @@ impl Holodekk {
         //     }
         // }
         Ok(())
-    }
-}
-
-#[cfg(test)]
-pub mod fixtures {
-    use rstest::*;
-
-    use super::*;
-
-    #[fixture]
-    pub fn holodekk_config() -> HolodekkConfig {
-        HolodekkConfig {
-            fleet: "test".to_string(),
-            root_path: "/tmp".into(),
-            bin_path: "/bmp".into(),
-        }
     }
 }

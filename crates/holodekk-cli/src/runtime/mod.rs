@@ -5,7 +5,7 @@ use std::sync::Arc;
 mod ruby;
 
 use super::{CliRuntime, CliRuntimeError};
-use holodekk::Holodekk;
+use holodekkd::holodekk::Holodekk;
 
 pub fn detect(
     holodekk: Arc<Holodekk>,

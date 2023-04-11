@@ -5,7 +5,7 @@ use axum::{response::IntoResponse, routing::get, Extension, Json, Router};
 
 use serde::{Deserialize, Serialize};
 
-use holodekk::Holodekk;
+use crate::holodekk::Holodekk;
 
 pub struct ApiServices {
     holodekk: Arc<Holodekk>,

@@ -1,7 +1,7 @@
-pub(crate) mod instance;
+pub mod instance;
 pub use instance::{SubroutineInstance, SubroutineStatus};
 
-pub(crate) mod manifest;
+pub mod manifest;
 pub use manifest::SubroutineManifest;
 
 use std::path::PathBuf;
@@ -53,7 +53,7 @@ pub(crate) mod fixtures {
     use rstest::*;
 
     use crate::entities::subroutine::instance::fixtures::subroutine_instance;
-    use crate::{fixtures::holodekk_config, HolodekkConfig};
+    use crate::{config::fixtures::holodekk_config, config::HolodekkConfig};
 
     use super::*;
 

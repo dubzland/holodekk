@@ -5,15 +5,14 @@ use tokio::{
     task::JoinHandle,
 };
 
-use crate::{
-    apis::grpc::{subroutines::subroutines_api_server, uhura::uhura_api_server},
-    repositories::Repository,
-    services::{subroutines::SubroutinesService, uhura::UhuraService},
-    utils::ConnectionInfo,
-    HolodekkConfig,
+use holodekk::{
+    apis::grpc::subroutines::subroutines_api_server, config::HolodekkConfig,
+    repositories::Repository, services::subroutines::SubroutinesService, utils::ConnectionInfo,
 };
 
-use super::run_server;
+use crate::{apis::grpc::uhura::uhura_api_server, services::UhuraService};
+
+use holodekk::servers::run_server;
 
 pub struct UhuraServer<T>
 where
