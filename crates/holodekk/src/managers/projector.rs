@@ -1,11 +1,39 @@
 use log::debug;
 
+use crate::managers::{start_manager, ManagerHandle};
+
 #[derive(Debug)]
 pub enum ProjectorCommand {
     Spawn {
         name: String,
         resp: tokio::sync::oneshot::Sender<String>,
     },
+}
+
+#[derive(Debug)]
+pub struct ProjectorManager {
+    cmd_tx: tokio::sync::mpsc::Sender<ProjectorCommand>,
+    handle: ManagerHandle,
+}
+
+impl ProjectorManager {
+    fn new(cmd_tx: tokio::sync::mpsc::Sender<ProjectorCommand>, handle: ManagerHandle) -> Self {
+        Self { cmd_tx, handle }
+    }
+
+    pub fn start() -> Self {
+        let (cmd_tx, cmd_rx) = tokio::sync::mpsc::channel(32);
+        let handle = start_manager(cmd_rx, projector_manager);
+        Self::new(cmd_tx, handle)
+    }
+
+    pub async fn stop(self) {
+        self.handle.stop().await;
+    }
+
+    pub fn cmd_tx(&self) -> tokio::sync::mpsc::Sender<ProjectorCommand> {
+        self.cmd_tx.clone()
+    }
 }
 
 pub async fn projector_manager(
@@ -35,18 +63,15 @@ mod tests {
 
     #[tokio::test]
     async fn respond_to_spawn() {
-        let (cmd_tx, cmd_rx) = tokio::sync::mpsc::channel(32);
+        let manager = ProjectorManager::start();
         let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
-        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-        let handle = tokio::spawn(async { projector_manager(cmd_rx, shutdown_rx).await });
         let cmd = ProjectorCommand::Spawn {
             name: "test".into(),
             resp: resp_tx,
         };
-        cmd_tx.send(cmd).await.unwrap();
+        manager.cmd_tx().send(cmd).await.unwrap();
         let res: String = resp_rx.await.unwrap();
-        shutdown_tx.send(()).unwrap();
-        handle.await.unwrap();
+        manager.stop().await;
 
         assert_eq!(res, "spawned");
     }
