@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
 
-use crate::entities::{Subroutine, SubroutineInstance};
+use crate::entities::{Projector, Subroutine, SubroutineInstance};
 
 pub trait MemoryDatabaseKey {
     fn db_key(&self) -> String;
@@ -19,6 +19,15 @@ impl MemoryDatabaseKey for Subroutine {
     fn db_key(&self) -> String {
         let mut hasher = Sha256::new();
         hasher.update(&self.name);
+        format!("{:x}", hasher.finalize())
+    }
+}
+
+impl MemoryDatabaseKey for Projector {
+    fn db_key(&self) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(&self.fleet);
+        hasher.update(&self.namespace);
         format!("{:x}", hasher.finalize())
     }
 }

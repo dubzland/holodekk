@@ -3,8 +3,8 @@ pub use application::*;
 mod container;
 pub use container::*;
 
-mod projector;
-pub use projector::*;
+pub mod projector;
+pub use projector::Projector;
 
 pub mod subroutine;
 pub use subroutine::{

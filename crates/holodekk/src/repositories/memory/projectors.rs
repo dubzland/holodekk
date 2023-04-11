@@ -1,13 +1,68 @@
 use async_trait::async_trait;
 
 use crate::entities::Projector;
-use crate::repositories::{ProjectorRepository, Result};
+use crate::repositories::{Error, ProjectorRepository, Result};
 
-use super::MemoryRepository;
+use super::{MemoryDatabaseKey, MemoryRepository};
 
 #[async_trait]
 impl ProjectorRepository for MemoryRepository {
-    async fn projector_create(&self, _projector: Projector) -> Result<Projector> {
-        todo!()
+    async fn projector_create(&self, projector: Projector) -> Result<Projector> {
+        // Ensure the projector doesn't exist
+        if self.db.projectors().exists(&projector.db_key()) {
+            Err(Error::AlreadyExists)
+        } else {
+            self.db.projectors().add(projector.clone())?;
+            Ok(projector)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use rstest::*;
+
+    use crate::entities::projector::fixtures::projector;
+    use crate::repositories::memory::{MemoryDatabase, MemoryDatabaseKey};
+
+    use super::*;
+
+    #[fixture]
+    fn db() -> Arc<MemoryDatabase> {
+        Arc::new(MemoryDatabase::new())
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn creates_projector(db: Arc<MemoryDatabase>, projector: Projector) -> Result<()> {
+        let repo = MemoryRepository::new(db.clone());
+
+        let result = repo.projector_create(projector.clone()).await;
+
+        assert!(result.is_ok());
+
+        let new_projector = db.projectors().get(&projector.db_key())?;
+        assert_eq!(new_projector.id, projector.id);
+        Ok(())
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn prevents_creating_duplicates(
+        db: Arc<MemoryDatabase>,
+        projector: Projector,
+    ) -> Result<()> {
+        let repo = MemoryRepository::new(db.clone());
+        db.projectors().add(projector.clone())?;
+
+        let result = repo.projector_create(projector.clone()).await;
+
+        assert!(result.is_err());
+
+        let err = result.unwrap_err();
+        assert!(matches!(err, crate::repositories::Error::AlreadyExists));
+        Ok(())
     }
 }
