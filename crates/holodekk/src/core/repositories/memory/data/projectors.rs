@@ -47,4 +47,12 @@ impl ProjectorMemoryStore {
     pub fn exists(&self, id: &str) -> bool {
         self.records.read().unwrap().contains_key(id)
     }
+
+    pub fn delete(&self, id: &str) -> Result<()> {
+        if self.records.write().unwrap().remove(id).is_some() {
+            Ok(())
+        } else {
+            Err(Error::NotFound)
+        }
+    }
 }

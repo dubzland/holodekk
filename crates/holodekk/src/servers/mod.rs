@@ -48,7 +48,7 @@ pub fn start_grpc_server(
             })
         }
         ConnectionInfo::Unix { socket } => {
-            cleanup(&socket).unwrap();
+            cleanup(socket).unwrap();
             let uds = UnixListener::bind(socket).unwrap();
             let listener = UnixListenerStream::new(uds);
             tokio::spawn(async {

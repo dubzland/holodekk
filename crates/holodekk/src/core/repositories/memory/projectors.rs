@@ -20,6 +20,10 @@ impl ProjectorRepository for MemoryRepository {
     async fn projector_get(&self, id: &str) -> Result<Projector> {
         self.db.projectors().get(id)
     }
+
+    async fn projector_delete(&self, id: &str) -> Result<()> {
+        self.db.projectors().delete(id)
+    }
 }
 
 #[cfg(test)]

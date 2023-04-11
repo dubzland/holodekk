@@ -2,6 +2,8 @@ pub mod projector;
 
 use std::future::Future;
 
+use log::debug;
+
 #[derive(Debug)]
 pub struct ManagerHandle {
     shutdown_tx: tokio::sync::oneshot::Sender<()>,
@@ -25,17 +27,40 @@ impl ManagerHandle {
     }
 }
 
-pub type ManagerFn<R, F> =
-    fn(tokio::sync::mpsc::Receiver<R>, tokio::sync::oneshot::Receiver<()>) -> F;
+// pub type ManagerFn<R, F> = fn(tokio::sync::mpsc::Receiver<R>) -> F;
 
-pub fn start_manager<R, F>(
-    cmd_rx: tokio::sync::mpsc::Receiver<R>,
-    manager_fn: ManagerFn<R, F>,
+pub fn start_manager<F>(
+    // cmd_rx: tokio::sync::mpsc::Receiver<R>,
+    manager_fn: F,
 ) -> ManagerHandle
 where
     F: Future<Output = ()> + Send + 'static,
 {
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-    let task_handle = tokio::spawn(manager_fn(cmd_rx, shutdown_rx));
+    let task_handle = tokio::spawn(async move {
+        tokio::select! {
+            _ = async {
+                manager_fn.await
+            } => {}
+            _ = shutdown_rx => {
+                debug!("manager shutdown received");
+            }
+        }
+    });
     ManagerHandle::new(shutdown_tx, task_handle)
 }
+
+// pub type ManagerFn<R, F> =
+//     fn(tokio::sync::mpsc::Receiver<R>, tokio::sync::oneshot::Receiver<()>) -> F;
+
+// pub fn start_manager<R, F>(
+//     cmd_rx: tokio::sync::mpsc::Receiver<R>,
+//     manager_fn: ManagerFn<R, F>,
+// ) -> ManagerHandle
+// where
+//     F: Future<Output = ()> + Send + 'static,
+// {
+//     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+//     let task_handle = tokio::spawn(manager_fn(cmd_rx, shutdown_rx));
+//     ManagerHandle::new(shutdown_tx, task_handle)
+// }

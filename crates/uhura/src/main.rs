@@ -217,9 +217,9 @@ fn main() -> Result<()> {
     projector_root.push(options.namespace.clone());
 
     let projector_config = ProjectorConfig {
-        fleet: options.fleet.clone().into(),
+        fleet: options.fleet.clone(),
         namespace: "test".into(),
-        root: projector_root.into(),
+        root: projector_root,
         api_config: ConnectionInfo::from_options(
             options.projector_port.as_ref(),
             options.projector_address.as_ref(),
@@ -249,7 +249,8 @@ async fn main_loop<T>(
 where
     T: ProjectorRepository + SubroutineRepository,
 {
-    let mut uhura_server = UhuraServer::new(config, &options.namespace.clone(), repo.clone());
+    let mut uhura_server =
+        UhuraServer::new(config.clone(), options.namespace.clone(), repo.clone());
     let uhura_listener_config = ConnectionInfo::from_options(
         options.uhura_port.as_ref(),
         options.uhura_address.as_ref(),

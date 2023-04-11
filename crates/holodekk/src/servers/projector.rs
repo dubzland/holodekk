@@ -22,24 +22,22 @@ where
 {
     _repository: Arc<T>,
     projector_api: GrpcServerHandle,
-    // projector_tx: tokio::sync::mpsc::Sender<ProjectorCommand>,
-    // projector_handler: Option<ServerHandle<()>>,
 }
 
 impl<T> ProjectorServer<T>
 where
     T: SubroutineRepository,
 {
-    pub fn new(_repository: Arc<T>, projector_api: GrpcServerHandle) -> Self {
+    fn new(_repository: Arc<T>, projector_api: GrpcServerHandle) -> Self {
         Self {
             _repository,
             projector_api,
         }
     }
 
-    pub fn start(config: &ProjectorConfig, repository: Arc<T>) -> Self {
+    pub fn start(projector_config: &ProjectorConfig, repository: Arc<T>) -> Self {
         let projector_api = start_grpc_server(
-            &config.api_config,
+            &projector_config.api_config,
             tonic::transport::Server::builder().add_service(applications_api_server()),
         );
         Self::new(repository, projector_api)

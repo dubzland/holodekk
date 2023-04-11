@@ -15,6 +15,8 @@ pub enum Error {
     AlreadyRunning,
     #[error("Repository Error")]
     Repository(#[from] repositories::Error),
+    #[error("Projector Error")]
+    Projector(#[from] crate::managers::projector::SpawnError),
 }
 
 impl From<Error> for Status {
@@ -24,6 +26,7 @@ impl From<Error> for Status {
             Error::Duplicate => Self::already_exists(err.to_string()),
             Error::AlreadyRunning => Self::already_exists(err.to_string()),
             Error::Repository(err) => Self::internal(err.to_string()),
+            Error::Projector(err) => Self::internal(err.to_string()),
         }
     }
 }
