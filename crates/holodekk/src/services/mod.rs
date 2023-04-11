@@ -1,3 +1,4 @@
+pub mod projector;
 pub mod subroutines;
 pub mod uhura;
 
