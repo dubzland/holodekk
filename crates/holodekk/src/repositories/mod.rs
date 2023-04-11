@@ -22,6 +22,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[async_trait]
 pub trait ProjectorRepository: Send + Sync + 'static {
     async fn projector_create(&self, projector: Projector) -> Result<Projector>;
+    async fn projector_get(&self, id: &str) -> Result<Projector>;
 }
 
 #[cfg_attr(test, automock)]

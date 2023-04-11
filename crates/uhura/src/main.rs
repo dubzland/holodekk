@@ -24,7 +24,7 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 use holodekk::{
     config::HolodekkConfig,
     repositories::{memory::MemoryRepository, ProjectorRepository, SubroutineRepository},
-    servers::ProjectorServer,
+    servers::{ProjectorConfig, ProjectorServer},
     utils::{
         // fs::cleanup as cleanup_socket,
         libsee,
@@ -213,33 +213,26 @@ fn main() -> Result<()> {
         bin_path: options.holodekk_bin.to_owned(),
     });
 
-    // build the servers
-    let repo = Arc::new(MemoryRepository::default());
-    let uhura_server = UhuraServer::new(config, &options.namespace, repo.clone());
-    let uhura_listener_config = ConnectionInfo::from_options(
-        options.uhura_port.as_ref(),
-        options.uhura_address.as_ref(),
-        options.uhura_socket.as_ref(),
-    )
-    .unwrap();
-    let projector_server = ProjectorServer::new(&options.fleet, &options.namespace, repo);
-    let projector_listener_config = ConnectionInfo::from_options(
-        options.projector_port.as_ref(),
-        options.projector_address.as_ref(),
-        options.projector_socket.as_ref(),
-    )
-    .unwrap();
+    let mut projector_root = config.root_path.clone();
+    projector_root.push(options.namespace.clone());
+
+    let projector_config = ProjectorConfig {
+        fleet: options.fleet.clone().into(),
+        namespace: "test".into(),
+        root: projector_root.into(),
+        api_config: ConnectionInfo::from_options(
+            options.projector_port.as_ref(),
+            options.projector_address.as_ref(),
+            options.projector_socket.as_ref(),
+        )
+        .unwrap(),
+    };
 
     // re-enable signals
     sigprocmask(SigmaskHow::SIG_SETMASK, Some(&oldmask), None)?;
 
-    main_loop(
-        &options,
-        uhura_server,
-        uhura_listener_config,
-        projector_server,
-        projector_listener_config,
-    )?;
+    let repo = Arc::new(MemoryRepository::default());
+    main_loop(&options, config, projector_config, repo)?;
 
     cleanup(&options);
     info!("Shutdown complete.");
@@ -249,16 +242,23 @@ fn main() -> Result<()> {
 #[tokio::main]
 async fn main_loop<T>(
     options: &Options,
-    mut uhura_server: UhuraServer<T>,
-    uhura_config: ConnectionInfo,
-    mut projector_server: ProjectorServer<T>,
-    projector_config: ConnectionInfo,
+    config: Arc<HolodekkConfig>,
+    projector_config: ProjectorConfig,
+    repo: Arc<T>,
 ) -> std::result::Result<(), std::io::Error>
 where
     T: ProjectorRepository + SubroutineRepository,
 {
-    uhura_server.start(uhura_config);
-    projector_server.start(projector_config);
+    let mut uhura_server = UhuraServer::new(config, &options.namespace.clone(), repo.clone());
+    let uhura_listener_config = ConnectionInfo::from_options(
+        options.uhura_port.as_ref(),
+        options.uhura_address.as_ref(),
+        options.uhura_socket.as_ref(),
+    )
+    .unwrap();
+    uhura_server.start(uhura_listener_config);
+
+    let projector_server = ProjectorServer::start(&projector_config, repo);
 
     // Notify the holodekk of our state
     debug!("Sending status update to parent");
@@ -272,7 +272,7 @@ where
             debug!("SIGINT received.  Processing shutdown.");
 
             uhura_server.stop().await;
-            projector_server.stop().await;
+            projector_server.stop().await.unwrap();
         }
         SignalKind::Quit | SignalKind::Term => {
             debug!("Unexpected {} received.  Terminating immediately", signal);

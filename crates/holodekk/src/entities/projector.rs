@@ -5,7 +5,7 @@ use sha2::{Digest, Sha256};
 
 use crate::utils::ConnectionInfo;
 
-fn generate_id<S: AsRef<str>>(fleet: S, namespace: S) -> String {
+pub fn generate_id<S: AsRef<str>>(fleet: S, namespace: S) -> String {
     let mut hasher = Sha256::new();
     hasher.update(fleet.as_ref());
     hasher.update(namespace.as_ref());

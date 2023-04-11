@@ -1,4 +1,4 @@
-pub mod projector;
+pub mod projectors;
 pub mod subroutines;
 
 use tonic::Status;

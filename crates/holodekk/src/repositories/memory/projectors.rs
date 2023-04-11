@@ -16,6 +16,10 @@ impl ProjectorRepository for MemoryRepository {
             Ok(projector)
         }
     }
+
+    async fn projector_get(&self, id: &str) -> Result<Projector> {
+        self.db.projectors().get(id)
+    }
 }
 
 #[cfg(test)]

@@ -1,60 +1,52 @@
+use std::path::PathBuf;
 use std::sync::Arc;
 
-use tokio::{
-    sync::oneshot::{channel, Sender},
-    task::JoinHandle,
-};
-
 use crate::{
-    apis::grpc::applications::applications_api_server, repositories::ProjectorRepository,
+    apis::grpc::applications::applications_api_server, repositories::SubroutineRepository,
     utils::ConnectionInfo,
 };
 
-use super::run_server;
+use super::{start_grpc_server, GrpcServerHandle};
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ProjectorConfig {
+    pub fleet: String,
+    pub namespace: String,
+    pub root: PathBuf,
+    pub api_config: ConnectionInfo,
+}
 
 pub struct ProjectorServer<T>
 where
-    T: ProjectorRepository,
+    T: SubroutineRepository,
 {
-    _fleet: String,
-    _namespace: String,
     _repository: Arc<T>,
-    server_shutdown: Option<Sender<()>>,
-    server_handle: Option<JoinHandle<std::result::Result<(), tonic::transport::Error>>>,
+    projector_api: GrpcServerHandle,
+    // projector_tx: tokio::sync::mpsc::Sender<ProjectorCommand>,
+    // projector_handler: Option<ServerHandle<()>>,
 }
 
 impl<T> ProjectorServer<T>
 where
-    T: ProjectorRepository,
+    T: SubroutineRepository,
 {
-    pub fn new<S>(fleet: S, namespace: S, repository: Arc<T>) -> Self
-    where
-        S: AsRef<str> + Into<String>,
-    {
+    pub fn new(_repository: Arc<T>, projector_api: GrpcServerHandle) -> Self {
         Self {
-            _fleet: fleet.into(),
-            _namespace: namespace.into(),
-            _repository: repository,
-            server_shutdown: None,
-            server_handle: None,
+            _repository,
+            projector_api,
         }
     }
 
-    pub fn start(&mut self, listener_config: ConnectionInfo) {
-        let (server_shutdown, shutdown_rx) = channel();
-        let projector_server =
-            tonic::transport::Server::builder().add_service(applications_api_server());
-
-        let server_handle = tokio::spawn(async {
-            run_server(listener_config, projector_server, shutdown_rx).await
-        });
-
-        self.server_shutdown = Some(server_shutdown);
-        self.server_handle = Some(server_handle);
+    pub fn start(config: &ProjectorConfig, repository: Arc<T>) -> Self {
+        let projector_api = start_grpc_server(
+            &config.api_config,
+            tonic::transport::Server::builder().add_service(applications_api_server()),
+        );
+        Self::new(repository, projector_api)
     }
 
-    pub async fn stop(self) {
-        self.server_shutdown.unwrap().send(()).unwrap();
-        self.server_handle.unwrap().await.unwrap().unwrap();
+    pub async fn stop(self) -> Result<(), tonic::transport::Error> {
+        self.projector_api.stop().await?;
+        Ok(())
     }
 }
