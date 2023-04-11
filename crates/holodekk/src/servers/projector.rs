@@ -6,7 +6,7 @@ use tokio::{
 };
 
 use crate::{
-    apis::grpc::applications::applications_api_server, repositories::Repository,
+    apis::grpc::applications::applications_api_server, repositories::ProjectorRepository,
     utils::ConnectionInfo,
 };
 
@@ -14,7 +14,7 @@ use super::run_server;
 
 pub struct ProjectorServer<T>
 where
-    T: Repository,
+    T: ProjectorRepository,
 {
     _fleet: String,
     _namespace: String,
@@ -25,7 +25,7 @@ where
 
 impl<T> ProjectorServer<T>
 where
-    T: Repository,
+    T: ProjectorRepository,
 {
     pub fn new<S>(fleet: S, namespace: S, repository: Arc<T>) -> Self
     where

@@ -10,12 +10,12 @@ pub use status::*;
 use std::sync::Arc;
 
 use crate::config::HolodekkConfig;
-use crate::repositories::Repository;
+use crate::repositories::SubroutineRepository;
 
 #[derive(Clone, Debug)]
 pub struct SubroutinesService<T>
 where
-    T: Repository,
+    T: SubroutineRepository,
 {
     config: Arc<HolodekkConfig>,
     repo: Arc<T>,
@@ -24,7 +24,7 @@ where
 
 impl<T> SubroutinesService<T>
 where
-    T: Repository,
+    T: SubroutineRepository,
 {
     pub fn new<S>(config: Arc<HolodekkConfig>, repo: Arc<T>, namespace: S) -> Self
     where

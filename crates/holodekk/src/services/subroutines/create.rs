@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use mockall::{automock, predicate::*};
 
 use crate::entities::{Subroutine, SubroutineKind};
-use crate::repositories::Repository;
+use crate::repositories::SubroutineRepository;
 use crate::services::{Error, Result};
 
 use super::SubroutinesService;
@@ -26,7 +26,7 @@ pub trait Create {
 #[async_trait]
 impl<T> Create for SubroutinesService<T>
 where
-    T: Repository,
+    T: SubroutineRepository,
 {
     /// Creates a Subroutine entry in the repository.
     async fn create(&self, input: SubroutineCreateInput) -> Result<Subroutine> {
@@ -56,7 +56,7 @@ mod tests {
     use crate::{
         config::{fixtures::holodekk_config, HolodekkConfig},
         entities::{subroutine::fixtures::subroutine, Subroutine},
-        repositories::{fixtures::repository, MockRepository},
+        repositories::{fixtures::subroutine_repository, MockSubroutineRepository},
         services::Error,
     };
 
@@ -66,7 +66,7 @@ mod tests {
     #[tokio::test]
     async fn creates_subroutine(
         holodekk_config: HolodekkConfig,
-        mut repository: MockRepository,
+        mut subroutine_repository: MockSubroutineRepository,
         subroutine: Subroutine,
     ) -> Result<()> {
         let input = SubroutineCreateInput {
@@ -76,7 +76,7 @@ mod tests {
         };
 
         let sub_name = subroutine.name.clone();
-        repository
+        subroutine_repository
             .expect_subroutine_get_by_name()
             .withf(move |name, _inc| name == &sub_name)
             .return_const(Err(crate::repositories::Error::NotFound));
@@ -84,7 +84,7 @@ mod tests {
         let sub_path = subroutine.path.clone();
         let sub_name = subroutine.name.clone();
 
-        repository
+        subroutine_repository
             .expect_subroutine_create()
             .withf(move |new_sub: &Subroutine| {
                 (*new_sub).path.eq(&sub_path) && (*new_sub).name.eq(&sub_name)
@@ -93,7 +93,7 @@ mod tests {
 
         let service = SubroutinesService::new(
             Arc::new(holodekk_config),
-            Arc::new(repository),
+            Arc::new(subroutine_repository),
             "test-namespace",
         );
 
@@ -106,7 +106,7 @@ mod tests {
     #[tokio::test]
     async fn rejects_duplicate_subroutine_name(
         holodekk_config: HolodekkConfig,
-        mut repository: MockRepository,
+        mut subroutine_repository: MockSubroutineRepository,
         subroutine: Subroutine,
     ) {
         let input = SubroutineCreateInput {
@@ -117,14 +117,14 @@ mod tests {
 
         let sub_name = subroutine.name.clone();
 
-        repository
+        subroutine_repository
             .expect_subroutine_get_by_name()
             .withf(move |name, _inc| name == &sub_name)
             .return_const(Ok(subroutine.to_owned()));
 
         let service = SubroutinesService::new(
             Arc::new(holodekk_config),
-            Arc::new(repository),
+            Arc::new(subroutine_repository),
             "test-namespace",
         );
 

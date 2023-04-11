@@ -23,7 +23,7 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 
 use holodekk::{
     config::HolodekkConfig,
-    repositories::{memory::MemoryRepository, Repository},
+    repositories::{memory::MemoryRepository, ProjectorRepository, SubroutineRepository},
     servers::ProjectorServer,
     utils::{
         // fs::cleanup as cleanup_socket,
@@ -255,7 +255,7 @@ async fn main_loop<T>(
     projector_config: ConnectionInfo,
 ) -> std::result::Result<(), std::io::Error>
 where
-    T: Repository,
+    T: ProjectorRepository + SubroutineRepository,
 {
     uhura_server.start(uhura_config);
     projector_server.start(projector_config);

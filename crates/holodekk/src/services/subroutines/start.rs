@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use mockall::{automock, predicate::*};
 
 use crate::entities::SubroutineStatus;
-use crate::repositories::Repository;
+use crate::repositories::SubroutineRepository;
 use crate::services::Result;
 
 use super::{Status, SubroutinesService};
@@ -17,7 +17,7 @@ pub trait Start {
 #[async_trait]
 impl<T> Start for SubroutinesService<T>
 where
-    T: Repository,
+    T: SubroutineRepository,
 {
     async fn start(&self, name: &str) -> Result<SubroutineStatus> {
         match self.status(name).await? {

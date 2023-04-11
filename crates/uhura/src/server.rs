@@ -7,7 +7,8 @@ use tokio::{
 
 use holodekk::{
     apis::grpc::subroutines::subroutines_api_server, config::HolodekkConfig,
-    repositories::Repository, services::subroutines::SubroutinesService, utils::ConnectionInfo,
+    repositories::SubroutineRepository, services::subroutines::SubroutinesService,
+    utils::ConnectionInfo,
 };
 
 use crate::{apis::grpc::uhura::uhura_api_server, services::UhuraService};
@@ -16,7 +17,7 @@ use holodekk::servers::run_server;
 
 pub struct UhuraServer<T>
 where
-    T: Repository,
+    T: SubroutineRepository,
 {
     config: Arc<HolodekkConfig>,
     namespace: String,
@@ -27,7 +28,7 @@ where
 
 impl<T> UhuraServer<T>
 where
-    T: Repository,
+    T: SubroutineRepository,
 {
     pub fn new<S>(config: Arc<HolodekkConfig>, namespace: S, repository: Arc<T>) -> Self
     where

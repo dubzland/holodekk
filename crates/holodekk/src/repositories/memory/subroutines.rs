@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 
 pub(self) use crate::entities::Subroutine;
-pub(self) use crate::repositories::{Repository, Result};
+pub(self) use crate::repositories::{Result, SubroutineRepository};
 
 pub(self) use super::MemoryRepository;
 
 #[async_trait]
-impl Repository for MemoryRepository {
+impl SubroutineRepository for MemoryRepository {
     async fn subroutine_create(&self, subroutine: Subroutine) -> Result<Subroutine> {
         self.db.subroutines().add(subroutine.clone())?;
         Ok(subroutine)

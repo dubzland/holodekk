@@ -4,7 +4,7 @@ use async_trait::async_trait;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
-use super::entities::Subroutine;
+use super::entities::{Projector, Subroutine};
 
 #[derive(thiserror::Error, Clone, Copy, Debug, PartialEq)]
 pub enum Error {
@@ -20,7 +20,13 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait Repository: Send + Sync + 'static {
+pub trait ProjectorRepository: Send + Sync + 'static {
+    async fn projector_create(&self, projector: Projector) -> Result<Projector>;
+}
+
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub trait SubroutineRepository: Send + Sync + 'static {
     async fn subroutine_create(&self, subroutine: Subroutine) -> Result<Subroutine>;
     async fn subroutine_get(&self, id: &str, include_instances: bool) -> Result<Subroutine>;
     async fn subroutine_get_by_name(
@@ -34,10 +40,16 @@ pub trait Repository: Send + Sync + 'static {
 pub(crate) mod fixtures {
     use rstest::*;
 
-    use super::MockRepository;
+    use super::MockProjectorRepository;
+    use super::MockSubroutineRepository;
 
     #[fixture]
-    pub(crate) fn repository() -> MockRepository {
-        MockRepository::default()
+    pub(crate) fn projector_repository() -> MockProjectorRepository {
+        MockProjectorRepository::default()
+    }
+
+    #[fixture]
+    pub(crate) fn subroutine_repository() -> MockSubroutineRepository {
+        MockSubroutineRepository::default()
     }
 }
