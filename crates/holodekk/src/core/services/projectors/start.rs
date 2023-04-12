@@ -28,7 +28,7 @@ where
     T: ProjectorRepository,
 {
     async fn start(&self, input: ProjectorStartInput) -> Result<Projector> {
-        let id = entities::projector::generate_id(&self.config.fleet, &input.namespace);
+        let id = entities::projector::generate_id(&self.fleet, &input.namespace);
         if self.repo.projector_get(&id).await.is_ok() {
             Err(Error::Duplicate)
         } else {

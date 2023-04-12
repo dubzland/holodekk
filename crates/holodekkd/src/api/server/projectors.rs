@@ -1,27 +1,23 @@
-use actix_web::{error, get, post, web, web::Bytes, Error, HttpResponse, Responder, Result};
+use std::sync::Arc;
 
-use super::server::ApiServices;
+use axum::{extract::State, response::IntoResponse, routing::get, Json, Router};
 
-use holodekk_engine::{ImageKind, Store};
+use holodekk::core::repositories::ProjectorRepository;
+use holodekk::core::services::projectors::All;
 
-pub fn routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(images).service(build);
+use super::ApiServices;
+
+pub fn routes<T>() -> Router<Arc<ApiServices<T>>>
+where
+    T: ProjectorRepository,
+{
+    Router::new().route("/", get(list))
 }
 
-#[get("/images")]
-async fn images(services: web::Data<ApiServices>) -> Result<impl Responder> {
-    let images = services
-        .engine()
-        .images(ImageKind::Subroutine)
-        .await
-        .map_err(|_e| error::ErrorInternalServerError("Bogus"))?;
-    Ok(web::Json(images))
+async fn list<T>(State(state): State<Arc<ApiServices<T>>>) -> impl IntoResponse
+where
+    T: ProjectorRepository,
+{
+    let projectors = state.projectors().all().await.unwrap();
+    Json(projectors)
 }
-
-#[post("/build")]
-async fn build(_body: Bytes) -> Result<HttpResponse, Error> {
-    println!("Received build request.");
-    Ok(HttpResponse::Ok().body(""))
-}
-
-

@@ -56,7 +56,7 @@ mod tests {
     use rstest::*;
 
     use crate::{
-        config::{fixtures::holodekk_config, HolodekkConfig},
+        config::fixtures::{mock_config, MockConfig},
         core::{
             entities::{subroutine::fixtures::subroutine, Subroutine},
             repositories::{self, fixtures::subroutine_repository, MockSubroutineRepository},
@@ -69,7 +69,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn creates_subroutine(
-        holodekk_config: HolodekkConfig,
+        mock_config: MockConfig,
         mut subroutine_repository: MockSubroutineRepository,
         subroutine: Subroutine,
     ) -> Result<()> {
@@ -95,11 +95,7 @@ mod tests {
             })
             .return_const(Ok(subroutine.clone()));
 
-        let service = SubroutinesService::new(
-            Arc::new(holodekk_config),
-            Arc::new(subroutine_repository),
-            "test-namespace",
-        );
+        let service = SubroutinesService::new(&mock_config, Arc::new(subroutine_repository));
 
         let sub = service.create(input).await?;
         assert_eq!(&sub, &subroutine);
@@ -109,7 +105,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn rejects_duplicate_subroutine_name(
-        holodekk_config: HolodekkConfig,
+        mock_config: MockConfig,
         mut subroutine_repository: MockSubroutineRepository,
         subroutine: Subroutine,
     ) {
@@ -126,11 +122,7 @@ mod tests {
             .withf(move |name, _inc| name == &sub_name)
             .return_const(Ok(subroutine.to_owned()));
 
-        let service = SubroutinesService::new(
-            Arc::new(holodekk_config),
-            Arc::new(subroutine_repository),
-            "test-namespace",
-        );
+        let service = SubroutinesService::new(&mock_config, Arc::new(subroutine_repository));
 
         let res = service.create(input).await;
         assert!(res.is_err());

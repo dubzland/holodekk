@@ -1,3 +1,6 @@
+mod all;
+pub use all::*;
+
 mod start;
 pub use start::*;
 
@@ -17,7 +20,7 @@ pub struct ProjectorsService<T>
 where
     T: ProjectorRepository,
 {
-    config: Arc<HolodekkConfig>,
+    fleet: String,
     repo: Arc<T>,
     manager: Sender<ProjectorCommand>,
 }
@@ -26,13 +29,12 @@ impl<T> ProjectorsService<T>
 where
     T: ProjectorRepository,
 {
-    pub fn new(
-        config: Arc<HolodekkConfig>,
-        repo: Arc<T>,
-        manager: Sender<ProjectorCommand>,
-    ) -> Self {
+    pub fn new<C>(config: Arc<C>, repo: Arc<T>, manager: Sender<ProjectorCommand>) -> Self
+    where
+        C: HolodekkConfig,
+    {
         Self {
-            config,
+            fleet: config.fleet().to_string(),
             repo,
             manager,
         }

@@ -3,30 +3,54 @@ use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 
 use holodekk::{
-    config::HolodekkConfig,
-    core::repositories::ProjectorRepository,
+    config::{HolodekkApiConfig, HolodekkConfig},
+    core::repositories::{
+        memory::{MemoryDatabase, MemoryRepository},
+        RepositoryKind,
+    },
     managers::projector::{ProjectorCommand, ProjectorManager},
+    servers::{start_http_server, HttpServerHandle},
 };
+
+use crate::api::server::router;
 
 pub struct HolodekkServer {
     projector_manager: ProjectorManager,
+    api_server: HttpServerHandle,
 }
 
 impl HolodekkServer {
-    fn new(projector_manager: ProjectorManager) -> Self {
-        Self { projector_manager }
+    fn new(projector_manager: ProjectorManager, api_server: HttpServerHandle) -> Self {
+        Self {
+            projector_manager,
+            api_server,
+        }
     }
 
-    pub fn start<T>(holodekk_config: Arc<HolodekkConfig>, _repository: Arc<T>) -> Self
+    pub fn start<C>(config: Arc<C>) -> Self
     where
-        T: ProjectorRepository,
+        C: HolodekkConfig + HolodekkApiConfig,
     {
-        let projector_manager = ProjectorManager::start(holodekk_config);
-        Self::new(projector_manager)
+        let repo = match config.repo_kind() {
+            RepositoryKind::Memory => {
+                let db = MemoryDatabase::new();
+                Arc::new(MemoryRepository::new(Arc::new(db)))
+            }
+        };
+
+        let projector_manager = ProjectorManager::start(config.clone());
+
+        let api_config = config.holodekk_api_config().clone();
+        let api_server = start_http_server(
+            &api_config,
+            router(config, repo, projector_manager.cmd_tx()),
+        );
+        Self::new(projector_manager, api_server)
     }
 
     pub async fn stop(self) -> Result<(), tonic::transport::Error> {
         self.projector_manager.stop().await;
+        self.api_server.stop().await.unwrap();
         Ok(())
     }
 

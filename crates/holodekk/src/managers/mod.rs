@@ -27,12 +27,7 @@ impl ManagerHandle {
     }
 }
 
-// pub type ManagerFn<R, F> = fn(tokio::sync::mpsc::Receiver<R>) -> F;
-
-pub fn start_manager<F>(
-    // cmd_rx: tokio::sync::mpsc::Receiver<R>,
-    manager_fn: F,
-) -> ManagerHandle
+pub fn start_manager<F>(manager_fn: F) -> ManagerHandle
 where
     F: Future<Output = ()> + Send + 'static,
 {
@@ -49,18 +44,3 @@ where
     });
     ManagerHandle::new(shutdown_tx, task_handle)
 }
-
-// pub type ManagerFn<R, F> =
-//     fn(tokio::sync::mpsc::Receiver<R>, tokio::sync::oneshot::Receiver<()>) -> F;
-
-// pub fn start_manager<R, F>(
-//     cmd_rx: tokio::sync::mpsc::Receiver<R>,
-//     manager_fn: ManagerFn<R, F>,
-// ) -> ManagerHandle
-// where
-//     F: Future<Output = ()> + Send + 'static,
-// {
-//     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-//     let task_handle = tokio::spawn(manager_fn(cmd_rx, shutdown_rx));
-//     ManagerHandle::new(shutdown_tx, task_handle)
-// }

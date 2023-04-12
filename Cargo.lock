@@ -766,10 +766,13 @@ name = "holodekk"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "axum",
  "bollard",
  "clap",
+ "futures",
  "futures-core",
  "futures-util",
+ "hyper",
  "libc",
  "log",
  "mio",

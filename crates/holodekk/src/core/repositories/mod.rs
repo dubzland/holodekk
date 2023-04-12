@@ -1,6 +1,7 @@
 pub mod memory;
 
 use async_trait::async_trait;
+use clap::ValueEnum;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
@@ -18,12 +19,18 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Clone, Copy, Debug, PartialEq, ValueEnum)]
+pub enum RepositoryKind {
+    Memory,
+}
+
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait ProjectorRepository: Send + Sync + 'static {
     async fn projector_create(&self, projector: Projector) -> Result<Projector>;
     async fn projector_get(&self, id: &str) -> Result<Projector>;
     async fn projector_delete(&self, id: &str) -> Result<()>;
+    async fn projector_all(&self) -> Result<Vec<Projector>>;
 }
 
 #[cfg_attr(test, automock)]

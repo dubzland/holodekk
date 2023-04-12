@@ -39,19 +39,22 @@ impl SubroutineInstance {
 pub mod fixtures {
     use rstest::*;
 
-    use crate::config::{fixtures::holodekk_config, HolodekkConfig};
+    use crate::config::{
+        fixtures::{mock_config, MockConfig},
+        HolodekkConfig, ProjectorConfig,
+    };
     use crate::core::entities::{subroutine::fixtures::subroutine, Subroutine};
 
     use super::*;
 
     #[fixture]
     pub(crate) fn subroutine_instance(
-        holodekk_config: HolodekkConfig,
+        mock_config: MockConfig,
         subroutine: Subroutine,
     ) -> SubroutineInstance {
         SubroutineInstance::new(
-            &holodekk_config.fleet,
-            &"test-namespace".to_string(),
+            mock_config.fleet(),
+            mock_config.namespace(),
             "/tmp/holodekk/projector/local/subroutines/test/sub",
             &subroutine.id,
         )

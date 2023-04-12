@@ -9,6 +9,8 @@ use std::fmt;
 use std::net::Ipv4Addr;
 use std::path::{Path, PathBuf};
 
+use serde::Serialize;
+
 #[derive(thiserror::Error, Debug)]
 pub enum ConnectionInfoError {
     #[error("Options for both TCP and UDS were supplied")]
@@ -19,7 +21,7 @@ pub enum ConnectionInfoError {
     NotUnixSocket,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum ConnectionInfo {
     /// TCP based socket
     Tcp { port: u16, addr: Ipv4Addr },

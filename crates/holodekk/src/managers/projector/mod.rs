@@ -32,7 +32,10 @@ impl ProjectorManager {
         Self { cmd_tx, handle }
     }
 
-    pub fn start(config: Arc<HolodekkConfig>) -> Self {
+    pub fn start<C>(config: Arc<C>) -> Self
+    where
+        C: HolodekkConfig + 'static,
+    {
         let (cmd_tx, cmd_rx) = tokio::sync::mpsc::channel(32);
         let handle = start_manager(projector_manager(config, cmd_rx));
         Self::new(cmd_tx, handle)
@@ -47,10 +50,13 @@ impl ProjectorManager {
     }
 }
 
-pub async fn projector_manager(
-    config: Arc<HolodekkConfig>,
+pub async fn projector_manager<C>(
+    config: Arc<C>,
     mut cmd_rx: tokio::sync::mpsc::Receiver<ProjectorCommand>,
-) {
+) where
+    C: HolodekkConfig,
+{
+    let config = config.clone();
     while let Some(cmd) = cmd_rx.recv().await {
         match cmd {
             ProjectorCommand::Spawn { namespace, resp } => {
@@ -59,7 +65,7 @@ pub async fn projector_manager(
                 resp.send(Ok(projector)).unwrap();
             }
             ProjectorCommand::Shutdown { projector, resp } => {
-                shutdown_projector(config.clone(), projector.clone()).unwrap();
+                shutdown_projector(projector.clone()).unwrap();
                 resp.send(Ok(())).unwrap();
             }
         }
@@ -68,15 +74,15 @@ pub async fn projector_manager(
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
+    use crate::config::fixtures::mock_config;
+
     use super::*;
 
     #[tokio::test]
     async fn respond_to_spawn() {
-        let config = HolodekkConfig {
-            fleet: "test".into(),
-            root_path: "/tmp".into(),
-            bin_path: "/tmp".into(),
-        };
+        let config = mock_config();
         let manager = ProjectorManager::start(Arc::new(config));
         manager.stop().await;
     }

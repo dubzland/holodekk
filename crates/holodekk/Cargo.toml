@@ -7,9 +7,12 @@ license-file.workspace = true
 
 [dependencies]
 async-trait.workspace = true
+axum.workspace = true
 clap.workspace = true
+futures.workspace = true
 futures-core.workspace = true
 futures-util.workspace = true
+hyper.workspace = true
 log.workspace = true
 mio.workspace = true
 nix.workspace = true

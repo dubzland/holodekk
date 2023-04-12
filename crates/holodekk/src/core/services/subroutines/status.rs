@@ -4,7 +4,7 @@ use mockall::{automock, predicate::*};
 
 use crate::core::{
     entities::SubroutineStatus,
-    repositories,
+    repositories::{self, SubroutineRepository},
     services::{Error, Result},
 };
 
@@ -19,7 +19,7 @@ pub trait Status: Sync {
 #[async_trait]
 impl<T> Status for SubroutinesService<T>
 where
-    T: repositories::SubroutineRepository,
+    T: SubroutineRepository,
 {
     /// Retrieves the status for a subroutine instance.
     ///
@@ -70,7 +70,7 @@ where
             // Scan the instances for one matching our fleet/namespace
             if let Some(instance) = instances
                 .iter()
-                .find(|i| i.fleet == self.config.fleet && i.namespace == self.namespace)
+                .find(|i| i.fleet == self.fleet && i.namespace == self.namespace)
             {
                 Ok(instance.status)
             } else {
@@ -89,12 +89,11 @@ mod tests {
     use rstest::*;
 
     use crate::{
-        config::{fixtures::holodekk_config, HolodekkConfig},
+        config::fixtures::{mock_config, MockConfig},
         core::{
             entities::{
                 subroutine::fixtures::{subroutine, subroutine_with_instance},
-                subroutine::instance::fixtures::subroutine_instance,
-                Subroutine, SubroutineInstance, SubroutineStatus,
+                Subroutine, SubroutineStatus,
             },
             repositories::{self, fixtures::subroutine_repository, MockSubroutineRepository},
             services::Error,
@@ -106,12 +105,10 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_status_for_existing_subroutine_instance(
-        holodekk_config: HolodekkConfig,
+        mock_config: MockConfig,
         mut subroutine_repository: MockSubroutineRepository,
         subroutine_with_instance: Subroutine,
-        subroutine_instance: SubroutineInstance,
     ) -> Result<()> {
-        let namespace = subroutine_instance.namespace.clone();
         let name = subroutine_with_instance.name.clone();
 
         subroutine_repository
@@ -119,11 +116,7 @@ mod tests {
             .withf(move |sub_name, include| sub_name == &name && include == &true)
             .return_const(Ok(subroutine_with_instance.clone()));
 
-        let service = SubroutinesService::new(
-            Arc::new(holodekk_config),
-            Arc::new(subroutine_repository),
-            namespace.clone(),
-        );
+        let service = SubroutinesService::new(&mock_config, Arc::new(subroutine_repository));
 
         let status = service.status(&subroutine_with_instance.name).await?;
         assert_eq!(status, SubroutineStatus::Unknown);
@@ -133,12 +126,10 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_not_found_for_missing_subroutine(
-        holodekk_config: HolodekkConfig,
+        mock_config: MockConfig,
         mut subroutine_repository: MockSubroutineRepository,
         subroutine: Subroutine,
-        subroutine_instance: SubroutineInstance,
     ) -> Result<()> {
-        let namespace = subroutine_instance.namespace.clone();
         let name = subroutine.name.clone();
 
         subroutine_repository
@@ -146,11 +137,7 @@ mod tests {
             .withf(move |sub_name, include| sub_name == name && include == &true)
             .return_const(Err(repositories::Error::NotFound));
 
-        let service = SubroutinesService::new(
-            Arc::new(holodekk_config),
-            Arc::new(subroutine_repository),
-            namespace.clone(),
-        );
+        let service = SubroutinesService::new(&mock_config, Arc::new(subroutine_repository));
 
         let res = service.status(&subroutine.name).await;
         assert!(res.is_err());
@@ -161,7 +148,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_not_found_when_no_instances_running(
-        holodekk_config: HolodekkConfig,
+        mock_config: MockConfig,
         mut subroutine_repository: MockSubroutineRepository,
         subroutine: Subroutine,
     ) -> Result<()> {
@@ -172,11 +159,7 @@ mod tests {
             .withf(move |sub_name, include| sub_name == &name && include == &true)
             .return_const(Ok(subroutine.clone()));
 
-        let service = SubroutinesService::new(
-            Arc::new(holodekk_config),
-            Arc::new(subroutine_repository),
-            "test",
-        );
+        let service = SubroutinesService::new(&mock_config, Arc::new(subroutine_repository));
 
         let res = service.status(&subroutine.name).await;
         assert!(res.is_err());

@@ -1,5 +1,6 @@
 pub mod api;
+pub mod config;
 pub mod errors;
-pub mod holodekk;
-pub mod projector;
 pub mod server;
+
+pub type HolodekkResult<T> = std::result::Result<T, errors::HolodekkError>;

@@ -55,4 +55,15 @@ impl ProjectorMemoryStore {
             Err(Error::NotFound)
         }
     }
+
+    pub fn all(&self) -> Result<Vec<Projector>> {
+        let projectors: Vec<Projector> = self
+            .records
+            .read()
+            .unwrap()
+            .values()
+            .map(|p| p.to_owned())
+            .collect();
+        Ok(projectors)
+    }
 }

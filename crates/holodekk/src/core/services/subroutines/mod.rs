@@ -9,7 +9,7 @@ pub use status::*;
 
 use std::sync::Arc;
 
-use crate::config::HolodekkConfig;
+use crate::config::{HolodekkConfig, ProjectorConfig};
 use crate::core::repositories::SubroutineRepository;
 
 #[derive(Clone, Debug)]
@@ -17,7 +17,7 @@ pub struct SubroutinesService<T>
 where
     T: SubroutineRepository,
 {
-    config: Arc<HolodekkConfig>,
+    fleet: String,
     repo: Arc<T>,
     namespace: String,
 }
@@ -26,14 +26,14 @@ impl<T> SubroutinesService<T>
 where
     T: SubroutineRepository,
 {
-    pub fn new<S>(config: Arc<HolodekkConfig>, repo: Arc<T>, namespace: S) -> Self
+    pub fn new<C>(config: &C, repo: Arc<T>) -> Self
     where
-        S: Into<String>,
+        C: HolodekkConfig + ProjectorConfig,
     {
         Self {
-            config,
+            fleet: config.fleet().into(),
             repo,
-            namespace: namespace.into(),
+            namespace: config.namespace().into(),
         }
     }
 }

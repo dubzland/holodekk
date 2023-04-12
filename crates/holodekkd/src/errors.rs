@@ -22,8 +22,6 @@ pub enum HolodekkError {
     InvalidEngine(String),
     #[error("Projector does not exist: {id}")]
     InvalidProjector { id: Uuid },
-    #[error("Failed to start projector.")]
-    ProjectorError(#[from] crate::projector::Error),
     #[error("IO error.")]
     Io(#[from] std::io::Error),
     #[error("RPC Client error")]

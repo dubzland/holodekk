@@ -28,15 +28,18 @@ struct MessageProjectorPidParent {
     pid: i32,
 }
 
-pub fn spawn_projector(
-    config: Arc<HolodekkConfig>,
+pub fn spawn_projector<C>(
+    config: Arc<C>,
     namespace: &str,
-) -> std::result::Result<Projector, SpawnError> {
+) -> std::result::Result<Projector, SpawnError>
+where
+    C: HolodekkConfig,
+{
     // Setup a pipe so we can be notified when the projector is fully up
     let (parent_fd, child_fd) = pipe2(OFlag::empty()).unwrap();
     let mut sync_pipe = unsafe { File::from_raw_fd(parent_fd) };
 
-    let mut root_path = config.root_path.clone();
+    let mut root_path = config.root_path().clone();
     root_path.push(namespace);
 
     // Ensure the root directory exists
@@ -54,14 +57,14 @@ pub fn spawn_projector(
     let mut projector_sock = root_path.clone();
     projector_sock.push("projector.sock");
 
-    let mut uhura = config.bin_path.clone();
+    let mut uhura = config.bin_path().clone();
     uhura.push("uhura");
 
     let mut command = Command::new(uhura);
     command.arg("--projector-root");
     command.arg(&root_path);
     command.arg("--fleet");
-    command.arg(&config.fleet);
+    command.arg(config.fleet());
     command.arg("--namespace");
     command.arg(namespace);
     command.arg("--pidfile");
@@ -105,7 +108,7 @@ pub fn spawn_projector(
             }
         };
         let p = Projector::new(
-            config.fleet.as_str(),
+            config.fleet(),
             namespace,
             &pidfile,
             uhura_listener,

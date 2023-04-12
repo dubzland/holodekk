@@ -52,8 +52,8 @@ impl Subroutine {
 pub(crate) mod fixtures {
     use rstest::*;
 
+    use crate::config::fixtures::{mock_config, MockConfig};
     use crate::core::entities::subroutine::instance::fixtures::subroutine_instance;
-    use crate::{config::fixtures::holodekk_config, config::HolodekkConfig};
 
     use super::*;
 
@@ -67,16 +67,14 @@ pub(crate) mod fixtures {
     }
 
     #[fixture]
-    pub(crate) fn subroutine_with_instance(holodekk_config: HolodekkConfig) -> Subroutine {
+    pub(crate) fn subroutine_with_instance(mock_config: MockConfig) -> Subroutine {
         let mut sub = Subroutine::new(
             "test/sub",
             "/tmp/holodekk/subroutines/test/sub",
             SubroutineKind::Ruby,
         );
-        sub.instances = Some(vec![subroutine_instance(
-            holodekk_config.clone(),
-            sub.clone(),
-        )]);
+        sub.instances = Some(vec![subroutine_instance(mock_config, sub.clone())]);
+        println!("instances: {:?}", sub.instances);
         sub
     }
 }

@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use nix::unistd::Pid;
+use serde::{Serialize, Serializer};
 use sha2::{Digest, Sha256};
 
 use crate::utils::ConnectionInfo;
@@ -12,7 +13,14 @@ pub fn generate_id<S: AsRef<str>>(fleet: S, namespace: S) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-#[derive(Clone, Debug, PartialEq)]
+fn pid_serialize<S>(pid: &Pid, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    s.serialize_i32(pid.as_raw())
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Projector {
     pub id: String,
     pub fleet: String,
@@ -20,6 +28,7 @@ pub struct Projector {
     pub pidfile: PathBuf,
     pub uhura_address: ConnectionInfo,
     pub projector_address: ConnectionInfo,
+    #[serde(serialize_with = "pid_serialize")]
     pub pid: Pid,
 }
 

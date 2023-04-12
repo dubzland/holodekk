@@ -1,20 +1,11 @@
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::{
-    apis::grpc::applications::applications_api_server, core::repositories::SubroutineRepository,
-    utils::ConnectionInfo,
+    apis::grpc::applications::applications_api_server, config::ProjectorApiConfig,
+    core::repositories::SubroutineRepository,
 };
 
 use super::{start_grpc_server, GrpcServerHandle};
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct ProjectorConfig {
-    pub fleet: String,
-    pub namespace: String,
-    pub root: PathBuf,
-    pub api_config: ConnectionInfo,
-}
 
 pub struct ProjectorServer<T>
 where
@@ -35,9 +26,12 @@ where
         }
     }
 
-    pub fn start(projector_config: &ProjectorConfig, repository: Arc<T>) -> Self {
+    pub fn start<C>(config: &C, repository: Arc<T>) -> Self
+    where
+        C: ProjectorApiConfig,
+    {
         let projector_api = start_grpc_server(
-            &projector_config.api_config,
+            config.projector_api_config(),
             tonic::transport::Server::builder().add_service(applications_api_server()),
         );
         Self::new(repository, projector_api)

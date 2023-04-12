@@ -24,7 +24,7 @@ where
     T: ProjectorRepository,
 {
     async fn stop(&self, input: ProjectorStopInput) -> Result<()> {
-        let id = entities::projector::generate_id(&self.config.fleet, &input.namespace);
+        let id = entities::projector::generate_id(&self.fleet, &input.namespace);
         let projector = self.repo.projector_get(&id).await?;
 
         let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
