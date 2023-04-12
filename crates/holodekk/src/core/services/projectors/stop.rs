@@ -21,7 +21,7 @@ pub struct ProjectorStopInput {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Stop {
-    /// Attempts to start a projector with the given arguments
+    /// Stops a running projector
     ///
     /// # Arguments
     ///
@@ -35,7 +35,7 @@ where
     T: ProjectorRepository,
 {
     async fn stop(&self, input: ProjectorStopInput) -> Result<()> {
-        trace!("ProjectorsService.shutdown({:?})", input);
+        trace!("ProjectorsService.stop({:?})", input);
 
         // ensure a projector is actually running
         let id = entities::projector::generate_id(&self.fleet, &input.namespace);
