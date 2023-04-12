@@ -13,6 +13,8 @@ pub enum Error {
     NotFound,
     #[error("Subroutine is already running")]
     AlreadyRunning,
+    #[error("Failed to shutdown projector")]
+    ShutdownFailed,
     #[error("Repository Error")]
     Repository(#[from] repositories::Error),
     #[error("Projector Error")]
@@ -25,6 +27,7 @@ impl From<Error> for Status {
             Error::NotFound => Self::not_found(err.to_string()),
             Error::Duplicate => Self::already_exists(err.to_string()),
             Error::AlreadyRunning => Self::already_exists(err.to_string()),
+            Error::ShutdownFailed => Self::internal("Unable to shutdown projector".to_string()),
             Error::Repository(err) => Self::internal(err.to_string()),
             Error::Projector(err) => Self::internal(err.to_string()),
         }

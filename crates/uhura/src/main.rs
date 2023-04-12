@@ -239,7 +239,7 @@ fn main() -> Result<()> {
             "Creating uhura root directory: {}",
             config.root_path().display()
         );
-        fs::create_dir_all(&config.root_path()).expect("Failed to create root directory for uhura");
+        fs::create_dir_all(config.root_path()).expect("Failed to create root directory for uhura");
     }
 
     let repo = Arc::new(MemoryRepository::default());
