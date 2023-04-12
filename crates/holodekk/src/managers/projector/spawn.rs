@@ -41,6 +41,7 @@ pub fn spawn_projector(
 
     // Ensure the root directory exists
     if !root_path.exists() {
+        info!("Creating projector root directory: {}", root_path.display());
         fs::create_dir_all(&root_path).expect("Failed to create root directory for projector");
     }
 
@@ -57,6 +58,8 @@ pub fn spawn_projector(
     uhura.push("uhura");
 
     let mut command = Command::new(uhura);
+    command.arg("--projector-root");
+    command.arg(&root_path);
     command.arg("--fleet");
     command.arg(&config.fleet);
     command.arg("--namespace");
@@ -66,8 +69,12 @@ pub fn spawn_projector(
     command.arg("--sync-pipe");
     command.arg(child_fd.to_string());
 
-    let uhura_listener = ConnectionInfo::unix(uhura_sock);
-    let projector_listener = ConnectionInfo::unix(projector_sock);
+    let uhura_listener = ConnectionInfo::unix(&uhura_sock);
+    command.arg("--uhura-socket");
+    command.arg(uhura_sock);
+    let projector_listener = ConnectionInfo::unix(&projector_sock);
+    command.arg("--projector-socket");
+    command.arg(projector_sock);
 
     info!("Launching uhura with: {:?}", command);
     let status = command
@@ -77,6 +84,7 @@ pub fn spawn_projector(
         .env_clear()
         .status()
         .expect("Unable to spawn projector");
+    info!("Status: {}", status);
 
     if status.success() {
         let mut buf = [0; 256];

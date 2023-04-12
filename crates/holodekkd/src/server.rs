@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
+use tokio::sync::mpsc::Sender;
+
 use holodekk::{
-    config::HolodekkConfig, core::repositories::ProjectorRepository,
-    managers::projector::ProjectorManager,
+    config::HolodekkConfig,
+    core::repositories::ProjectorRepository,
+    managers::projector::{ProjectorCommand, ProjectorManager},
 };
 
 pub struct HolodekkServer {
@@ -25,5 +28,9 @@ impl HolodekkServer {
     pub async fn stop(self) -> Result<(), tonic::transport::Error> {
         self.projector_manager.stop().await;
         Ok(())
+    }
+
+    pub fn manager_tx(&self) -> Sender<ProjectorCommand> {
+        self.projector_manager.cmd_tx()
     }
 }

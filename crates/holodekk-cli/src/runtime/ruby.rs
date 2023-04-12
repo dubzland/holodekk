@@ -4,14 +4,21 @@ use std::process::Command;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-
 use colored::*;
-
+use log::info;
 use tar::Builder as TarBuilder;
 
+use holodekk::config::HolodekkConfig;
 use holodekk::core::entities::{ContainerManifest, SubroutineManifest};
+use holodekk::core::repositories::memory::MemoryRepository;
+use holodekk::core::services::projectors::{
+    ProjectorStartInput, ProjectorStopInput, ProjectorsService, Start, Stop,
+};
 use holodekk::engines::{docker, Build, ImageKind};
-use holodekkd::holodekk::Holodekk;
+use holodekkd::{
+    holodekk::{Holodekk, HolodekkResult},
+    server::HolodekkServer,
+};
 
 use super::CliRuntime;
 
@@ -78,38 +85,62 @@ impl CliRuntime for RubyCliRuntime {
             .unwrap();
         println!("{}", "Build complete.".cyan());
     }
-    // async fn project(&self) -> HolodekkResult<()> {
-    //     let manifest = self.generate_manifest();
+    async fn project(&self) -> HolodekkResult<()> {
+        // let manifest = self.generate_manifest();
 
-    //     // Start a projector
-    //     let repo = Arc::new(MemoryRepository::default());
-    //     let fleet = "local";
-    //     let namespace = "local";
-    //     let subroutines_service = Arc::new(SubroutinesService::new(repo.clone(), fleet, namespace));
-    //     match subroutines_service.status(manifest.name()).await {
-    //         Ok(status) => {
-    //             if let holodekk::entities::SubroutineStatus::Running(pid) = status {
-    //                 println!("Running: {}", pid);
-    //             } else {
-    //                 println!("Not running");
-    //             }
-    //         }
-    //         Err(holodekk::services::Error::NotFound) => {
-    //             eprintln!("Doesn't exist");
-    //         }
-    //         Err(err) => {
-    //             eprintln!("Something went wrong: {}", err);
-    //         }
-    //     }
-    //     // self.holodekk.projector_for_namespace("local")?;
-    //     // let projector = self.holodekk.projector_for_namespace("local")?;
-    //     // let client = projector.client().await?;
-    //     // let response = client.uhura().status().await.unwrap();
-    //     // println!("Server response: {:?}", response);
-    //     // self.holodekk.stop_projector(projector.id)?;
+        let config = Arc::new(HolodekkConfig {
+            fleet: "local".into(),
+            root_path: "/home/jdubz/.holodekk/local/".into(),
+            bin_path: "/home/jdubz/code/gitlab/holodekk/holodekk/target/debug".into(),
+        });
 
-    //     Ok(())
-    // }
+        env_logger::init();
+
+        // Start the Holodekk server
+        let repo = Arc::new(MemoryRepository::default());
+        let holodekk = HolodekkServer::start(config.clone(), repo.clone());
+        let projector_service =
+            ProjectorsService::new(config.clone(), repo.clone(), holodekk.manager_tx());
+
+        // Start a projector
+        let start = ProjectorStartInput {
+            namespace: "local".into(),
+        };
+        let projector = projector_service.start(start).await.unwrap();
+
+        info!("projector spawned");
+
+        let stop = ProjectorStopInput {
+            namespace: projector.namespace,
+        };
+        projector_service.stop(stop).await.unwrap();
+        info!("projector shutdown");
+        // let namespace = "local";
+        // let subroutines_service = Arc::new(SubroutinesService::new(repo.clone(), fleet, namespace));
+        // match subroutines_service.status(manifest.name()).await {
+        //     Ok(status) => {
+        //         if let holodekk::entities::SubroutineStatus::Running(pid) = status {
+        //             println!("Running: {}", pid);
+        //         } else {
+        //             println!("Not running");
+        //         }
+        //     }
+        //     Err(holodekk::services::Error::NotFound) => {
+        //         eprintln!("Doesn't exist");
+        //     }
+        //     Err(err) => {
+        //         eprintln!("Something went wrong: {}", err);
+        //     }
+        // }
+        // self.holodekk.projector_for_namespace("local")?;
+        // let projector = self.holodekk.projector_for_namespace("local")?;
+        // let client = projector.client().await?;
+        // let response = client.uhura().status().await.unwrap();
+        // println!("Server response: {:?}", response);
+        // self.holodekk.stop_projector(projector.id)?;
+
+        Ok(())
+    }
 }
 
 fn create_archive<T: std::io::Write, P: AsRef<Path>>(context: P, target: T) -> std::io::Result<()> {

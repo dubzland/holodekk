@@ -15,6 +15,8 @@ pub enum ConnectionInfoError {
     TooManyValues,
     #[error("Neither options were provided")]
     NotEnoughValues,
+    #[error("Not a Unix socket")]
+    NotUnixSocket,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -56,6 +58,13 @@ impl ConnectionInfo {
     {
         Self::Unix {
             socket: socket.into(),
+        }
+    }
+
+    pub fn to_socket(&self) -> std::result::Result<String, ConnectionInfoError> {
+        match self {
+            ConnectionInfo::Tcp { .. } => Err(ConnectionInfoError::NotUnixSocket),
+            ConnectionInfo::Unix { socket } => Ok(socket.to_str().unwrap().to_owned()),
         }
     }
 }

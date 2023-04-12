@@ -120,7 +120,7 @@ pub struct Options {
     pidfile: PathBuf,
 
     /// Root directory
-    #[arg(long = "sync-pipe")]
+    #[arg(long)]
     projector_root: PathBuf,
 
     /// Projector port
