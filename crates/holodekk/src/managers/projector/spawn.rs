@@ -63,6 +63,8 @@ where
     let mut command = Command::new(uhura);
     command.arg("--projector-root");
     command.arg(&root_path);
+    command.arg("--holodekk-bin");
+    command.arg(config.bin_path());
     command.arg("--fleet");
     command.arg(config.fleet());
     command.arg("--namespace");

@@ -29,6 +29,7 @@ pub enum RepositoryKind {
 pub trait ProjectorRepository: Send + Sync + 'static {
     async fn projector_create(&self, projector: Projector) -> Result<Projector>;
     async fn projector_get(&self, id: &str) -> Result<Projector>;
+    async fn projector_exists(&self, id: &str) -> bool;
     async fn projector_delete(&self, id: &str) -> Result<()>;
     async fn projector_all(&self) -> Result<Vec<Projector>>;
 }

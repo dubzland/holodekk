@@ -10,7 +10,7 @@ use axum::extract::connect_info;
 use futures::ready;
 use futures_util::FutureExt;
 use hyper::server::accept::Accept;
-use log::{info, warn};
+use log::trace;
 use tokio::{
     net::{unix::UCred, UnixListener, UnixStream},
     sync::oneshot::channel,
@@ -94,23 +94,7 @@ pub fn start_http_server(
         }
         ConnectionInfo::Unix { socket } => {
             cleanup(socket).unwrap();
-            info!("setting up listener at {}", socket.display());
-            info!(
-                "checking for existence of {}",
-                socket.parent().unwrap().display()
-            );
-            match socket.parent().unwrap().try_exists() {
-                Ok(exists) => {
-                    if exists {
-                        info!("socket directory exists");
-                    } else {
-                        warn!("socket directory DOES NOT exist");
-                    }
-                }
-                Err(err) => {
-                    warn!("Error checking for directory existence: {}", err);
-                }
-            }
+            trace!("setting up listener at {}", socket.display());
             let uds = UnixListener::bind(socket).unwrap();
             tokio::spawn(async {
                 axum::Server::builder(ServerAccept { uds })

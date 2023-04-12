@@ -22,6 +22,7 @@ use serde::Serialize;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
 use holodekk::{
+    config::HolodekkConfig,
     core::repositories::{
         memory::MemoryRepository, ProjectorRepository, RepositoryKind, SubroutineRepository,
     },
@@ -153,10 +154,6 @@ pub struct Options {
     #[arg(long = "sync-pipe")]
     syncpipe_fd: Option<i32>,
 
-    /// Holodekk root directory
-    #[arg(long, default_value = "/var/lib/holodekkd")]
-    holodekk_root: PathBuf,
-
     /// Holodekk bin directory
     #[arg(long, default_value = "/usr/local/bin/")]
     holodekk_bin: PathBuf,
@@ -168,7 +165,7 @@ fn main() -> Result<()> {
     let config = UhuraConfig::new(
         &options.fleet,
         &options.namespace,
-        options.holodekk_root.to_owned(),
+        options.projector_root.to_owned(),
         options.holodekk_bin.to_owned(),
         RepositoryKind::Memory,
         ConnectionInfo::from_options(
@@ -232,6 +229,19 @@ fn main() -> Result<()> {
     // re-enable signals
     sigprocmask(SigmaskHow::SIG_SETMASK, Some(&oldmask), None)?;
 
+    // Ensure the root directory exists
+    debug!(
+        "Checking for existence of root directory: {}",
+        config.root_path().display()
+    );
+    if !config.root_path().exists() {
+        info!(
+            "Creating uhura root directory: {}",
+            config.root_path().display()
+        );
+        fs::create_dir_all(&config.root_path()).expect("Failed to create root directory for uhura");
+    }
+
     let repo = Arc::new(MemoryRepository::default());
     main_loop(&options, config, repo)?;
 
@@ -258,6 +268,8 @@ where
     if options.syncpipe_fd.is_some() {
         send_status_update(options);
     }
+
+    debug!("Complete.  Waiting for shutdown signal");
 
     let signal = Signals::new().await;
     match signal {

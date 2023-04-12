@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use futures_util::FutureExt;
-use log::{info, warn};
+use log::{debug, info, warn};
 use tokio::{net::UnixListener, sync::oneshot::channel};
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::server::TcpIncoming;
@@ -67,6 +67,7 @@ pub fn start_grpc_server(
             let uds = UnixListener::bind(socket).unwrap();
             let listener = UnixListenerStream::new(uds);
             tokio::spawn(async {
+                debug!("inside spawned UNIX listener");
                 server
                     .serve_with_incoming_shutdown(listener, shutdown_rx.map(drop))
                     .await

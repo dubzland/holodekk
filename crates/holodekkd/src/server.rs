@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use log::debug;
 use tokio::sync::mpsc::Sender;
 
 use holodekk::{
@@ -38,8 +39,10 @@ impl HolodekkServer {
             }
         };
 
+        debug!("starting Projector Manager...");
         let projector_manager = ProjectorManager::start(config.clone());
 
+        debug!("starting Holodekk API server...");
         let api_config = config.holodekk_api_config().clone();
         let api_server = start_http_server(
             &api_config,

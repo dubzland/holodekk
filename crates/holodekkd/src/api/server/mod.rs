@@ -36,9 +36,6 @@ where
     let projectors_service = Arc::new(ProjectorsService::new(config, repo, cmd_tx));
     let services = Arc::new(ApiServices { projectors_service });
 
-    std::env::set_var("RUST_LOG", "debug");
-    env_logger::init();
-
     Router::new()
         .route("/health", get(health))
         .merge(projectors::routes())

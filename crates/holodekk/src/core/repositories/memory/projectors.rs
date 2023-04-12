@@ -21,6 +21,10 @@ impl ProjectorRepository for MemoryRepository {
         self.db.projectors().get(id)
     }
 
+    async fn projector_exists(&self, id: &str) -> bool {
+        self.db.projectors().exists(id)
+    }
+
     async fn projector_delete(&self, id: &str) -> Result<()> {
         self.db.projectors().delete(id)
     }

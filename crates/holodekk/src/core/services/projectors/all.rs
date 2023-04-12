@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use log::trace;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
@@ -18,6 +19,7 @@ where
     T: ProjectorRepository,
 {
     async fn all(&self) -> Result<Vec<Projector>> {
+        trace!("ProjectorsService.all()");
         let projectors = self.repo.projector_all().await?;
         Ok(projectors)
     }

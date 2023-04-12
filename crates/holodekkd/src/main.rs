@@ -71,6 +71,12 @@ async fn main() -> std::io::Result<()> {
         options.repository,
     );
 
+    env_logger::init();
+
+    debug!(
+        "Starting HolodekkServer with config: {:?}",
+        holodekkd_config
+    );
     let holodekk = HolodekkServer::start(Arc::new(holodekkd_config));
 
     let signal = Signals::new().await;
@@ -84,8 +90,5 @@ async fn main() -> std::io::Result<()> {
         }
     }
 
-    //     let holodekk = Arc::new(Holodekk::new(holodekk_config));
-    //     holodekk.init()?;
-    //     api::server::run(holodekk, options.port.to_owned()).await;
     Ok(())
 }
