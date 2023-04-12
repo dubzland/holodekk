@@ -21,11 +21,11 @@ pub struct ProjectorStopInput {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Stop {
-    /// Stops a running projector
+    /// Stops a running [Projector]
     ///
     /// # Arguments
     ///
-    /// `input` - parameters for the projector (currently only `namespace`)
+    /// `input` ([ProjectorStopInput]) - parameters for the projector (currently only `namespace`)
     async fn stop(&self, input: ProjectorStopInput) -> Result<()>;
 }
 

@@ -29,7 +29,7 @@ impl ProjectorRepository for MemoryRepository {
         self.db.projectors().delete(id)
     }
 
-    async fn projector_all(&self) -> Result<Vec<Projector>> {
+    async fn projector_get_all(&self) -> Result<Vec<Projector>> {
         self.db.projectors().all()
     }
 }

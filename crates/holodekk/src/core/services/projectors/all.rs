@@ -10,6 +10,7 @@ use super::ProjectorsService;
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait All {
+    /// Returns the list of all currently active [Projector] instances
     async fn all(&self) -> Result<Vec<Projector>>;
 }
 
@@ -20,7 +21,7 @@ where
 {
     async fn all(&self) -> Result<Vec<Projector>> {
         trace!("ProjectorsService.all()");
-        let projectors = self.repo.projector_all().await?;
+        let projectors = self.repo.projector_get_all().await?;
         Ok(projectors)
     }
 }

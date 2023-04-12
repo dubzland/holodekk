@@ -14,6 +14,11 @@ pub struct ProjectorExistsInput {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Exists {
+    /// Checks for the existence of a [Projector](entities::Projector)
+    ///
+    /// # Arguments
+    ///
+    /// `input` ([ProjectorExistsInput]) - parameters for the projector (currently only `namespace`)
     async fn exists(&self, input: ProjectorExistsInput) -> bool;
 }
 

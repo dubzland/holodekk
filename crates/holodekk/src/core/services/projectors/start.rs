@@ -21,11 +21,11 @@ pub struct ProjectorStartInput {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Start {
-    /// Starts a projector daemon
+    /// Starts a [Projector] instance
     ///
     /// # Arguments
     ///
-    /// `input` - parameters for the projector (currently on `namespace')
+    /// `input` ([ProjectorStartInput])- parameters for the projector (currently only `namespace')
     async fn start(&self, input: ProjectorStartInput) -> Result<Projector>;
 }
 
