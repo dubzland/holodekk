@@ -26,15 +26,6 @@ pub trait UhuraApiConfig {
     fn uhura_api_config(&self) -> &ConnectionInfo;
 }
 
-// #[derive(Clone, Debug, PartialEq)]
-// pub struct HolodekkConfig {
-//     pub fleet: String,
-//     pub root_path: PathBuf,
-//     pub bin_path: PathBuf,
-//     pub api_config: ConnectionInfo,
-//     pub repo_kind: RepositoryKind,
-// }
-
 #[cfg(test)]
 pub mod fixtures {
     use rstest::*;

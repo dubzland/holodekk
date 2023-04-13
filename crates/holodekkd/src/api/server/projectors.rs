@@ -4,7 +4,7 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
-    routing::{get, post},
+    routing::{delete, get, post},
     Json, Router,
 };
 use serde::Deserialize;
@@ -23,8 +23,8 @@ where
 {
     Router::new()
         .route("/", get(list))
-        .route("/start", post(start))
-        .route("/:namespace/stop", post(stop))
+        .route("/", post(start))
+        .route("/:namespace", delete(stop))
 }
 
 async fn list<T>(State(state): State<Arc<ApiServices<T>>>) -> impl IntoResponse
