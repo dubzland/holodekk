@@ -4,8 +4,8 @@ mod projectors;
 pub use projectors::*;
 mod subroutines;
 pub use subroutines::*;
-mod subroutine_instances;
-pub use subroutine_instances::*;
+mod subroutine_definitions;
+pub use subroutine_definitions::*;
 
 use std::sync::Arc;
 

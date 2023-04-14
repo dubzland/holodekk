@@ -1,16 +1,16 @@
 use std::{collections::HashMap, sync::RwLock};
 
 use crate::core::{
-    entities::{Subroutine, SubroutineInstance},
+    entities::SubroutineDefinition,
     repositories::{Error, RepositoryId, Result},
 };
 
 #[derive(Debug)]
-pub struct SubroutineInstancesMemoryStore {
-    records: RwLock<HashMap<String, SubroutineInstance>>,
+pub struct SubroutineDefinitionsMemoryStore {
+    records: RwLock<HashMap<String, SubroutineDefinition>>,
 }
 
-impl Default for SubroutineInstancesMemoryStore {
+impl Default for SubroutineDefinitionsMemoryStore {
     fn default() -> Self {
         Self {
             records: RwLock::new(HashMap::new()),
@@ -18,28 +18,28 @@ impl Default for SubroutineInstancesMemoryStore {
     }
 }
 
-impl SubroutineInstancesMemoryStore {
-    pub fn add(&self, instance: SubroutineInstance) -> Result<()> {
-        if self.records.read().unwrap().contains_key(&instance.id()) {
+impl SubroutineDefinitionsMemoryStore {
+    pub fn add(&self, definition: SubroutineDefinition) -> Result<()> {
+        if self.records.read().unwrap().contains_key(&definition.id()) {
             Err(Error::AlreadyExists)
         } else {
             self.records
                 .write()
                 .unwrap()
-                .insert(instance.id(), instance);
+                .insert(definition.id(), definition);
             Ok(())
         }
     }
 
-    pub fn all(&self) -> Result<Vec<SubroutineInstance>> {
-        let instances = self
+    pub fn all(&self) -> Result<Vec<SubroutineDefinition>> {
+        let definitions = self
             .records
             .read()
             .unwrap()
             .values()
             .map(|i| i.to_owned())
             .collect();
-        Ok(instances)
+        Ok(definitions)
     }
 
     pub fn delete(&self, id: &str) -> Result<()> {
@@ -55,24 +55,11 @@ impl SubroutineInstancesMemoryStore {
         }
     }
 
-    pub fn get(&self, id: &str) -> Result<SubroutineInstance> {
+    pub fn get(&self, id: &str) -> Result<SubroutineDefinition> {
         if let Some(record) = self.records.read().unwrap().get(id) {
             Ok(record.to_owned())
         } else {
             Err(Error::NotFound)
         }
-    }
-
-    pub fn get_all_by_subroutine(
-        &self,
-        subroutine: &Subroutine,
-    ) -> Result<Vec<SubroutineInstance>> {
-        let records = self.records.read().unwrap();
-        let instances = records
-            .values()
-            .filter(|s| s.subroutine_id == subroutine.id())
-            .map(|s| s.to_owned())
-            .collect();
-        Ok(instances)
     }
 }

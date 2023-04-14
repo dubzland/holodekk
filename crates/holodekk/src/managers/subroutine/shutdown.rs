@@ -2,7 +2,7 @@ use log::{debug, warn};
 use nix::sys::signal::{kill, SIGINT};
 use nix::unistd::Pid;
 
-use crate::core::entities::{Subroutine, SubroutineInstance, SubroutineStatus};
+use crate::core::entities::{Subroutine, SubroutineDefinition, SubroutineStatus};
 
 #[derive(thiserror::Error, Clone, Debug, PartialEq)]
 pub enum ShutdownError {
@@ -11,23 +11,23 @@ pub enum ShutdownError {
 }
 
 pub fn shutdown_subroutine(
-    instance: SubroutineInstance,
     subroutine: Subroutine,
+    definition: SubroutineDefinition,
 ) -> std::result::Result<(), ShutdownError> {
     // TODO: check to see if the subroutine is still running before blindly killing it
-    match instance.status {
+    match subroutine.status {
         SubroutineStatus::Running(pid) => match kill(Pid::from_raw(pid as i32), SIGINT) {
             Ok(_) => {
                 debug!(
                     "stopped subroutine {} running in namespace {} with pid {}",
-                    subroutine.name, instance.namespace, pid
+                    definition.name, subroutine.namespace, pid
                 );
                 Ok(())
             }
             Err(err) => {
                 warn!(
                     "failed stop subroutine {} running in namespace {} with pid {}: {}",
-                    subroutine.name, instance.namespace, pid, err
+                    definition.name, subroutine.namespace, pid, err
                 );
                 Err(ShutdownError::from(err))
             }

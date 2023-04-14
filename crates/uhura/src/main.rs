@@ -23,9 +23,7 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 
 use holodekk::{
     config::HolodekkConfig,
-    core::repositories::{
-        memory::MemoryRepository, ProjectorsRepository, RepositoryKind, SubroutinesRepository,
-    },
+    core::repositories::RepositoryKind,
     servers::ProjectorServer,
     utils::{
         libsee,
@@ -240,8 +238,7 @@ fn main() -> Result<()> {
         fs::create_dir_all(config.root_path()).expect("Failed to create root directory for uhura");
     }
 
-    let repo = Arc::new(MemoryRepository::default());
-    main_loop(&options, config, repo)?;
+    main_loop(&options, config)?;
 
     cleanup(&options);
     info!("Shutdown complete.");
@@ -249,17 +246,13 @@ fn main() -> Result<()> {
 }
 
 #[tokio::main]
-async fn main_loop<T>(
+async fn main_loop(
     options: &Options,
     config: Arc<UhuraConfig>,
-    repo: Arc<T>,
-) -> std::result::Result<(), std::io::Error>
-where
-    T: ProjectorsRepository + SubroutinesRepository,
-{
-    let uhura_server = UhuraServer::start(config.clone(), repo.clone());
+) -> std::result::Result<(), std::io::Error> {
+    let uhura_server = UhuraServer::start(config.clone());
 
-    let projector_server = ProjectorServer::start(config, repo);
+    let projector_server = ProjectorServer::start(config);
 
     // Notify the holodekk of our state
     debug!("Sending status update to parent");
@@ -274,7 +267,7 @@ where
         SignalKind::Int => {
             debug!("SIGINT received.  Processing shutdown.");
 
-            uhura_server.stop().await;
+            uhura_server.stop().await.unwrap();
             projector_server.stop().await.unwrap();
         }
         SignalKind::Quit | SignalKind::Term => {

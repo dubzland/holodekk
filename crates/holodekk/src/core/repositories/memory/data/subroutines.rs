@@ -62,4 +62,17 @@ impl SubroutinesMemoryStore {
             Err(Error::NotFound)
         }
     }
+
+    //     pub fn get_all_by_definition(
+    //         &self,
+    //         subroutine: &Subroutine,
+    //     ) -> Result<Vec<SubroutineInstance>> {
+    //         let records = self.records.read().unwrap();
+    //         let instances = records
+    //             .values()
+    //             .filter(|s| s.subroutine_id == subroutine.id())
+    //             .map(|s| s.to_owned())
+    //             .collect();
+    //         Ok(instances)
+    //     }
 }

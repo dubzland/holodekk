@@ -3,7 +3,7 @@ syntax = "proto3";
 package subroutines;
 
 service RpcSubroutines {
-	rpc Create(RpcCreateRequest) returns (RpcSubroutine) {}
+	rpc Create(RpcCreateSubroutineRequest) returns (RpcSubroutine) {}
 	/* rpc Status(RpcStatusRequest) returns (RpcSubroutineStatus) {} */
 }
 
@@ -19,29 +19,31 @@ enum RpcSubroutineKind {
 	RUBY = 1;
 }
 
-message RpcSubroutine {
+message RpcSubroutineDefinition {
 	string id = 1;
 	string name = 2;
 	string path = 3;
 	RpcSubroutineKind kind = 4;
 }
 
-message RpcSubroutineInstance {
+message RpcSubroutine {
 	string fleet = 1;
 	string namespace = 2;
 	string path = 3;
 	RpcSubroutineStatus status = 4;
-	string subroutine_id = 5;
+	string subroutine_definition_id = 5;
 }
 
-message RpcCreateRequest {
+message RpcCreateSubroutineDefinitionRequest {
 	string name = 1;
 	string path = 2;
 	RpcSubroutineKind kind = 3;
 }
 
-message RpcStatusRequest {
-	string name = 1;
+message RpcCreateSubroutineRequest {
+	string fleet = 1;
+	string namespace = 2;
+	string subroutine_definition_id = 3;
 }
 
 message RpcSubroutineStatus {

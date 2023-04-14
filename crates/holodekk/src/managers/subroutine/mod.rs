@@ -6,19 +6,19 @@ pub use spawn::{spawn_subroutine, SpawnError};
 use std::sync::Arc;
 
 use crate::config::{HolodekkConfig, ProjectorConfig};
-use crate::core::entities::{Subroutine, SubroutineInstance};
+use crate::core::entities::{Subroutine, SubroutineDefinition};
 use crate::managers::{start_manager, ManagerHandle};
 
 #[derive(Debug)]
 pub enum SubroutineCommand {
     Spawn {
         namespace: String,
-        subroutine: Subroutine,
-        resp: tokio::sync::oneshot::Sender<std::result::Result<SubroutineInstance, SpawnError>>,
+        definition: SubroutineDefinition,
+        resp: tokio::sync::oneshot::Sender<std::result::Result<Subroutine, SpawnError>>,
     },
     Shutdown {
-        instance: SubroutineInstance,
         subroutine: Subroutine,
+        definition: SubroutineDefinition,
         resp: tokio::sync::oneshot::Sender<std::result::Result<(), ShutdownError>>,
     },
 }
@@ -63,20 +63,20 @@ pub async fn subroutine_manager<C>(
         match cmd {
             SubroutineCommand::Spawn {
                 namespace,
-                subroutine,
+                definition,
                 resp,
             } => {
-                println!("spawning {}:{}", namespace, &subroutine.name);
-                let subroutine_instance =
-                    spawn_subroutine(config.clone(), &namespace, subroutine.clone()).unwrap();
-                resp.send(Ok(subroutine_instance)).unwrap();
+                println!("spawning {}:{}", namespace, &definition.name);
+                let subroutine =
+                    spawn_subroutine(config.clone(), &namespace, definition.clone()).unwrap();
+                resp.send(Ok(subroutine)).unwrap();
             }
             SubroutineCommand::Shutdown {
-                instance,
                 subroutine,
+                definition,
                 resp,
             } => {
-                shutdown_subroutine(instance.clone(), subroutine.clone()).unwrap();
+                shutdown_subroutine(subroutine.clone(), definition.clone()).unwrap();
                 resp.send(Ok(())).unwrap();
             }
         }

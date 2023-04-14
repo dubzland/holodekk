@@ -12,7 +12,7 @@ use nix::{
 use serde::Deserialize;
 
 use crate::config::{HolodekkConfig, ProjectorConfig};
-use crate::core::entities::{Subroutine, SubroutineInstance, SubroutineStatus};
+use crate::core::entities::{Subroutine, SubroutineDefinition, SubroutineStatus};
 use crate::core::repositories::RepositoryId;
 
 #[derive(thiserror::Error, Clone, Debug, PartialEq)]
@@ -31,8 +31,8 @@ struct MessageSubroutinePidParent {
 pub fn spawn_subroutine<C>(
     config: Arc<C>,
     namespace: &str,
-    subroutine: Subroutine,
-) -> std::result::Result<SubroutineInstance, SpawnError>
+    definition: SubroutineDefinition,
+) -> std::result::Result<Subroutine, SpawnError>
 where
     C: HolodekkConfig + ProjectorConfig,
 {
@@ -41,7 +41,7 @@ where
     let mut sync_pipe = unsafe { File::from_raw_fd(parent_fd) };
 
     let mut root_path = config.projector_root_path().clone();
-    root_path.push(subroutine.name.clone());
+    root_path.push(definition.name.clone());
 
     // Ensure the root directory exists
     if !root_path.exists() {
@@ -72,11 +72,11 @@ where
 
     let mut command = Command::new(subroutine_bin);
     command.arg("--name");
-    command.arg(subroutine.name.clone());
+    command.arg(definition.name.clone());
     command.arg("--pidfile");
     command.arg(&shim_pidfile);
     command.arg("--subroutine-directory");
-    command.arg(&subroutine.path);
+    command.arg(&definition.path);
     command.arg("--subroutine-pidfile");
     command.arg(&subroutine_pidfile);
     command.arg("--log-file");
@@ -119,7 +119,7 @@ where
                 Pid::from_raw(pid)
             }
         };
-        let mut i = SubroutineInstance::new(config.fleet(), namespace, root_path, &subroutine.id());
+        let mut i = Subroutine::new(config.fleet(), namespace, root_path, &definition.id());
         i.status = SubroutineStatus::Running(pid.as_raw() as u32);
         debug!("Subroutine spawned with pid: {}", pid);
         drop(sync_pipe);

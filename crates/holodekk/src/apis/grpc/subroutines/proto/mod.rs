@@ -6,8 +6,8 @@ mod pb {
 
 pub mod entities {
     pub use super::pb::subroutines::{
-        RpcCreateRequest, RpcStatusRequest, RpcSubroutine, RpcSubroutineInstance,
-        RpcSubroutineKind, RpcSubroutineStatus, RpcSubroutineStatusCode,
+        RpcCreateSubroutineDefinitionRequest, RpcCreateSubroutineRequest, RpcSubroutine,
+        RpcSubroutineDefinition, RpcSubroutineKind, RpcSubroutineStatus, RpcSubroutineStatusCode,
     };
 }
 
@@ -16,7 +16,7 @@ pub mod enums {}
 pub use pb::subroutines::rpc_subroutines_client::RpcSubroutinesClient;
 pub use pb::subroutines::rpc_subroutines_server::{RpcSubroutines, RpcSubroutinesServer};
 
-mod instance;
+mod definition;
 mod kind;
 mod status;
 mod subroutine;

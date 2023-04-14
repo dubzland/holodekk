@@ -6,8 +6,8 @@ pub use projectors::*;
 mod subroutines;
 pub use subroutines::*;
 
-mod subroutine_instances;
-pub use subroutine_instances::*;
+mod subroutine_definitions;
+pub use subroutine_definitions::*;
 
 use clap::ValueEnum;
 
@@ -47,7 +47,7 @@ pub(crate) mod fixtures {
     use rstest::*;
 
     use super::MockProjectorsRepository;
-    use super::MockSubroutineInstancesRepository;
+    use super::MockSubroutineDefinitionsRepository;
     use super::MockSubroutinesRepository;
 
     #[fixture]
@@ -61,7 +61,7 @@ pub(crate) mod fixtures {
     }
 
     #[fixture]
-    pub(crate) fn subroutine_instances_repository() -> MockSubroutineInstancesRepository {
-        MockSubroutineInstancesRepository::default()
+    pub(crate) fn subroutine_definitions_repository() -> MockSubroutineDefinitionsRepository {
+        MockSubroutineDefinitionsRepository::default()
     }
 }

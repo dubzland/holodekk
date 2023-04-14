@@ -1,52 +1,46 @@
-use std::path::PathBuf;
-
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 use sha2::{Digest, Sha256};
 
-use crate::core::entities::{Subroutine, SubroutineKind};
+use crate::core::entities::Subroutine;
 
 use super::{RepositoryId, RepositoryQuery, Result};
 
-pub fn subroutine_repo_id(name: &str) -> String {
+pub fn subroutine_repo_id(fleet: &str, namespace: &str, subroutine_definition_id: &str) -> String {
     let mut hasher = Sha256::new();
-    hasher.update(name);
+    hasher.update(fleet);
+    hasher.update(namespace);
+    hasher.update(subroutine_definition_id);
     format!("{:x}", hasher.finalize())
 }
 
 impl RepositoryId for Subroutine {
     fn id(&self) -> String {
-        subroutine_repo_id(&self.name)
+        subroutine_repo_id(&self.fleet, &self.namespace, &self.subroutine_definition_id)
     }
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SubroutinesQuery {
-    name: Option<String>,
-    path: Option<PathBuf>,
-    kind: Option<SubroutineKind>,
+    pub fleet: Option<String>,
+    pub namespace: Option<String>,
+    pub subroutine_definition_id: Option<String>,
 }
 
 impl SubroutinesQuery {
-    pub fn name_eq<S>(&mut self, name: S) -> &mut Self
-    where
-        S: Into<String>,
-    {
-        self.name = Some(name.into());
+    pub fn for_subroutine_definition(&mut self, id: &str) -> &mut Self {
+        self.subroutine_definition_id = Some(id.into());
         self
     }
 
-    pub fn path_eq<P>(&mut self, path: P) -> &mut Self
-    where
-        P: Into<PathBuf>,
-    {
-        self.path = Some(path.into());
+    pub fn fleet_eq(&mut self, fleet: &str) -> &mut Self {
+        self.fleet = Some(fleet.into());
         self
     }
 
-    pub fn kind_eq(&mut self, kind: SubroutineKind) -> &mut Self {
-        self.kind = Some(kind);
+    pub fn namespace_eq(&mut self, namespace: &str) -> &mut Self {
+        self.namespace = Some(namespace.into());
         self
     }
 }
@@ -57,22 +51,26 @@ impl RepositoryQuery for SubroutinesQuery {
     fn builder() -> Self {
         Self::default()
     }
+
     fn matches(&self, record: &Subroutine) -> bool {
-        if self.name.is_none() && self.path.is_none() && self.kind.is_none() {
+        if self.fleet.is_none()
+            && self.namespace.is_none()
+            && self.subroutine_definition_id.is_none()
+        {
             true
         } else {
-            if let Some(name) = self.name.as_ref() {
-                if name != &record.name {
+            if let Some(fleet) = self.fleet.as_ref() {
+                if fleet != &record.fleet {
                     return false;
                 }
             }
-            if let Some(path) = self.path.as_ref() {
-                if path != &record.path {
+            if let Some(namespace) = self.namespace.as_ref() {
+                if namespace != &record.namespace {
                     return false;
                 }
             }
-            if let Some(kind) = self.kind.as_ref() {
-                if kind != &record.kind {
+            if let Some(subroutine_definition_id) = self.subroutine_definition_id.as_ref() {
+                if subroutine_definition_id != &record.subroutine_definition_id {
                     return false;
                 }
             }
@@ -82,29 +80,17 @@ impl RepositoryQuery for SubroutinesQuery {
 
     fn build(&self) -> Self {
         Self {
-            name: self.name.clone(),
-            path: self.path.clone(),
-            kind: self.kind,
+            fleet: self.fleet.clone(),
+            namespace: self.namespace.clone(),
+            subroutine_definition_id: self.subroutine_definition_id.clone(),
         }
-    }
-}
-
-impl PartialEq<SubroutinesQuery> for Subroutine {
-    fn eq(&self, other: &SubroutinesQuery) -> bool {
-        other.matches(self)
-    }
-}
-
-impl PartialEq<Subroutine> for SubroutinesQuery {
-    fn eq(&self, other: &Subroutine) -> bool {
-        self.matches(other)
     }
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait SubroutinesRepository: Send + Sync + 'static {
-    async fn subroutines_create(&self, subroutine: Subroutine) -> Result<Subroutine>;
+pub trait SubroutinesRepository: Send + Sync {
+    async fn subroutines_create(&self, instance: Subroutine) -> Result<Subroutine>;
     async fn subroutines_delete(&self, id: &str) -> Result<()>;
     async fn subroutines_exists(&self, id: &str) -> Result<bool>;
     async fn subroutines_find<T>(&self, query: T) -> Result<Vec<Subroutine>>

@@ -1,11 +1,9 @@
-use std::path::Path;
-
 use tonic::transport::Channel;
 
-use crate::core::entities::{Subroutine, SubroutineKind};
+use crate::core::entities::Subroutine;
 use crate::errors::grpc::GrpcClientResult;
 
-use super::proto::entities::{RpcCreateRequest, RpcSubroutineKind};
+use super::proto::entities::RpcCreateSubroutineRequest;
 use super::proto::RpcSubroutinesClient;
 
 #[derive(Clone, Debug)]
@@ -22,21 +20,15 @@ impl SubroutinesApiClient {
 
     pub async fn create(
         &self,
-        name: &str,
-        path: &Path,
-        kind: SubroutineKind,
+        fleet: &str,
+        namespace: &str,
+        subroutine_definition_id: &str,
     ) -> GrpcClientResult<Subroutine> {
-        let mut req = RpcCreateRequest {
-            name: name.into(),
-            path: path.as_os_str().to_owned().into_string().unwrap(),
-            kind: 0,
+        let req = RpcCreateSubroutineRequest {
+            fleet: fleet.into(),
+            namespace: namespace.into(),
+            subroutine_definition_id: subroutine_definition_id.into(),
         };
-        req.set_kind(RpcSubroutineKind::from(kind));
-        // let mut req = tonic::Request::new(RpcCreateRequest {
-        //     name: name.into(),
-        //     path: path.into_os_string().into_string().unwrap(),
-        //     kind: 0,
-        // });
         let mut client = self.inner.clone();
         let response = client.create(tonic::Request::new(req)).await?;
         Ok(response.into_inner().into())

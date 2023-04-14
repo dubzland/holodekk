@@ -8,5 +8,5 @@ pub use projector::Projector;
 
 pub mod subroutine;
 pub use subroutine::{
-    Subroutine, SubroutineInstance, SubroutineKind, SubroutineManifest, SubroutineStatus,
+    Subroutine, SubroutineDefinition, SubroutineKind, SubroutineManifest, SubroutineStatus,
 };

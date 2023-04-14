@@ -1,17 +1,23 @@
 use async_trait::async_trait;
 
-pub use crate::core::{
-    entities::Subroutine,
-    repositories::{Error, RepositoryQuery, Result, SubroutinesRepository},
-};
+pub use crate::core::entities::Subroutine;
+pub use crate::core::repositories::{Error, RepositoryQuery, Result, SubroutinesRepository};
 
 pub(self) use super::MemoryRepository;
 
 #[async_trait]
 impl SubroutinesRepository for MemoryRepository {
     async fn subroutines_create(&self, subroutine: Subroutine) -> Result<Subroutine> {
-        self.db.subroutines().add(subroutine.clone())?;
-        Ok(subroutine)
+        if self
+            .db
+            .subroutine_definitions()
+            .exists(&subroutine.subroutine_definition_id)?
+        {
+            self.db.subroutines().add(subroutine.clone())?;
+            Ok(subroutine)
+        } else {
+            Err(Error::RelationNotFound)
+        }
     }
 
     async fn subroutines_delete(&self, id: &str) -> Result<()> {
@@ -36,7 +42,7 @@ impl SubroutinesRepository for MemoryRepository {
             .subroutines()
             .all()?
             .into_iter()
-            .filter(|s| query.matches(s))
+            .filter(|i| query.matches(i))
             .collect();
         Ok(subroutines)
     }
@@ -54,8 +60,10 @@ mod tests {
     use rstest::*;
 
     use crate::core::{
-        entities::subroutine::fixtures::subroutine,
-        repositories::{memory::MemoryDatabase, RepositoryId, SubroutinesQuery},
+        entities::subroutine::{
+            definition::fixtures::subroutine_definition, fixtures::subroutine, SubroutineDefinition,
+        },
+        repositories::{memory::MemoryDatabase, Error, RepositoryId, SubroutinesQuery},
     };
 
     use super::*;
@@ -67,21 +75,45 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn create_fails_when_subroutine_already_exists(
+    async fn create_fails_when_the_subroutine_definition_does_not_exist(
         db: Arc<MemoryDatabase>,
         subroutine: Subroutine,
     ) -> Result<()> {
-        db.subroutines().add(subroutine.clone())?;
         let repo = MemoryRepository::new(db.clone());
-        let res = repo.subroutines_create(subroutine.clone()).await;
-        assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), Error::AlreadyExists));
+
+        let result = repo.subroutines_create(subroutine.clone()).await;
+
+        assert!(matches!(result.unwrap_err(), Error::RelationNotFound));
+
         Ok(())
     }
 
     #[rstest]
     #[tokio::test]
-    async fn create_succeeds(db: Arc<MemoryDatabase>, subroutine: Subroutine) -> Result<()> {
+    async fn create_fails_when_subroutine_already_exists(
+        db: Arc<MemoryDatabase>,
+        subroutine: Subroutine,
+        subroutine_definition: SubroutineDefinition,
+    ) -> Result<()> {
+        db.subroutine_definitions().add(subroutine_definition)?;
+        db.subroutines().add(subroutine.clone())?;
+        let repo = MemoryRepository::new(db.clone());
+
+        let result = repo.subroutines_create(subroutine.clone()).await;
+
+        assert!(matches!(result.unwrap_err(), Error::AlreadyExists));
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn create_succeeds(
+        db: Arc<MemoryDatabase>,
+        subroutine: Subroutine,
+        subroutine_definition: SubroutineDefinition,
+    ) -> Result<()> {
+        db.subroutine_definitions().add(subroutine_definition)?;
         let repo = MemoryRepository::new(db.clone());
 
         let result = repo.subroutines_create(subroutine.clone()).await;
@@ -92,35 +124,27 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn create_adds_record(db: Arc<MemoryDatabase>, subroutine: Subroutine) -> Result<()> {
+    async fn create_stores_subroutine(
+        db: Arc<MemoryDatabase>,
+        subroutine: Subroutine,
+        subroutine_definition: SubroutineDefinition,
+    ) -> Result<()> {
+        db.subroutine_definitions().add(subroutine_definition)?;
         let repo = MemoryRepository::new(db.clone());
+
         repo.subroutines_create(subroutine.clone()).await?;
 
-        let new_sub = db.subroutines().get(&subroutine.id())?;
-        assert_eq!(new_sub.id(), subroutine.id());
+        let exists = db.subroutines().exists(&subroutine.id())?;
+        assert!(exists);
         Ok(())
     }
 
     #[rstest]
     #[tokio::test]
-    async fn create_returns_the_subroutine(
-        db: Arc<MemoryDatabase>,
-        subroutine: Subroutine,
-    ) -> Result<()> {
+    async fn delete_fails_when_subroutine_does_not_exist(db: Arc<MemoryDatabase>) -> Result<()> {
         let repo = MemoryRepository::new(db.clone());
-        let new_sub = repo.subroutines_create(subroutine.clone()).await?;
-        assert_eq!(new_sub.id(), subroutine.id());
-        Ok(())
-    }
-
-    #[rstest]
-    #[tokio::test]
-    async fn delete_fails_for_nonexistent_subroutine(
-        db: Arc<MemoryDatabase>,
-        subroutine: Subroutine,
-    ) -> Result<()> {
-        let repo = MemoryRepository::new(db.clone());
-        let res = repo.subroutines_delete(&subroutine.id()).await;
+        let res = repo.subroutines_delete("nonexistent").await;
+        assert!(res.is_err());
         assert!(matches!(res.unwrap_err(), Error::NotFound));
         Ok(())
     }
@@ -134,8 +158,18 @@ mod tests {
         db.subroutines().add(subroutine.clone())?;
         let repo = MemoryRepository::new(db.clone());
         repo.subroutines_delete(&subroutine.id()).await?;
-
         let exists = db.subroutines().exists(&subroutine.id())?;
+        assert!(!exists);
+        Ok(())
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn exists_returns_false_for_nonexistent_subroutine(
+        db: Arc<MemoryDatabase>,
+    ) -> Result<()> {
+        let repo = MemoryRepository::new(db.clone());
+        let exists = repo.subroutines_exists("nonexistent").await?;
         assert!(!exists);
         Ok(())
     }
@@ -148,72 +182,62 @@ mod tests {
     ) -> Result<()> {
         db.subroutines().add(subroutine.clone())?;
         let repo = MemoryRepository::new(db.clone());
-        assert!(repo.subroutines_exists(&subroutine.id()).await?);
+        let exists = repo.subroutines_exists(&subroutine.id()).await?;
+        assert!(exists);
         Ok(())
     }
 
     #[rstest]
     #[tokio::test]
-    async fn exists_returns_false_for_nonexistent_subroutine(
-        db: Arc<MemoryDatabase>,
-        subroutine: Subroutine,
-    ) -> Result<()> {
+    async fn find_retrieves_nothing_when_no_records(db: Arc<MemoryDatabase>) -> Result<()> {
         let repo = MemoryRepository::new(db.clone());
-        assert!(!repo.subroutines_exists(&subroutine.id()).await?);
+
+        let instances = repo.subroutines_find(SubroutinesQuery::default()).await?;
+        assert!(instances.is_empty());
         Ok(())
     }
 
     #[rstest]
     #[tokio::test]
-    async fn find_returns_nothing_when_no_records(db: Arc<MemoryDatabase>) -> Result<()> {
-        let repo = MemoryRepository::new(db.clone());
-        assert!(repo
-            .subroutines_find(SubroutinesQuery::default())
-            .await?
-            .is_empty());
-        Ok(())
-    }
-
-    #[rstest]
-    #[tokio::test]
-    async fn find_returns_nothing_when_no_matches(
+    async fn find_retrieves_nothing_when_no_matches(
         db: Arc<MemoryDatabase>,
         subroutine: Subroutine,
     ) -> Result<()> {
         db.subroutines().add(subroutine.clone())?;
         let repo = MemoryRepository::new(db.clone());
-        assert!(repo
-            .subroutines_find(SubroutinesQuery::builder().name_eq("nonexistent").build())
-            .await?
-            .is_empty());
+
+        let instances = repo
+            .subroutines_find(SubroutinesQuery::builder().fleet_eq("nonexistent").build())
+            .await?;
+        assert!(instances.is_empty());
         Ok(())
     }
 
     #[rstest]
     #[tokio::test]
-    async fn find_returns_matches(db: Arc<MemoryDatabase>, subroutine: Subroutine) -> Result<()> {
+    async fn find_retrieves_matches(db: Arc<MemoryDatabase>, subroutine: Subroutine) -> Result<()> {
         db.subroutines().add(subroutine.clone())?;
         let repo = MemoryRepository::new(db.clone());
-        let res = repo
+
+        let instances = repo
             .subroutines_find(
                 SubroutinesQuery::builder()
-                    .name_eq(&subroutine.name)
+                    .fleet_eq(&subroutine.fleet)
+                    .namespace_eq(&subroutine.namespace)
                     .build(),
             )
             .await?;
-        assert_eq!(res.len(), 1);
-        assert_eq!(res[0], subroutine);
+        assert!(!instances.is_empty());
+        assert_eq!(instances[0], subroutine);
         Ok(())
     }
 
     #[rstest]
     #[tokio::test]
-    async fn get_fails_when_subroutine_does_not_exist(
-        db: Arc<MemoryDatabase>,
-        subroutine: Subroutine,
-    ) -> Result<()> {
+    async fn get_fails_when_the_instance_does_not_exist(db: Arc<MemoryDatabase>) -> Result<()> {
         let repo = MemoryRepository::new(db.clone());
-        let res = repo.subroutines_get(&subroutine.id()).await;
+
+        let res = repo.subroutines_get("nonexistent").await;
         assert!(res.is_err());
         assert!(matches!(res.unwrap_err(), Error::NotFound));
         Ok(())
@@ -221,12 +245,15 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn get_returns_subroutine(db: Arc<MemoryDatabase>, subroutine: Subroutine) -> Result<()> {
+    async fn get_retrieves_subroutine(
+        db: Arc<MemoryDatabase>,
+        subroutine: Subroutine,
+    ) -> Result<()> {
         db.subroutines().add(subroutine.clone())?;
         let repo = MemoryRepository::new(db.clone());
 
-        let sub = repo.subroutines_get(&subroutine.id()).await?;
-        assert_eq!(sub.id(), subroutine.id());
+        let instance = repo.subroutines_get(&subroutine.id()).await?;
+        assert_eq!(instance.id(), subroutine.id());
         Ok(())
     }
 }

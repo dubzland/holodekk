@@ -1,29 +1,27 @@
 mod create;
 pub use create::*;
 
-mod start;
-pub use start::*;
-
-mod status;
-pub use status::*;
-
 use std::sync::Arc;
 
-use crate::core::repositories::SubroutinesRepository;
+use tokio::sync::mpsc::Sender;
+
+use crate::core::repositories::{SubroutineDefinitionsRepository, SubroutinesRepository};
+use crate::managers::subroutine::SubroutineCommand;
 
 #[derive(Clone, Debug)]
 pub struct SubroutinesService<T>
 where
-    T: SubroutinesRepository,
+    T: SubroutinesRepository + SubroutineDefinitionsRepository,
 {
     repo: Arc<T>,
+    manager: Sender<SubroutineCommand>,
 }
 
 impl<T> SubroutinesService<T>
 where
-    T: SubroutinesRepository,
+    T: SubroutinesRepository + SubroutineDefinitionsRepository,
 {
-    pub fn new(repo: Arc<T>) -> Self {
-        Self { repo }
+    pub fn new(repo: Arc<T>, manager: Sender<SubroutineCommand>) -> Self {
+        Self { repo, manager }
     }
 }

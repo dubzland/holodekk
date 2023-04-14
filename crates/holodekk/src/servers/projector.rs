@@ -1,44 +1,35 @@
 use std::sync::Arc;
 
-use crate::{
-    apis::grpc::applications::applications_api_server, config::ProjectorApiConfig,
-    core::repositories::SubroutinesRepository,
-};
+use log::debug;
+
+use crate::{apis::grpc::applications::applications_api_server, config::ProjectorApiConfig};
 
 use super::{start_grpc_server, GrpcServerHandle};
 
-pub struct ProjectorServer<T>
-where
-    T: SubroutinesRepository,
-{
-    _repository: Arc<T>,
-    projector_api: GrpcServerHandle,
+pub struct ProjectorServer {
+    api_server: GrpcServerHandle,
 }
 
-impl<T> ProjectorServer<T>
-where
-    T: SubroutinesRepository,
-{
-    fn new(_repository: Arc<T>, projector_api: GrpcServerHandle) -> Self {
-        Self {
-            _repository,
-            projector_api,
-        }
+impl ProjectorServer {
+    fn new(api_server: GrpcServerHandle) -> Self {
+        Self { api_server }
     }
 
-    pub fn start<C>(config: Arc<C>, repository: Arc<T>) -> Self
+    pub fn start<C>(config: Arc<C>) -> Self
     where
         C: ProjectorApiConfig,
     {
-        let projector_api = start_grpc_server(
-            config.projector_api_config(),
+        debug!("starting Projector API server...");
+        let api_config = config.projector_api_config().clone();
+        let api_server = start_grpc_server(
+            &api_config,
             tonic::transport::Server::builder().add_service(applications_api_server()),
         );
-        Self::new(repository, projector_api)
+        Self::new(api_server)
     }
 
     pub async fn stop(self) -> Result<(), tonic::transport::Error> {
-        self.projector_api.stop().await?;
+        self.api_server.stop().await?;
         Ok(())
     }
 }

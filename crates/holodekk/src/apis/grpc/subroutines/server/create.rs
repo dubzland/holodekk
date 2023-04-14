@@ -3,7 +3,7 @@ use tonic::{Request, Response};
 use crate::core::services::subroutines::{Create, SubroutinesCreateInput};
 
 use crate::apis::grpc::subroutines::proto::{
-    entities::{RpcCreateRequest, RpcSubroutine, RpcSubroutineKind},
+    entities::{RpcCreateSubroutineRequest, RpcSubroutine},
     RpcSubroutines,
 };
 
@@ -16,17 +16,17 @@ where
 {
     async fn create(
         &self,
-        request: Request<RpcCreateRequest>,
+        request: Request<RpcCreateSubroutineRequest>,
     ) -> std::result::Result<Response<RpcSubroutine>, tonic::Status> {
         let request = request.into_inner();
         let input = SubroutinesCreateInput {
-            name: request.name,
-            path: request.path.into(),
-            kind: RpcSubroutineKind::from_i32(request.kind).unwrap().into(),
+            fleet: request.fleet,
+            namespace: request.namespace,
+            subroutine_definition_id: request.subroutine_definition_id,
         };
-        let instance = self.service.create(input).await?;
+        let subroutine = self.service.create(input).await?;
 
-        Ok(Response::new(instance.into()))
+        Ok(Response::new(subroutine.into()))
     }
 }
 

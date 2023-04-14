@@ -11,7 +11,7 @@ use serde::Deserialize;
 
 use holodekk::core::{
     entities::Projector,
-    repositories::{ProjectorsRepository, SubroutinesRepository},
+    repositories::ProjectorsRepository,
     services::projectors::{
         Create, Delete, Exists, Find, ProjectorsCreateInput, ProjectorsDeleteInput,
         ProjectorsExistsInput, ProjectorsFindInput,
@@ -22,7 +22,7 @@ use super::ApiServices;
 
 pub fn routes<T>() -> Router<Arc<ApiServices<T>>>
 where
-    T: ProjectorsRepository + SubroutinesRepository,
+    T: ProjectorsRepository + 'static,
 {
     Router::new()
         .route("/", get(list))
@@ -32,7 +32,7 @@ where
 
 async fn list<T>(State(state): State<Arc<ApiServices<T>>>) -> impl IntoResponse
 where
-    T: ProjectorsRepository + SubroutinesRepository,
+    T: ProjectorsRepository,
 {
     let projectors = state
         .projectors()
@@ -52,7 +52,7 @@ async fn start<T>(
     Json(new_projector): Json<NewProjector>,
 ) -> Result<Json<Projector>, (StatusCode, String)>
 where
-    T: ProjectorsRepository + SubroutinesRepository,
+    T: ProjectorsRepository,
 {
     if state
         .projectors()
@@ -83,7 +83,7 @@ async fn stop<T>(
     Path(namespace): Path<String>,
 ) -> Result<(), (StatusCode, String)>
 where
-    T: ProjectorsRepository + SubroutinesRepository,
+    T: ProjectorsRepository,
 {
     if state
         .projectors()

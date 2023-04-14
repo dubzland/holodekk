@@ -1,22 +1,23 @@
-use std::path::PathBuf;
-
 use async_trait::async_trait;
+use log::{debug, info, trace, warn};
 #[cfg(test)]
 use mockall::{automock, predicate::*};
+use tokio::sync::mpsc::Sender;
 
 use crate::core::{
-    entities::{Subroutine, SubroutineKind},
-    repositories::{subroutine_repo_id, SubroutinesRepository},
+    entities::{Subroutine, SubroutineDefinition},
+    repositories::{subroutine_repo_id, SubroutineDefinitionsRepository, SubroutinesRepository},
     services::{Error, Result},
 };
+use crate::managers::subroutine::SubroutineCommand;
 
 use super::SubroutinesService;
 
 #[derive(Clone, Debug)]
 pub struct SubroutinesCreateInput {
-    pub name: String,
-    pub path: PathBuf,
-    pub kind: SubroutineKind,
+    pub fleet: String,
+    pub namespace: String,
+    pub subroutine_definition_id: String,
 }
 
 #[cfg_attr(test, automock)]
@@ -28,99 +29,84 @@ pub trait Create {
 #[async_trait]
 impl<T> Create for SubroutinesService<T>
 where
-    T: SubroutinesRepository,
+    T: SubroutinesRepository + SubroutineDefinitionsRepository,
 {
-    /// Creates a Subroutine entry in the repository.
     async fn create(&self, input: SubroutinesCreateInput) -> Result<Subroutine> {
-        // make sure this subroutine does not already exist
-        println!("Checking for subroutine with name: {}", input.name,);
-        if self
-            .repo
-            .subroutines_get(&subroutine_repo_id(&input.name))
-            .await
-            .is_ok()
-        {
-            return Err(Error::Duplicate);
-        }
+        trace!("SubroutinesService.create({:?})", input);
 
-        let subroutine = Subroutine::new(input.name, input.path, input.kind);
-        let subroutine = self.repo.subroutines_create(subroutine).await?;
-        Ok(subroutine)
+        // ensure this subroutine isn't already running in the selected namespace
+        let id = subroutine_repo_id(
+            &input.fleet,
+            &input.namespace,
+            &input.subroutine_definition_id,
+        );
+        if self.repo.subroutines_exists(&id).await? {
+            Err(Error::AlreadyRunning)
+        } else {
+            // retrieve the subroutine definition
+            let subroutine_definition = self
+                .repo
+                .subroutine_definitions_get(&input.subroutine_definition_id)
+                .await?;
+
+            // send spawn request to manager
+            info!(
+                "Spawning subroutine {} in namespace {}",
+                subroutine_definition.name, input.namespace
+            );
+            let subroutine: Subroutine = send_start_command(
+                self.manager.clone(),
+                &input.namespace,
+                subroutine_definition.clone(),
+            )
+            .await?;
+            info!("Subroutine spawned: {:?}", subroutine);
+
+            // store the instance and return it
+            let subroutine = self.repo.subroutines_create(subroutine).await?;
+            Ok(subroutine)
+        }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use std::sync::Arc;
+async fn send_start_command(
+    manager: Sender<SubroutineCommand>,
+    namespace: &str,
+    subroutine_definition: SubroutineDefinition,
+) -> Result<Subroutine> {
+    let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
 
-    use rstest::*;
-
-    use crate::core::{
-        entities::{subroutine::fixtures::subroutine, Subroutine},
-        repositories::{self, fixtures::subroutines_repository, MockSubroutinesRepository},
-        services::Error,
+    let cmd = SubroutineCommand::Spawn {
+        namespace: namespace.to_string(),
+        definition: subroutine_definition,
+        resp: resp_tx,
     };
 
-    use super::*;
+    debug!("command: {:?}", cmd);
 
-    #[rstest]
-    #[tokio::test]
-    async fn creates_subroutine(
-        mut subroutines_repository: MockSubroutinesRepository,
-        subroutine: Subroutine,
-    ) -> Result<()> {
-        let input = SubroutinesCreateInput {
-            name: subroutine.name.clone(),
-            path: subroutine.path.clone(),
-            kind: subroutine.kind,
-        };
+    manager.send(cmd).await.map_err(|err| {
+        warn!(
+            "Failed to send subroutine spawn command to manager: {}",
+            err
+        );
+        Error::SpawnFailed
+    })?;
 
-        let sub_name = subroutine.name.clone();
-        subroutines_repository
-            .expect_subroutines_get()
-            .withf(move |name| name == &subroutine_repo_id(&sub_name))
-            .return_const(Err(repositories::Error::NotFound));
+    trace!("Command sent to manager.  awaiting response...");
+    let res = resp_rx.await.map_err(|err| {
+        warn!(
+            "Failed to receive response from manager to spawn request: {}",
+            err
+        );
+        Error::SpawnFailed
+    })?;
 
-        let sub_path = subroutine.path.clone();
-        let sub_name = subroutine.name.clone();
-
-        subroutines_repository
-            .expect_subroutines_create()
-            .withf(move |new_sub: &Subroutine| {
-                (*new_sub).path.eq(&sub_path) && (*new_sub).name.eq(&sub_name)
-            })
-            .return_const(Ok(subroutine.clone()));
-
-        let service = SubroutinesService::new(Arc::new(subroutines_repository));
-
-        let sub = service.create(input).await?;
-        assert_eq!(&sub, &subroutine);
-        Ok(())
-    }
-
-    #[rstest]
-    #[tokio::test]
-    async fn rejects_duplicate_subroutine_name(
-        mut subroutines_repository: MockSubroutinesRepository,
-        subroutine: Subroutine,
-    ) {
-        let input = SubroutinesCreateInput {
-            name: subroutine.name.clone(),
-            path: subroutine.path.clone(),
-            kind: subroutine.kind,
-        };
-
-        let sub_name = subroutine.name.clone();
-
-        subroutines_repository
-            .expect_subroutines_get()
-            .withf(move |name| name == &subroutine_repo_id(&sub_name))
-            .return_const(Ok(subroutine.to_owned()));
-
-        let service = SubroutinesService::new(Arc::new(subroutines_repository));
-
-        let res = service.create(input).await;
-        assert!(res.is_err());
-        assert_eq!(res.unwrap_err(), Error::Duplicate);
-    }
+    trace!("Spawn response received from manager: {:?}", res);
+    res.map_err(|err| {
+        warn!(
+            "Manager returned error in response to spawn request: {}",
+            err
+        );
+        Error::SpawnFailed
+    })
 }
