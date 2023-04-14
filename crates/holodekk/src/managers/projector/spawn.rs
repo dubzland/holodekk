@@ -1,6 +1,7 @@
 use std::fs::{self, File};
 use std::io::Read;
 use std::os::unix::io::FromRawFd;
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::Arc;
 
@@ -28,18 +29,15 @@ struct MessageProjectorPidParent {
     pid: i32,
 }
 
-pub fn spawn_projector<C>(
+fn build_command<C>(
     config: Arc<C>,
     namespace: &str,
-) -> std::result::Result<Projector, SpawnError>
+    child_fd: i32,
+) -> (PathBuf, ConnectionInfo, ConnectionInfo, Command)
 where
     C: HolodekkConfig,
 {
-    // Setup a pipe so we can be notified when the projector is fully up
-    let (parent_fd, child_fd) = pipe2(OFlag::empty()).unwrap();
-    let mut sync_pipe = unsafe { File::from_raw_fd(parent_fd) };
-
-    let mut root_path = config.root_path().clone();
+    let mut root_path = config.paths().projectors().clone();
     root_path.push(namespace);
 
     // Ensure the root directory exists
@@ -57,14 +55,14 @@ where
     let mut projector_sock = root_path.clone();
     projector_sock.push("projector.sock");
 
-    let mut uhura = config.bin_path().clone();
+    let mut uhura = config.paths().bin().clone();
     uhura.push("uhura");
 
     let mut command = Command::new(uhura);
     command.arg("--projector-root");
     command.arg(&root_path);
     command.arg("--holodekk-bin");
-    command.arg(config.bin_path());
+    command.arg(config.paths().bin());
     command.arg("--fleet");
     command.arg(config.fleet());
     command.arg("--namespace");
@@ -80,6 +78,23 @@ where
     let projector_listener = ConnectionInfo::unix(&projector_sock);
     command.arg("--projector-socket");
     command.arg(projector_sock);
+
+    (pidfile, uhura_listener, projector_listener, command)
+}
+
+pub fn spawn_projector<C>(
+    config: Arc<C>,
+    namespace: &str,
+) -> std::result::Result<Projector, SpawnError>
+where
+    C: HolodekkConfig,
+{
+    // Setup a pipe so we can be notified when the projector is fully up
+    let (parent_fd, child_fd) = pipe2(OFlag::empty()).unwrap();
+    let mut sync_pipe = unsafe { File::from_raw_fd(parent_fd) };
+
+    let (pidfile, uhura_listener, projector_listener, mut command) =
+        build_command(config.clone(), namespace, child_fd);
 
     info!("Launching uhura with: {:?}", command);
     let status = command

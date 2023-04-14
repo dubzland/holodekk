@@ -1,6 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use holodekk::config::{HolodekkConfig, ProjectorApiConfig, ProjectorConfig, UhuraApiConfig};
+use holodekk::config::{
+    HolodekkConfig, HolodekkPaths, ProjectorApiConfig, ProjectorConfig, UhuraApiConfig,
+};
 use holodekk::core::repositories::RepositoryKind;
 use holodekk::utils::ConnectionInfo;
 
@@ -8,9 +10,8 @@ use holodekk::utils::ConnectionInfo;
 pub struct UhuraConfig {
     fleet: String,
     namespace: String,
-    root_path: PathBuf,
-    projector_root_path: PathBuf,
-    bin_path: PathBuf,
+    paths: HolodekkPaths,
+    projector_path: PathBuf,
     repo_kind: RepositoryKind,
     uhura_api_config: ConnectionInfo,
     projector_api_config: ConnectionInfo,
@@ -29,14 +30,15 @@ impl UhuraConfig {
     where
         P: AsRef<Path> + Into<PathBuf>,
     {
-        let mut projector_root_path: PathBuf = root_path.as_ref().to_owned();
-        projector_root_path.push(namespace);
+        let paths = HolodekkPaths::new(root_path, bin_path);
+        let mut projector_path = paths.root().clone();
+        projector_path.push(namespace);
+
         Self {
             fleet: fleet.into(),
             namespace: namespace.into(),
-            root_path: root_path.into(),
-            projector_root_path,
-            bin_path: bin_path.into(),
+            paths,
+            projector_path,
             repo_kind,
             uhura_api_config,
             projector_api_config,
@@ -49,12 +51,8 @@ impl HolodekkConfig for UhuraConfig {
         &self.fleet
     }
 
-    fn root_path(&self) -> &PathBuf {
-        &self.root_path
-    }
-
-    fn bin_path(&self) -> &PathBuf {
-        &self.bin_path
+    fn paths(&self) -> &HolodekkPaths {
+        &self.paths
     }
 
     fn repo_kind(&self) -> RepositoryKind {
@@ -63,12 +61,12 @@ impl HolodekkConfig for UhuraConfig {
 }
 
 impl ProjectorConfig for UhuraConfig {
-    fn namespace(&self) -> &str {
-        &self.namespace
+    fn projector_path(&self) -> &PathBuf {
+        &self.projector_path
     }
 
-    fn projector_root_path(&self) -> &PathBuf {
-        &self.projector_root_path
+    fn namespace(&self) -> &str {
+        &self.namespace
     }
 }
 

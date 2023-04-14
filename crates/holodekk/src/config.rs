@@ -1,29 +1,69 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::core::repositories::RepositoryKind;
 use crate::utils::ConnectionInfo;
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct HolodekkPaths {
+    root: PathBuf,
+    projectors: PathBuf,
+    subroutines: PathBuf,
+    bin: PathBuf,
+}
+
+impl HolodekkPaths {
+    pub fn new<P: AsRef<Path>>(root: P, bin: P) -> Self {
+        let root = root.as_ref().to_owned();
+        let mut projectors = root.clone();
+        projectors.push("projectors");
+        let mut subroutines = root.clone();
+        subroutines.push("subroutines");
+
+        Self {
+            root,
+            projectors,
+            subroutines,
+            bin: bin.as_ref().to_owned(),
+        }
+    }
+
+    pub fn root(&self) -> &PathBuf {
+        &self.root
+    }
+
+    pub fn projectors(&self) -> &PathBuf {
+        &self.projectors
+    }
+
+    pub fn subroutines(&self) -> &PathBuf {
+        &self.subroutines
+    }
+
+    pub fn bin(&self) -> &PathBuf {
+        &self.bin
+    }
+}
+
 pub trait HolodekkConfig: Clone + Sync + Send + 'static {
     fn fleet(&self) -> &str;
-    fn root_path(&self) -> &PathBuf;
-    fn bin_path(&self) -> &PathBuf;
+    fn paths(&self) -> &HolodekkPaths;
     fn repo_kind(&self) -> RepositoryKind;
 }
 
-pub trait ProjectorConfig {
-    fn projector_root_path(&self) -> &PathBuf;
+pub trait ProjectorConfig: Clone + Sync + Send + 'static {
+    fn projector_path(&self) -> &PathBuf;
     fn namespace(&self) -> &str;
 }
 
-pub trait HolodekkApiConfig {
+pub trait HolodekkApiConfig: Clone + Sync + Send + 'static {
     fn holodekk_api_config(&self) -> &ConnectionInfo;
 }
 
-pub trait ProjectorApiConfig {
+pub trait ProjectorApiConfig: Clone + Sync + Send + 'static {
     fn projector_api_config(&self) -> &ConnectionInfo;
 }
 
-pub trait UhuraApiConfig {
+pub trait UhuraApiConfig: Clone + Sync + Send + 'static {
     fn uhura_api_config(&self) -> &ConnectionInfo;
 }
 
@@ -35,17 +75,26 @@ pub mod fixtures {
 
     #[derive(Clone, Debug)]
     pub struct MockConfig {
-        root_path: PathBuf,
-        projector_root_path: PathBuf,
-        bin_path: PathBuf,
+        paths: HolodekkPaths,
+        projector_path: PathBuf,
     }
 
     impl Default for MockConfig {
         fn default() -> Self {
+            let holodekk_root_path: PathBuf = "/tmp".into();
+
+            let mut projectors_root_path = holodekk_root_path.clone();
+            projectors_root_path.push("projectors");
+
+            let mut subroutines_root_path = holodekk_root_path.clone();
+            subroutines_root_path.push("subroutines");
+
+            let mut projector_path = projectors_root_path.clone();
+            projector_path.push("test");
+
             Self {
-                root_path: "/tmp".into(),
-                projector_root_path: "/tmp/test".into(),
-                bin_path: "/tmp/bin".into(),
+                paths: HolodekkPaths::new("/tmp", "/tmp/bin"),
+                projector_path,
             }
         }
     }
@@ -55,12 +104,8 @@ pub mod fixtures {
             "test"
         }
 
-        fn root_path(&self) -> &PathBuf {
-            &self.root_path
-        }
-
-        fn bin_path(&self) -> &PathBuf {
-            &self.bin_path
+        fn paths(&self) -> &HolodekkPaths {
+            &self.paths
         }
 
         fn repo_kind(&self) -> RepositoryKind {
@@ -69,8 +114,8 @@ pub mod fixtures {
     }
 
     impl ProjectorConfig for MockConfig {
-        fn projector_root_path(&self) -> &PathBuf {
-            &self.projector_root_path
+        fn projector_path(&self) -> &PathBuf {
+            &self.projector_path
         }
 
         fn namespace(&self) -> &str {

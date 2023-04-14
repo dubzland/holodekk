@@ -1,14 +1,13 @@
 use std::path::PathBuf;
 
-use holodekk::config::{HolodekkApiConfig, HolodekkConfig};
+use holodekk::config::{HolodekkApiConfig, HolodekkConfig, HolodekkPaths};
 use holodekk::core::repositories::RepositoryKind;
 use holodekk::utils::ConnectionInfo;
 
 #[derive(Clone, Debug)]
 pub struct HolodekkdConfig {
     fleet: String,
-    root_path: PathBuf,
-    bin_path: PathBuf,
+    paths: HolodekkPaths,
     holodekk_api_config: ConnectionInfo,
     repo_kind: RepositoryKind,
 }
@@ -26,8 +25,7 @@ impl HolodekkdConfig {
     {
         Self {
             fleet: fleet.into(),
-            root_path: root_path.into(),
-            bin_path: bin_path.into(),
+            paths: HolodekkPaths::new(root_path.into(), bin_path.into()),
             holodekk_api_config,
             repo_kind,
         }
@@ -39,12 +37,8 @@ impl HolodekkConfig for HolodekkdConfig {
         &self.fleet
     }
 
-    fn root_path(&self) -> &PathBuf {
-        &self.root_path
-    }
-
-    fn bin_path(&self) -> &PathBuf {
-        &self.bin_path
+    fn paths(&self) -> &HolodekkPaths {
+        &self.paths
     }
 
     fn repo_kind(&self) -> RepositoryKind {

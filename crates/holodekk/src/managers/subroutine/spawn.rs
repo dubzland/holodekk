@@ -1,6 +1,7 @@
 use std::fs::{self, File};
 use std::io::Read;
 use std::os::unix::io::FromRawFd;
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::Arc;
 
@@ -28,19 +29,15 @@ struct MessageSubroutinePidParent {
     pid: i32,
 }
 
-pub fn spawn_subroutine<C>(
+fn build_command<C>(
     config: Arc<C>,
-    namespace: &str,
     definition: SubroutineDefinition,
-) -> std::result::Result<Subroutine, SpawnError>
+    child_fd: i32,
+) -> (PathBuf, PathBuf, Command)
 where
     C: HolodekkConfig + ProjectorConfig,
 {
-    // Setup a pipe so we can be notified when the projector is fully up
-    let (parent_fd, child_fd) = pipe2(OFlag::empty()).unwrap();
-    let mut sync_pipe = unsafe { File::from_raw_fd(parent_fd) };
-
-    let mut root_path = config.projector_root_path().clone();
+    let mut root_path = config.projector_path().clone();
     root_path.push(definition.name.clone());
 
     // Ensure the root directory exists
@@ -67,7 +64,7 @@ where
     let mut projector_sock = root_path.clone();
     projector_sock.push("projector.sock");
 
-    let mut subroutine_bin = config.bin_path().clone();
+    let mut subroutine_bin = config.paths().bin().clone();
     subroutine_bin.push("holodekk-subroutine");
 
     let mut command = Command::new(subroutine_bin);
@@ -91,6 +88,24 @@ where
     command.arg("--sync-pipe");
     command.arg(child_fd.to_string());
 
+    (subroutine_pidfile, root_path, command)
+}
+
+pub fn spawn_subroutine<C>(
+    config: Arc<C>,
+    namespace: &str,
+    definition: SubroutineDefinition,
+) -> std::result::Result<Subroutine, SpawnError>
+where
+    C: HolodekkConfig + ProjectorConfig,
+{
+    // Setup a pipe so we can be notified when the projector is fully up
+    let (parent_fd, child_fd) = pipe2(OFlag::empty()).unwrap();
+    let mut sync_pipe = unsafe { File::from_raw_fd(parent_fd) };
+
+    let (pidfile, subroutine_root, mut command) =
+        build_command(config.clone(), definition.clone(), child_fd);
+
     info!("Launching subroutine with: {:?}", command);
     let status = command
         .stdin(Stdio::null())
@@ -111,15 +126,15 @@ where
             Err(err) => {
                 warn!("Failed to receive pid from subroutine: {}", err);
                 // try to read it from the pidfile
-                let contents = fs::read_to_string(&subroutine_pidfile)
-                    .expect("Should have been able to read pid file");
+                let contents =
+                    fs::read_to_string(pidfile).expect("Should have been able to read pid file");
                 let pid: i32 = contents
                     .parse()
                     .expect("Unable to convert pidfile contents to pid");
                 Pid::from_raw(pid)
             }
         };
-        let mut i = Subroutine::new(config.fleet(), namespace, root_path, &definition.id());
+        let mut i = Subroutine::new(config.fleet(), namespace, subroutine_root, &definition.id());
         i.status = SubroutineStatus::Running(pid.as_raw() as u32);
         debug!("Subroutine spawned with pid: {}", pid);
         drop(sync_pipe);
