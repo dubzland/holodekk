@@ -228,14 +228,15 @@ fn main() -> Result<()> {
     // Ensure the root directory exists
     debug!(
         "Checking for existence of root directory: {}",
-        config.root_path().display()
+        config.paths().root().display()
     );
-    if !config.root_path().exists() {
+    if !config.paths().root().exists() {
         info!(
             "Creating uhura root directory: {}",
-            config.root_path().display()
+            config.paths().root().display()
         );
-        fs::create_dir_all(config.root_path()).expect("Failed to create root directory for uhura");
+        fs::create_dir_all(config.paths().root())
+            .expect("Failed to create root directory for uhura");
     }
 
     main_loop(&options, config)?;
