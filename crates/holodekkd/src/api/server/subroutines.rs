@@ -9,20 +9,17 @@ use axum::{
 };
 use serde::Deserialize;
 
-use holodekk::core::{
-    entities::Projector,
-    repositories::{ProjectorsRepository, SubroutinesRepository},
-    services::projectors::{
-        Create, Delete, Exists, Find, ProjectorsCreateInput, ProjectorsDeleteInput,
-        ProjectorsExistsInput, ProjectorsFindInput,
-    },
+use holodekk::core::entities::Projector;
+use holodekk::core::repositories::ProjectorRepository;
+use holodekk::core::services::projectors::{
+    All, Exists, ProjectorExistsInput, ProjectorStartInput, ProjectorStopInput, Start, Stop,
 };
 
 use super::ApiServices;
 
 pub fn routes<T>() -> Router<Arc<ApiServices<T>>>
 where
-    T: ProjectorsRepository + SubroutinesRepository,
+    T: ProjectorRepository,
 {
     Router::new()
         .route("/", get(list))
@@ -32,13 +29,9 @@ where
 
 async fn list<T>(State(state): State<Arc<ApiServices<T>>>) -> impl IntoResponse
 where
-    T: ProjectorsRepository + SubroutinesRepository,
+    T: ProjectorRepository,
 {
-    let projectors = state
-        .projectors()
-        .find(ProjectorsFindInput::default())
-        .await
-        .unwrap();
+    let projectors = state.projectors().all().await.unwrap();
     Json(projectors)
 }
 
@@ -52,15 +45,14 @@ async fn start<T>(
     Json(new_projector): Json<NewProjector>,
 ) -> Result<Json<Projector>, (StatusCode, String)>
 where
-    T: ProjectorsRepository + SubroutinesRepository,
+    T: ProjectorRepository,
 {
     if state
         .projectors()
-        .exists(ProjectorsExistsInput {
+        .exists(ProjectorExistsInput {
             namespace: new_projector.namespace.clone(),
         })
         .await
-        .map_err(internal_error)?
     {
         Err((
             StatusCode::CONFLICT,
@@ -69,7 +61,7 @@ where
     } else {
         let projector = state
             .projectors()
-            .create(ProjectorsCreateInput {
+            .start(ProjectorStartInput {
                 namespace: new_projector.namespace,
             })
             .await
@@ -83,19 +75,18 @@ async fn stop<T>(
     Path(namespace): Path<String>,
 ) -> Result<(), (StatusCode, String)>
 where
-    T: ProjectorsRepository + SubroutinesRepository,
+    T: ProjectorRepository,
 {
     if state
         .projectors()
-        .exists(ProjectorsExistsInput {
+        .exists(ProjectorExistsInput {
             namespace: namespace.clone(),
         })
         .await
-        .map_err(internal_error)?
     {
         state
             .projectors()
-            .delete(ProjectorsDeleteInput { namespace })
+            .stop(ProjectorStopInput { namespace })
             .await
             .map_err(internal_error)?;
         Ok(())
@@ -110,3 +101,4 @@ where
 {
     (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
 }
+

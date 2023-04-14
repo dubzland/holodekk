@@ -1,11 +1,15 @@
 pub mod memory;
 
-use async_trait::async_trait;
-use clap::ValueEnum;
-#[cfg(test)]
-use mockall::{automock, predicate::*};
+mod projectors;
+pub use projectors::*;
 
-use super::entities::{Projector, Subroutine};
+mod subroutines;
+pub use subroutines::*;
+
+mod subroutine_instances;
+pub use subroutine_instances::*;
+
+use clap::ValueEnum;
 
 #[derive(thiserror::Error, Clone, Copy, Debug, PartialEq)]
 pub enum Error {
@@ -15,6 +19,8 @@ pub enum Error {
     NotFound,
     #[error("Record already exists")]
     AlreadyExists,
+    #[error("Relation not found")]
+    RelationNotFound,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -24,42 +30,38 @@ pub enum RepositoryKind {
     Memory,
 }
 
-#[cfg_attr(test, automock)]
-#[async_trait]
-pub trait ProjectorRepository: Send + Sync + 'static {
-    async fn projector_create(&self, projector: Projector) -> Result<Projector>;
-    async fn projector_get(&self, id: &str) -> Result<Projector>;
-    async fn projector_exists(&self, id: &str) -> bool;
-    async fn projector_delete(&self, id: &str) -> Result<()>;
-    async fn projector_get_all(&self) -> Result<Vec<Projector>>;
+pub trait RepositoryId {
+    fn id(&self) -> String;
 }
 
-#[cfg_attr(test, automock)]
-#[async_trait]
-pub trait SubroutineRepository: Send + Sync + 'static {
-    async fn subroutine_create(&self, subroutine: Subroutine) -> Result<Subroutine>;
-    async fn subroutine_get(&self, id: &str, include_instances: bool) -> Result<Subroutine>;
-    async fn subroutine_get_by_name(
-        &self,
-        name: &str,
-        include_instances: bool,
-    ) -> Result<Subroutine>;
+pub trait RepositoryQuery: Default + Send {
+    type Entity;
+
+    fn builder() -> Self;
+    fn matches(&self, record: &Self::Entity) -> bool;
+    fn build(&self) -> Self;
 }
 
 #[cfg(test)]
 pub(crate) mod fixtures {
     use rstest::*;
 
-    use super::MockProjectorRepository;
-    use super::MockSubroutineRepository;
+    use super::MockProjectorsRepository;
+    use super::MockSubroutineInstancesRepository;
+    use super::MockSubroutinesRepository;
 
     #[fixture]
-    pub(crate) fn projector_repository() -> MockProjectorRepository {
-        MockProjectorRepository::default()
+    pub(crate) fn projectors_repository() -> MockProjectorsRepository {
+        MockProjectorsRepository::default()
     }
 
     #[fixture]
-    pub(crate) fn subroutine_repository() -> MockSubroutineRepository {
-        MockSubroutineRepository::default()
+    pub(crate) fn subroutines_repository() -> MockSubroutinesRepository {
+        MockSubroutinesRepository::default()
+    }
+
+    #[fixture]
+    pub(crate) fn subroutine_instances_repository() -> MockSubroutineInstancesRepository {
+        MockSubroutineInstancesRepository::default()
     }
 }

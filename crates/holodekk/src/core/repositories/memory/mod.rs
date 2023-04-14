@@ -4,43 +4,10 @@ mod projectors;
 pub use projectors::*;
 mod subroutines;
 pub use subroutines::*;
+mod subroutine_instances;
+pub use subroutine_instances::*;
 
 use std::sync::Arc;
-
-use sha2::{Digest, Sha256};
-
-use crate::core::entities::{Projector, Subroutine, SubroutineInstance};
-
-pub trait MemoryDatabaseKey {
-    fn db_key(&self) -> String;
-}
-
-impl MemoryDatabaseKey for Subroutine {
-    fn db_key(&self) -> String {
-        let mut hasher = Sha256::new();
-        hasher.update(&self.name);
-        format!("{:x}", hasher.finalize())
-    }
-}
-
-impl MemoryDatabaseKey for Projector {
-    fn db_key(&self) -> String {
-        let mut hasher = Sha256::new();
-        hasher.update(&self.fleet);
-        hasher.update(&self.namespace);
-        format!("{:x}", hasher.finalize())
-    }
-}
-
-impl MemoryDatabaseKey for SubroutineInstance {
-    fn db_key(&self) -> String {
-        let mut hasher = Sha256::new();
-        hasher.update(&self.fleet);
-        hasher.update(&self.namespace);
-        hasher.update(&self.subroutine_id);
-        format!("{:x}", hasher.finalize())
-    }
-}
 
 #[derive(Debug)]
 pub struct MemoryRepository {
@@ -66,7 +33,7 @@ mod tests {
     use rstest::*;
 
     use crate::core::entities::subroutine::fixtures::subroutine;
-    use crate::core::repositories::Result;
+    use crate::core::repositories::{RepositoryId, Result};
 
     use super::*;
 
@@ -86,18 +53,7 @@ mod tests {
         // let key = subroutine_key(&subroutine.id);
         db.subroutines().add(subroutine.clone())?;
 
-        let new_sub = db.subroutines().get(&subroutine.db_key())?;
-        assert_eq!(new_sub.path, subroutine.path);
-        Ok(())
-    }
-
-    #[rstest]
-    #[test]
-    fn can_get_subroutine_by_name(subroutine: Subroutine) -> Result<()> {
-        let db = MemoryDatabase::new();
-        db.subroutines().add(subroutine.to_owned())?;
-
-        let new_sub = db.subroutines().get_by_name(&subroutine.name)?;
+        let new_sub = db.subroutines().get(&subroutine.id())?;
         assert_eq!(new_sub.path, subroutine.path);
         Ok(())
     }

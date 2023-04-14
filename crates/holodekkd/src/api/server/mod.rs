@@ -7,34 +7,56 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::Sender;
 
 use holodekk::{
-    config::HolodekkConfig, core::repositories::ProjectorRepository,
-    core::services::projectors::ProjectorsService, managers::projector::ProjectorCommand,
+    config::HolodekkConfig,
+    core::repositories::{ProjectorsRepository, SubroutinesRepository},
+    core::services::{projectors::ProjectorsService, subroutines::SubroutinesService},
+    managers::projector::ProjectorCommand,
 };
 
 pub struct ApiServices<T>
 where
-    T: ProjectorRepository,
+    T: ProjectorsRepository + SubroutinesRepository,
 {
+    repository: Arc<T>,
     projectors_service: Arc<ProjectorsService<T>>,
+    subroutines_service: Arc<SubroutinesService<T>>,
 }
 
 impl<T> ApiServices<T>
 where
-    T: ProjectorRepository,
+    T: ProjectorsRepository + SubroutinesRepository,
 {
+    pub fn repository(&self) -> Arc<T> {
+        self.repository.clone()
+    }
+
     pub fn projectors(&self) -> Arc<ProjectorsService<T>> {
         self.projectors_service.clone()
     }
+
+    pub fn subroutines(&self) -> Arc<SubroutinesService<T>> {
+        self.subroutines_service.clone()
+    }
 }
 
-pub fn router<C, T>(config: Arc<C>, repo: Arc<T>, cmd_tx: Sender<ProjectorCommand>) -> axum::Router
+pub fn router<C, T>(
+    config: Arc<C>,
+    repository: Arc<T>,
+    cmd_tx: Sender<ProjectorCommand>,
+) -> axum::Router
 where
     C: HolodekkConfig,
-    T: ProjectorRepository,
+    T: ProjectorsRepository + SubroutinesRepository,
 {
     // Create the global services
-    let projectors_service = Arc::new(ProjectorsService::new(config, repo, cmd_tx));
-    let services = Arc::new(ApiServices { projectors_service });
+    let projectors_service = Arc::new(ProjectorsService::new(config, repository.clone(), cmd_tx));
+
+    let subroutines_service = Arc::new(SubroutinesService::new(repository.clone()));
+    let services = Arc::new(ApiServices {
+        repository,
+        projectors_service,
+        subroutines_service,
+    });
 
     Router::new()
         .route("/health", get(health))

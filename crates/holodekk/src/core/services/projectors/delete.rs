@@ -6,7 +6,7 @@ use tokio::sync::mpsc::Sender;
 
 use crate::core::{
     entities::{self, Projector},
-    repositories::{self, ProjectorRepository},
+    repositories::{self, ProjectorsRepository},
     services::{Error, Result},
 };
 use crate::managers::projector::ProjectorCommand;
@@ -14,34 +14,34 @@ use crate::managers::projector::ProjectorCommand;
 use super::ProjectorsService;
 
 #[derive(Clone, Debug)]
-pub struct ProjectorStopInput {
+pub struct ProjectorsDeleteInput {
     pub namespace: String,
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait Stop {
+pub trait Delete {
     /// Stops a running [Projector]
     ///
     /// # Arguments
     ///
-    /// `input` ([ProjectorStopInput]) - parameters for the projector (currently only `namespace`)
-    async fn stop(&self, input: ProjectorStopInput) -> Result<()>;
+    /// `input` ([ProjectorsStopInput]) - parameters for the projector (currently only `namespace`)
+    async fn delete(&self, input: ProjectorsDeleteInput) -> Result<()>;
 }
 
 #[async_trait]
-impl<T> Stop for ProjectorsService<T>
+impl<T> Delete for ProjectorsService<T>
 where
-    T: ProjectorRepository,
+    T: ProjectorsRepository,
 {
-    async fn stop(&self, input: ProjectorStopInput) -> Result<()> {
+    async fn delete(&self, input: ProjectorsDeleteInput) -> Result<()> {
         trace!("ProjectorsService.stop({:?})", input);
 
         // ensure a projector is actually running
         let id = entities::projector::generate_id(&self.fleet, &input.namespace);
         let projector = self
             .repo
-            .projector_get(&id)
+            .projectors_get(&id)
             .await
             .map_err(|err| match err {
                 repositories::Error::NotFound => Error::NotFound,
@@ -54,7 +54,7 @@ where
         info!("Projector shutdown complete: {}", input.namespace);
 
         // remove projector from the repository
-        self.repo.projector_delete(&projector.id).await?;
+        self.repo.projectors_delete(&projector.id).await?;
         Ok(())
     }
 }
@@ -108,7 +108,7 @@ mod tests {
     use crate::config::fixtures::{mock_config, MockConfig};
     use crate::core::entities::{projector::fixtures::projector, Projector};
     use crate::core::repositories::{
-        self, fixtures::projector_repository, MockProjectorRepository,
+        self, fixtures::projectors_repository, MockProjectorsRepository,
     };
     use crate::core::services::Error;
 
@@ -118,21 +118,21 @@ mod tests {
     #[tokio::test]
     async fn returns_error_for_non_existent_projector(
         mock_config: MockConfig,
-        mut projector_repository: MockProjectorRepository,
+        mut projectors_repository: MockProjectorsRepository,
     ) {
         let (cmd_tx, _cmd_rx) = tokio::sync::mpsc::channel(1);
 
-        projector_repository
-            .expect_projector_get()
+        projectors_repository
+            .expect_projectors_get()
             .return_const(Err(repositories::Error::NotFound));
 
         let service = ProjectorsService::new(
             Arc::new(mock_config),
-            Arc::new(projector_repository),
+            Arc::new(projectors_repository),
             cmd_tx,
         );
         let res = service
-            .stop(ProjectorStopInput {
+            .delete(ProjectorsDeleteInput {
                 namespace: "nonexistent".to_string(),
             })
             .await;
@@ -145,14 +145,14 @@ mod tests {
     #[tokio::test]
     async fn sends_stop_command_to_manager(
         mock_config: MockConfig,
-        mut projector_repository: MockProjectorRepository,
+        mut projectors_repository: MockProjectorsRepository,
         projector: Projector,
     ) {
         let (cmd_tx, mut cmd_rx) = tokio::sync::mpsc::channel(1);
 
         // projector exists
-        projector_repository
-            .expect_projector_get()
+        projectors_repository
+            .expect_projectors_get()
             .return_const(Ok(projector.clone()));
 
         // Setup fake manager
@@ -166,19 +166,19 @@ mod tests {
         });
 
         // expect deletion
-        projector_repository
-            .expect_projector_delete()
+        projectors_repository
+            .expect_projectors_delete()
             .with(eq(projector.id))
             .return_const(Ok(()));
 
         let service = ProjectorsService::new(
             Arc::new(mock_config),
-            Arc::new(projector_repository),
+            Arc::new(projectors_repository),
             cmd_tx,
         );
 
         service
-            .stop(ProjectorStopInput {
+            .delete(ProjectorsDeleteInput {
                 namespace: "nonexistent".to_string(),
             })
             .await

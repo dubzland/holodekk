@@ -2,15 +2,15 @@ use std::{collections::HashMap, sync::RwLock};
 
 use crate::core::{
     entities::Projector,
-    repositories::{memory::MemoryDatabaseKey, Error, Result},
+    repositories::{Error, RepositoryId, Result},
 };
 
 #[derive(Debug)]
-pub struct ProjectorMemoryStore {
+pub struct ProjectorsMemoryStore {
     records: RwLock<HashMap<String, Projector>>,
 }
 
-impl Default for ProjectorMemoryStore {
+impl Default for ProjectorsMemoryStore {
     fn default() -> Self {
         Self {
             records: RwLock::new(HashMap::new()),
@@ -18,41 +18,16 @@ impl Default for ProjectorMemoryStore {
     }
 }
 
-impl ProjectorMemoryStore {
+impl ProjectorsMemoryStore {
     pub fn add(&self, projector: Projector) -> Result<()> {
-        if self
-            .records
-            .read()
-            .unwrap()
-            .contains_key(&projector.db_key())
-        {
+        if self.records.read().unwrap().contains_key(&projector.id()) {
             Err(Error::AlreadyExists)
         } else {
             self.records
                 .write()
                 .unwrap()
-                .insert(projector.db_key(), projector);
+                .insert(projector.id(), projector);
             Ok(())
-        }
-    }
-
-    pub fn get(&self, id: &str) -> Result<Projector> {
-        if let Some(record) = self.records.read().unwrap().get(id) {
-            Ok(record.to_owned())
-        } else {
-            Err(Error::NotFound)
-        }
-    }
-
-    pub fn exists(&self, id: &str) -> bool {
-        self.records.read().unwrap().contains_key(id)
-    }
-
-    pub fn delete(&self, id: &str) -> Result<()> {
-        if self.records.write().unwrap().remove(id).is_some() {
-            Ok(())
-        } else {
-            Err(Error::NotFound)
         }
     }
 
@@ -65,5 +40,25 @@ impl ProjectorMemoryStore {
             .map(|p| p.to_owned())
             .collect();
         Ok(projectors)
+    }
+
+    pub fn delete(&self, id: &str) -> Result<()> {
+        if self.records.write().unwrap().remove(id).is_some() {
+            Ok(())
+        } else {
+            Err(Error::NotFound)
+        }
+    }
+
+    pub fn exists(&self, id: &str) -> Result<bool> {
+        Ok(self.records.read().unwrap().contains_key(id))
+    }
+
+    pub fn get(&self, id: &str) -> Result<Projector> {
+        if let Some(record) = self.records.read().unwrap().get(id) {
+            Ok(record.to_owned())
+        } else {
+            Err(Error::NotFound)
+        }
     }
 }

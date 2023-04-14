@@ -1,4 +1,5 @@
 pub mod projectors;
+pub mod subroutine_instances;
 pub mod subroutines;
 
 use tonic::Status;

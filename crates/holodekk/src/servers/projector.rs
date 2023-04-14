@@ -2,14 +2,14 @@ use std::sync::Arc;
 
 use crate::{
     apis::grpc::applications::applications_api_server, config::ProjectorApiConfig,
-    core::repositories::SubroutineRepository,
+    core::repositories::SubroutinesRepository,
 };
 
 use super::{start_grpc_server, GrpcServerHandle};
 
 pub struct ProjectorServer<T>
 where
-    T: SubroutineRepository,
+    T: SubroutinesRepository,
 {
     _repository: Arc<T>,
     projector_api: GrpcServerHandle,
@@ -17,7 +17,7 @@ where
 
 impl<T> ProjectorServer<T>
 where
-    T: SubroutineRepository,
+    T: SubroutinesRepository,
 {
     fn new(_repository: Arc<T>, projector_api: GrpcServerHandle) -> Self {
         Self {
@@ -26,7 +26,7 @@ where
         }
     }
 
-    pub fn start<C>(config: &C, repository: Arc<T>) -> Self
+    pub fn start<C>(config: Arc<C>, repository: Arc<T>) -> Self
     where
         C: ProjectorApiConfig,
     {

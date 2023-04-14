@@ -24,15 +24,13 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 use holodekk::{
     config::HolodekkConfig,
     core::repositories::{
-        memory::MemoryRepository, ProjectorRepository, RepositoryKind, SubroutineRepository,
+        memory::MemoryRepository, ProjectorsRepository, RepositoryKind, SubroutinesRepository,
     },
     servers::ProjectorServer,
     utils::{
-        // fs::cleanup as cleanup_socket,
         libsee,
         signals::{SignalKind, Signals},
-        ConnectionInfo,
-        ConnectionInfoError,
+        ConnectionInfo, ConnectionInfoError,
     },
 };
 
@@ -162,7 +160,7 @@ pub struct Options {
 fn main() -> Result<()> {
     let options = Options::parse();
 
-    let config = UhuraConfig::new(
+    let config = Arc::new(UhuraConfig::new(
         &options.fleet,
         &options.namespace,
         options.projector_root.to_owned(),
@@ -180,7 +178,7 @@ fn main() -> Result<()> {
             options.projector_socket.as_ref(),
         )
         .unwrap(),
-    );
+    ));
 
     // Perform the initial fork
     match unsafe { fork() } {
@@ -253,15 +251,15 @@ fn main() -> Result<()> {
 #[tokio::main]
 async fn main_loop<T>(
     options: &Options,
-    config: UhuraConfig,
+    config: Arc<UhuraConfig>,
     repo: Arc<T>,
 ) -> std::result::Result<(), std::io::Error>
 where
-    T: ProjectorRepository + SubroutineRepository,
+    T: ProjectorsRepository + SubroutinesRepository,
 {
-    let uhura_server = UhuraServer::start(&config, repo.clone());
+    let uhura_server = UhuraServer::start(config.clone(), repo.clone());
 
-    let projector_server = ProjectorServer::start(&config, repo);
+    let projector_server = ProjectorServer::start(config, repo);
 
     // Notify the holodekk of our state
     debug!("Sending status update to parent");

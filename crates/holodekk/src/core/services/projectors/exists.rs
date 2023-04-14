@@ -2,12 +2,12 @@ use async_trait::async_trait;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
-use crate::core::{entities, repositories::ProjectorRepository};
+use crate::core::{entities, repositories::ProjectorsRepository, services::Result};
 
 use super::ProjectorsService;
 
 #[derive(Clone, Debug)]
-pub struct ProjectorExistsInput {
+pub struct ProjectorsExistsInput {
     pub namespace: String,
 }
 
@@ -18,18 +18,19 @@ pub trait Exists {
     ///
     /// # Arguments
     ///
-    /// `input` ([ProjectorExistsInput]) - parameters for the projector (currently only `namespace`)
-    async fn exists(&self, input: ProjectorExistsInput) -> bool;
+    /// `input` ([ProjectorsExistsInput]) - parameters for the projector (currently only `namespace`)
+    async fn exists(&self, input: ProjectorsExistsInput) -> Result<bool>;
 }
 
 #[async_trait]
 impl<T> Exists for ProjectorsService<T>
 where
-    T: ProjectorRepository,
+    T: ProjectorsRepository,
 {
-    async fn exists(&self, input: ProjectorExistsInput) -> bool {
+    async fn exists(&self, input: ProjectorsExistsInput) -> Result<bool> {
         let id = entities::projector::generate_id(&self.fleet, &input.namespace);
-        self.repo.projector_exists(&id).await
+        let exists = self.repo.projectors_exists(&id).await?;
+        Ok(exists)
     }
 }
 
@@ -40,7 +41,8 @@ mod tests {
     use rstest::*;
 
     use crate::config::fixtures::{mock_config, MockConfig};
-    use crate::core::repositories::{fixtures::projector_repository, MockProjectorRepository};
+    use crate::core::repositories::{fixtures::projectors_repository, MockProjectorsRepository};
+    use crate::core::services::Result;
 
     use super::*;
 
@@ -48,53 +50,55 @@ mod tests {
     #[tokio::test]
     async fn returns_true_for_existing_projector(
         mock_config: MockConfig,
-        mut projector_repository: MockProjectorRepository,
-    ) {
+        mut projectors_repository: MockProjectorsRepository,
+    ) -> Result<()> {
         let (cmd_tx, _cmd_rx) = tokio::sync::mpsc::channel(1);
 
-        projector_repository
-            .expect_projector_exists()
-            .return_const(true);
+        projectors_repository
+            .expect_projectors_exists()
+            .return_const(Ok(true));
 
         let service = ProjectorsService::new(
             Arc::new(mock_config),
-            Arc::new(projector_repository),
+            Arc::new(projectors_repository),
             cmd_tx,
         );
 
         assert!(
             service
-                .exists(ProjectorExistsInput {
+                .exists(ProjectorsExistsInput {
                     namespace: "existing".to_string()
                 })
-                .await
+                .await?
         );
+        Ok(())
     }
 
     #[rstest]
     #[tokio::test]
     async fn returns_false_for_nonexisting_projector(
         mock_config: MockConfig,
-        mut projector_repository: MockProjectorRepository,
-    ) {
+        mut projectors_repository: MockProjectorsRepository,
+    ) -> Result<()> {
         let (cmd_tx, _cmd_rx) = tokio::sync::mpsc::channel(1);
 
-        projector_repository
-            .expect_projector_exists()
-            .return_const(false);
+        projectors_repository
+            .expect_projectors_exists()
+            .return_const(Ok(false));
 
         let service = ProjectorsService::new(
             Arc::new(mock_config),
-            Arc::new(projector_repository),
+            Arc::new(projectors_repository),
             cmd_tx,
         );
 
         assert!(
             !service
-                .exists(ProjectorExistsInput {
+                .exists(ProjectorsExistsInput {
                     namespace: "existing".to_string()
                 })
-                .await
+                .await?
         );
+        Ok(())
     }
 }

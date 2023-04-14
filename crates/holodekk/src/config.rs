@@ -11,6 +11,7 @@ pub trait HolodekkConfig: Clone + Sync + Send + 'static {
 }
 
 pub trait ProjectorConfig {
+    fn projector_root_path(&self) -> &PathBuf;
     fn namespace(&self) -> &str;
 }
 
@@ -35,6 +36,7 @@ pub mod fixtures {
     #[derive(Clone, Debug)]
     pub struct MockConfig {
         root_path: PathBuf,
+        projector_root_path: PathBuf,
         bin_path: PathBuf,
     }
 
@@ -42,6 +44,7 @@ pub mod fixtures {
         fn default() -> Self {
             Self {
                 root_path: "/tmp".into(),
+                projector_root_path: "/tmp/test".into(),
                 bin_path: "/tmp/bin".into(),
             }
         }
@@ -66,6 +69,10 @@ pub mod fixtures {
     }
 
     impl ProjectorConfig for MockConfig {
+        fn projector_root_path(&self) -> &PathBuf {
+            &self.projector_root_path
+        }
+
         fn namespace(&self) -> &str {
             "test"
         }

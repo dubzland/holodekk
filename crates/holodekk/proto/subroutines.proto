@@ -3,7 +3,8 @@ syntax = "proto3";
 package subroutines;
 
 service RpcSubroutines {
-	rpc Status(RpcStatusRequest) returns (RpcSubroutineStatus) {}
+	rpc Create(RpcCreateRequest) returns (RpcSubroutine) {}
+	/* rpc Status(RpcStatusRequest) returns (RpcSubroutineStatus) {} */
 }
 
 enum RpcSubroutineStatusCode {
@@ -23,7 +24,6 @@ message RpcSubroutine {
 	string name = 2;
 	string path = 3;
 	RpcSubroutineKind kind = 4;
-	repeated RpcSubroutineInstance instances = 5;
 }
 
 message RpcSubroutineInstance {
@@ -32,6 +32,12 @@ message RpcSubroutineInstance {
 	string path = 3;
 	RpcSubroutineStatus status = 4;
 	string subroutine_id = 5;
+}
+
+message RpcCreateRequest {
+	string name = 1;
+	string path = 2;
+	RpcSubroutineKind kind = 3;
 }
 
 message RpcStatusRequest {

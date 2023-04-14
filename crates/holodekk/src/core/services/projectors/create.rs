@@ -6,7 +6,7 @@ use tokio::sync::mpsc::Sender;
 
 use crate::core::{
     entities::{self, Projector},
-    repositories::ProjectorRepository,
+    repositories::ProjectorsRepository,
     services::{Error, Result},
 };
 use crate::managers::projector::ProjectorCommand;
@@ -14,32 +14,32 @@ use crate::managers::projector::ProjectorCommand;
 use super::ProjectorsService;
 
 #[derive(Clone, Debug)]
-pub struct ProjectorStartInput {
+pub struct ProjectorsCreateInput {
     pub namespace: String,
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait Start {
+pub trait Create {
     /// Starts a [Projector] instance
     ///
     /// # Arguments
     ///
-    /// `input` ([ProjectorStartInput])- parameters for the projector (currently only `namespace')
-    async fn start(&self, input: ProjectorStartInput) -> Result<Projector>;
+    /// `input` ([ProjectorsStartInput])- parameters for the projector (currently only `namespace')
+    async fn create(&self, input: ProjectorsCreateInput) -> Result<Projector>;
 }
 
 #[async_trait]
-impl<T> Start for ProjectorsService<T>
+impl<T> Create for ProjectorsService<T>
 where
-    T: ProjectorRepository,
+    T: ProjectorsRepository,
 {
-    async fn start(&self, input: ProjectorStartInput) -> Result<Projector> {
-        trace!("ProjectorsService.start({:?})", input);
+    async fn create(&self, input: ProjectorsCreateInput) -> Result<Projector> {
+        trace!("ProjectorsService.create({:?})", input);
 
         // ensure a projector is not already running for this namespace
         let id = entities::projector::generate_id(&self.fleet, &input.namespace);
-        if self.repo.projector_exists(&id).await {
+        if self.repo.projectors_exists(&id).await? {
             warn!(
                 "projector already running for namespace: {}",
                 input.namespace
@@ -53,7 +53,7 @@ where
             info!("Projector spawned: {:?}", projector);
 
             // store the projector and return it
-            let projector = self.repo.projector_create(projector).await?;
+            let projector = self.repo.projectors_create(projector).await?;
             Ok(projector)
         }
     }
@@ -104,7 +104,7 @@ mod tests {
 
     use crate::config::fixtures::{mock_config, MockConfig};
     use crate::core::entities::{projector::fixtures::projector, Projector};
-    use crate::core::repositories::{fixtures::projector_repository, MockProjectorRepository};
+    use crate::core::repositories::{fixtures::projectors_repository, MockProjectorsRepository};
     use crate::core::services::Error;
 
     use super::*;
@@ -113,22 +113,22 @@ mod tests {
     #[tokio::test]
     async fn returns_error_when_projector_already_running(
         mock_config: MockConfig,
-        mut projector_repository: MockProjectorRepository,
+        mut projectors_repository: MockProjectorsRepository,
     ) {
         let (cmd_tx, _cmd_rx) = tokio::sync::mpsc::channel(1);
 
-        projector_repository
-            .expect_projector_exists()
-            .return_const(true);
+        projectors_repository
+            .expect_projectors_exists()
+            .return_const(Ok(true));
 
         let service = ProjectorsService::new(
             Arc::new(mock_config),
-            Arc::new(projector_repository),
+            Arc::new(projectors_repository),
             cmd_tx,
         );
 
         let res = service
-            .start(ProjectorStartInput {
+            .create(ProjectorsCreateInput {
                 namespace: "existing".to_string(),
             })
             .await;
@@ -141,15 +141,15 @@ mod tests {
     #[tokio::test]
     async fn sends_start_command_to_manager_and_adds_record(
         mock_config: MockConfig,
-        mut projector_repository: MockProjectorRepository,
+        mut projectors_repository: MockProjectorsRepository,
         projector: Projector,
     ) {
         let (cmd_tx, mut cmd_rx) = tokio::sync::mpsc::channel(1);
 
         // projector does not exist
-        projector_repository
-            .expect_projector_exists()
-            .return_const(false);
+        projectors_repository
+            .expect_projectors_exists()
+            .return_const(Ok(false));
 
         // Setup fake manager
         let new_projector = projector.clone();
@@ -163,19 +163,19 @@ mod tests {
         });
 
         // expect creation
-        projector_repository
-            .expect_projector_create()
+        projectors_repository
+            .expect_projectors_create()
             .with(eq(projector.clone()))
             .return_const(Ok(projector.clone()));
 
         let service = ProjectorsService::new(
             Arc::new(mock_config),
-            Arc::new(projector_repository),
+            Arc::new(projectors_repository),
             cmd_tx,
         );
 
         service
-            .start(ProjectorStartInput {
+            .create(ProjectorsCreateInput {
                 namespace: "nonexistent".to_string(),
             })
             .await

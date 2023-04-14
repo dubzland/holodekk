@@ -6,14 +6,14 @@ use mockall::{automock, predicate::*};
 
 use crate::core::{
     entities::{Subroutine, SubroutineKind},
-    repositories::SubroutineRepository,
+    repositories::{subroutine_repo_id, SubroutinesRepository},
     services::{Error, Result},
 };
 
 use super::SubroutinesService;
 
 #[derive(Clone, Debug)]
-pub struct SubroutineCreateInput {
+pub struct SubroutinesCreateInput {
     pub name: String,
     pub path: PathBuf,
     pub kind: SubroutineKind,
@@ -22,21 +22,21 @@ pub struct SubroutineCreateInput {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Create {
-    async fn create(&self, input: SubroutineCreateInput) -> Result<Subroutine>;
+    async fn create(&self, input: SubroutinesCreateInput) -> Result<Subroutine>;
 }
 
 #[async_trait]
 impl<T> Create for SubroutinesService<T>
 where
-    T: SubroutineRepository,
+    T: SubroutinesRepository,
 {
     /// Creates a Subroutine entry in the repository.
-    async fn create(&self, input: SubroutineCreateInput) -> Result<Subroutine> {
+    async fn create(&self, input: SubroutinesCreateInput) -> Result<Subroutine> {
         // make sure this subroutine does not already exist
         println!("Checking for subroutine with name: {}", input.name,);
         if self
             .repo
-            .subroutine_get_by_name(input.name.as_ref(), false)
+            .subroutines_get(&subroutine_repo_id(&input.name))
             .await
             .is_ok()
         {
@@ -44,7 +44,7 @@ where
         }
 
         let subroutine = Subroutine::new(input.name, input.path, input.kind);
-        let subroutine = self.repo.subroutine_create(subroutine).await?;
+        let subroutine = self.repo.subroutines_create(subroutine).await?;
         Ok(subroutine)
     }
 }
@@ -55,13 +55,10 @@ mod tests {
 
     use rstest::*;
 
-    use crate::{
-        config::fixtures::{mock_config, MockConfig},
-        core::{
-            entities::{subroutine::fixtures::subroutine, Subroutine},
-            repositories::{self, fixtures::subroutine_repository, MockSubroutineRepository},
-            services::Error,
-        },
+    use crate::core::{
+        entities::{subroutine::fixtures::subroutine, Subroutine},
+        repositories::{self, fixtures::subroutines_repository, MockSubroutinesRepository},
+        services::Error,
     };
 
     use super::*;
@@ -69,33 +66,32 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn creates_subroutine(
-        mock_config: MockConfig,
-        mut subroutine_repository: MockSubroutineRepository,
+        mut subroutines_repository: MockSubroutinesRepository,
         subroutine: Subroutine,
     ) -> Result<()> {
-        let input = SubroutineCreateInput {
+        let input = SubroutinesCreateInput {
             name: subroutine.name.clone(),
             path: subroutine.path.clone(),
             kind: subroutine.kind,
         };
 
         let sub_name = subroutine.name.clone();
-        subroutine_repository
-            .expect_subroutine_get_by_name()
-            .withf(move |name, _inc| name == &sub_name)
+        subroutines_repository
+            .expect_subroutines_get()
+            .withf(move |name| name == &subroutine_repo_id(&sub_name))
             .return_const(Err(repositories::Error::NotFound));
 
         let sub_path = subroutine.path.clone();
         let sub_name = subroutine.name.clone();
 
-        subroutine_repository
-            .expect_subroutine_create()
+        subroutines_repository
+            .expect_subroutines_create()
             .withf(move |new_sub: &Subroutine| {
                 (*new_sub).path.eq(&sub_path) && (*new_sub).name.eq(&sub_name)
             })
             .return_const(Ok(subroutine.clone()));
 
-        let service = SubroutinesService::new(&mock_config, Arc::new(subroutine_repository));
+        let service = SubroutinesService::new(Arc::new(subroutines_repository));
 
         let sub = service.create(input).await?;
         assert_eq!(&sub, &subroutine);
@@ -105,11 +101,10 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn rejects_duplicate_subroutine_name(
-        mock_config: MockConfig,
-        mut subroutine_repository: MockSubroutineRepository,
+        mut subroutines_repository: MockSubroutinesRepository,
         subroutine: Subroutine,
     ) {
-        let input = SubroutineCreateInput {
+        let input = SubroutinesCreateInput {
             name: subroutine.name.clone(),
             path: subroutine.path.clone(),
             kind: subroutine.kind,
@@ -117,12 +112,12 @@ mod tests {
 
         let sub_name = subroutine.name.clone();
 
-        subroutine_repository
-            .expect_subroutine_get_by_name()
-            .withf(move |name, _inc| name == &sub_name)
+        subroutines_repository
+            .expect_subroutines_get()
+            .withf(move |name| name == &subroutine_repo_id(&sub_name))
             .return_const(Ok(subroutine.to_owned()));
 
-        let service = SubroutinesService::new(&mock_config, Arc::new(subroutine_repository));
+        let service = SubroutinesService::new(Arc::new(subroutines_repository));
 
         let res = service.create(input).await;
         assert!(res.is_err());

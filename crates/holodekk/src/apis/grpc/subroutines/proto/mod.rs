@@ -6,8 +6,8 @@ mod pb {
 
 pub mod entities {
     pub use super::pb::subroutines::{
-        RpcStatusRequest, RpcSubroutine, RpcSubroutineInstance, RpcSubroutineKind,
-        RpcSubroutineStatus, RpcSubroutineStatusCode,
+        RpcCreateRequest, RpcStatusRequest, RpcSubroutine, RpcSubroutineInstance,
+        RpcSubroutineKind, RpcSubroutineStatus, RpcSubroutineStatusCode,
     };
 }
 

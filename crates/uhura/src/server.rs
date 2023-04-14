@@ -3,7 +3,7 @@ use std::sync::Arc;
 use holodekk::{
     apis::grpc::subroutines::subroutines_api_server,
     config::{HolodekkConfig, ProjectorConfig, UhuraApiConfig},
-    core::{repositories::SubroutineRepository, services::subroutines::SubroutinesService},
+    core::{repositories::SubroutinesRepository, services::subroutines::SubroutinesService},
 };
 
 use crate::{apis::grpc::uhura::uhura_api_server, services::UhuraService};
@@ -19,13 +19,13 @@ impl UhuraServer {
         Self { server_handle }
     }
 
-    pub fn start<C, T>(config: &C, repo: Arc<T>) -> UhuraServer
+    pub fn start<C, T>(config: Arc<C>, repo: Arc<T>) -> UhuraServer
     where
         C: HolodekkConfig + ProjectorConfig + UhuraApiConfig + Clone,
-        T: SubroutineRepository,
+        T: SubroutinesRepository,
     {
         let uhura_service = Arc::new(UhuraService::new());
-        let subroutines_service = Arc::new(SubroutinesService::new(config, repo));
+        let subroutines_service = Arc::new(SubroutinesService::new(repo));
         let uhura_server = tonic::transport::Server::builder()
             .add_service(uhura_api_server(uhura_service))
             .add_service(subroutines_api_server(subroutines_service));

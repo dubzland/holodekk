@@ -44,6 +44,7 @@ pub mod fixtures {
         HolodekkConfig, ProjectorConfig,
     };
     use crate::core::entities::{subroutine::fixtures::subroutine, Subroutine};
+    use crate::core::repositories::RepositoryId;
 
     use super::*;
 
@@ -56,7 +57,7 @@ pub mod fixtures {
             mock_config.fleet(),
             mock_config.namespace(),
             "/tmp/holodekk/projector/local/subroutines/test/sub",
-            &subroutine.id,
+            &subroutine.id(),
         )
     }
 }
