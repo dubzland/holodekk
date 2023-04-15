@@ -3,56 +3,69 @@ use std::sync::Arc;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
-    response::IntoResponse,
     routing::{delete, get, post},
     Json, Router,
 };
-use serde::Deserialize;
 
 use crate::core::projectors::{
+    api::models::NewProjector,
     entities::Projector,
-    repositories::ProjectorsRepository,
     services::{
         Create, Delete, Exists, Find, ProjectorsCreateInput, ProjectorsDeleteInput,
         ProjectorsExistsInput, ProjectorsFindInput,
     },
 };
 
-use super::ApiServices;
-
-pub fn routes<R>() -> Router<Arc<ApiServices<R>>>
+pub struct ApiServices<S>
 where
-    R: ProjectorsRepository + 'static,
+    S: Send + Sync + 'static,
 {
+    projectors_service: Arc<S>,
+}
+
+impl<S> ApiServices<S>
+where
+    S: Send + Sync + 'static,
+{
+    pub fn projectors(&self) -> Arc<S> {
+        self.projectors_service.clone()
+    }
+}
+
+pub fn router<S>(projectors_service: Arc<S>) -> axum::Router
+where
+    S: Create + Delete + Exists + Find + Send + Sync + 'static,
+{
+    // Create the global services
+    let services = Arc::new(ApiServices { projectors_service });
+
     Router::new()
         .route("/", get(list))
         .route("/", post(start))
         .route("/:namespace", delete(stop))
+        .with_state(services)
 }
 
-async fn list<R>(State(state): State<Arc<ApiServices<R>>>) -> impl IntoResponse
+async fn list<S>(
+    State(state): State<Arc<ApiServices<S>>>,
+) -> Result<Json<Vec<Projector>>, (StatusCode, String)>
 where
-    R: ProjectorsRepository,
+    S: Find + Send + Sync,
 {
     let projectors = state
         .projectors()
         .find(ProjectorsFindInput::default())
         .await
         .unwrap();
-    Json(projectors)
+    Ok(Json(projectors))
 }
 
-#[derive(Deserialize)]
-struct NewProjector {
-    namespace: String,
-}
-
-async fn start<R>(
-    State(state): State<Arc<ApiServices<R>>>,
+async fn start<S>(
+    State(state): State<Arc<ApiServices<S>>>,
     Json(new_projector): Json<NewProjector>,
 ) -> Result<Json<Projector>, (StatusCode, String)>
 where
-    R: ProjectorsRepository,
+    S: Create + Exists + Send + Sync,
 {
     if state
         .projectors()
@@ -78,12 +91,12 @@ where
     }
 }
 
-async fn stop<R>(
-    State(state): State<Arc<ApiServices<R>>>,
+async fn stop<S>(
+    State(state): State<Arc<ApiServices<S>>>,
     Path(namespace): Path<String>,
 ) -> Result<(), (StatusCode, String)>
 where
-    R: ProjectorsRepository,
+    S: Delete + Exists + Send + Sync,
 {
     if state
         .projectors()

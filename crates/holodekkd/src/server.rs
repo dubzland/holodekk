@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
+use axum::Router;
 use log::info;
 
 use holodekk::{
     config::{HolodekkApiConfig, HolodekkConfig},
     core::projectors::{
-        self, api::server::router, repositories::ProjectorsRepository, services::ProjectorsService,
+        self, repositories::ProjectorsRepository, services::ProjectorsService,
         worker::ProjectorsWorker,
     },
     utils::{
@@ -34,6 +35,16 @@ impl HolodekkServerHandle {
         self.projectors_worker.stop().await;
         Ok(())
     }
+}
+
+pub fn router<R>(projectors_service: Arc<ProjectorsService<R>>) -> axum::Router
+where
+    R: ProjectorsRepository + 'static,
+{
+    Router::new().nest("/", crate::api::router()).nest(
+        "/projectors",
+        projectors::api::server::router(projectors_service),
+    )
 }
 
 pub fn start_holodekk_server<C, R>(config: Arc<C>, repo: Arc<R>) -> HolodekkServerHandle
