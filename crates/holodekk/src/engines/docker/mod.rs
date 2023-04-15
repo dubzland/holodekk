@@ -16,7 +16,7 @@ pub(crate) const DOCKER_PREFIX: &str = "holodekk";
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,no_run
 /// use holodekk::engines::docker::Docker;
 ///
 /// let engine = Docker::connect();

@@ -14,8 +14,9 @@ use crate::core::containers::entities::ContainerManifest;
 ///
 /// # Examples
 ///
-/// ```rust,ignore
-/// use holodekk_core::holodekk::SubroutineManifest;
+/// ```rust,no_run
+/// use holodekk::core::subroutines::entities::SubroutineManifest;
+/// # let json = "".to_string();
 /// // load the json for a subroutine
 /// let manifest: SubroutineManifest = serde_json::from_str(&json).unwrap();
 #[derive(Debug, Deserialize, Serialize)]
