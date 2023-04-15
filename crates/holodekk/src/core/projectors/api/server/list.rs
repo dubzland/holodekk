@@ -30,6 +30,7 @@ mod tests {
     use rstest::*;
     use tower::ServiceExt;
 
+    use crate::core::projectors::entities::fixtures::projector;
     use crate::core::projectors::services::MockFindProjectors;
 
     use super::*;
@@ -60,5 +61,39 @@ mod tests {
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
             .await
             .unwrap();
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn responds_with_ok(mut mock_find: MockFindProjectors) {
+        mock_find
+            .expect_find()
+            .with(eq(ProjectorsFindInput::default()))
+            .return_const(Ok(vec![]));
+
+        let response = mock_app(mock_find)
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn returns_projectors(projector: Projector, mut mock_find: MockFindProjectors) {
+        mock_find
+            .expect_find()
+            .with(eq(ProjectorsFindInput::default()))
+            .return_const(Ok(vec![projector.clone()]));
+
+        let response = mock_app(mock_find)
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let p: Vec<Projector> = serde_json::from_slice(&body).unwrap();
+        assert_eq!(p.first().unwrap().id, projector.id);
     }
 }

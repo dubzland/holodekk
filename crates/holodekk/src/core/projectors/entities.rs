@@ -1,20 +1,13 @@
 use std::path::PathBuf;
 
 use nix::unistd::Pid;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 use crate::utils::ConnectionInfo;
 
 use super::repositories::projector_repo_id;
 
-fn pid_serialize<S>(pid: &Pid, s: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    s.serialize_i32(pid.as_raw())
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Projector {
     pub id: String,
     pub fleet: String,
@@ -22,8 +15,7 @@ pub struct Projector {
     pub pidfile: PathBuf,
     pub uhura_address: ConnectionInfo,
     pub projector_address: ConnectionInfo,
-    #[serde(serialize_with = "pid_serialize")]
-    pub pid: Pid,
+    pub pid: i32,
 }
 
 impl Projector {
@@ -47,7 +39,7 @@ impl Projector {
             pidfile: pidfile.into(),
             uhura_address,
             projector_address,
-            pid,
+            pid: pid.as_raw(),
         }
     }
 }

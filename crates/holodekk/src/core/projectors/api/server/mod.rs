@@ -1,11 +1,12 @@
+mod create;
 mod list;
-mod start;
 mod stop;
 
 use std::sync::Arc;
 
 use axum::{
     http::StatusCode,
+    response::{IntoResponse, Response},
     routing::{delete, get, post},
     Router,
 };
@@ -13,6 +14,7 @@ use axum::{
 use crate::core::projectors::services::{
     CreateProjector, DeleteProjector, FindProjectors, ProjectorExists,
 };
+use crate::core::services::Error;
 
 pub struct ApiServices<S> {
     projectors_service: Arc<S>,
@@ -33,9 +35,22 @@ where
 
     Router::new()
         .route("/", get(list::handler))
-        .route("/", post(start::handler))
+        .route("/", post(create::handler))
         .route("/:namespace", delete(stop::handler))
         .with_state(services)
+}
+
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        let response = match self {
+            Error::Duplicate => (
+                StatusCode::CONFLICT,
+                "Projector already running for specified namespace",
+            ),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown error"),
+        };
+        response.into_response()
+    }
 }
 
 fn internal_error<E>(err: E) -> (StatusCode, String)

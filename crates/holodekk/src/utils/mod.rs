@@ -11,7 +11,7 @@ use std::net::Ipv4Addr;
 use std::path::{Path, PathBuf};
 
 use async_trait::async_trait;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[async_trait]
 pub trait TaskHandle {
@@ -34,7 +34,7 @@ pub enum ConnectionInfoError {
     NotUnixSocket,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum ConnectionInfo {
     /// TCP based socket
     Tcp { port: u16, addr: Ipv4Addr },

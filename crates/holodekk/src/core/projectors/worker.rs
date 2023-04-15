@@ -224,7 +224,7 @@ where
 
 pub fn shutdown_projector(projector: Projector) -> std::result::Result<(), ShutdownError> {
     // TODO: check to see if uhura is still running before blindly killing it
-    match kill(projector.pid, SIGINT) {
+    match kill(Pid::from_raw(projector.pid), SIGINT) {
         Ok(_) => {
             debug!(
                 "stopped uhura running for namespace {} with pid {}",
