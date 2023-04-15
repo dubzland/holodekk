@@ -24,7 +24,7 @@ impl From<RpcSubroutineKind> for SubroutineKind {
 mod tests {
     use crate::core::subroutines::entities::SubroutineKind;
 
-    use crate::apis::grpc::subroutines::proto::entities::RpcSubroutineKind;
+    use crate::core::subroutines::api::proto::entities::RpcSubroutineKind;
 
     #[test]
     fn converts_to_ruby_from_rpc_ruby() {

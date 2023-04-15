@@ -36,7 +36,7 @@ impl From<Subroutine> for RpcSubroutine {
 mod tests {
     use std::path::PathBuf;
 
-    use crate::apis::grpc::subroutines::proto::entities::{
+    use crate::core::subroutines::api::proto::entities::{
         RpcSubroutine, RpcSubroutineStatus, RpcSubroutineStatusCode,
     };
     use crate::core::subroutines::entities::{Subroutine, SubroutineStatus};

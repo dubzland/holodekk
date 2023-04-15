@@ -3,16 +3,18 @@ use std::sync::Arc;
 use log::debug;
 
 use holodekk::{
-    apis::grpc::subroutines::subroutines_api_server,
     config::{HolodekkConfig, ProjectorConfig, UhuraApiConfig},
+    core::subroutines::api::server::subroutines_api_server,
     core::subroutines::{
         self,
         repositories::{SubroutineDefinitionsRepository, SubroutinesRepository},
         services::subroutines::SubroutinesService,
         worker::SubroutinesWorker,
     },
-    servers::{start_grpc_server, GrpcServerHandle},
-    utils::{TaskHandle, Worker},
+    utils::{
+        servers::{start_grpc_server, GrpcServerHandle},
+        TaskHandle, Worker,
+    },
 };
 
 use crate::{apis::grpc::uhura::uhura_api_server, services::UhuraService};

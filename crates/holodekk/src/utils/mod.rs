@@ -2,6 +2,7 @@ pub mod fs;
 pub mod libsee;
 pub mod logger;
 pub mod pipes;
+pub mod servers;
 pub mod signals;
 pub mod streams;
 

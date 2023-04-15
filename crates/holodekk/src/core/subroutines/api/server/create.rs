@@ -2,7 +2,7 @@ use tonic::{Request, Response};
 
 use crate::core::subroutines::services::subroutines::{Create, SubroutinesCreateInput};
 
-use crate::apis::grpc::subroutines::proto::{
+use crate::core::subroutines::api::proto::{
     entities::{RpcCreateSubroutineRequest, RpcSubroutine},
     RpcSubroutines,
 };

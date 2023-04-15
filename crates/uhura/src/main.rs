@@ -27,7 +27,6 @@ use holodekk::{
         memory::{MemoryDatabase, MemoryRepository},
         RepositoryKind,
     },
-    servers::ProjectorServer,
     utils::{
         libsee,
         signals::{SignalKind, Signals},
@@ -263,8 +262,6 @@ async fn main_loop(
 
     let uhura_server = start_uhura_server(config.clone(), repo);
 
-    let projector_server = ProjectorServer::start(config);
-
     // Notify the holodekk of our state
     debug!("Sending status update to parent");
     if options.syncpipe_fd.is_some() {
@@ -279,7 +276,6 @@ async fn main_loop(
             debug!("SIGINT received.  Processing shutdown.");
 
             uhura_server.stop().await.unwrap();
-            projector_server.stop().await.unwrap();
         }
         SignalKind::Quit | SignalKind::Term => {
             debug!("Unexpected {} received.  Terminating immediately", signal);

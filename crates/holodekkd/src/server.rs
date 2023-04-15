@@ -2,16 +2,17 @@ use std::sync::Arc;
 
 use log::debug;
 
-use holodekk::core::projectors::{
-    self, repositories::ProjectorsRepository, services::ProjectorsService, worker::ProjectorsWorker,
-};
-use holodekk::utils::{TaskHandle, Worker};
 use holodekk::{
     config::{HolodekkApiConfig, HolodekkConfig},
-    servers::{start_http_server, HttpServerHandle},
+    core::projectors::{
+        self, api::server::router, repositories::ProjectorsRepository, services::ProjectorsService,
+        worker::ProjectorsWorker,
+    },
+    utils::{
+        servers::{start_http_server, HttpServerHandle},
+        TaskHandle, Worker,
+    },
 };
-
-use crate::api::server::router;
 
 pub struct HolodekkServerHandle {
     projectors_worker: ProjectorsWorker,

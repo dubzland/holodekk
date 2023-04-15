@@ -43,7 +43,7 @@ mod tests {
     use rstest::*;
 
     use super::*;
-    use crate::apis::grpc::subroutines::proto::entities::{
+    use crate::core::subroutines::api::proto::entities::{
         RpcSubroutineStatus, RpcSubroutineStatusCode,
     };
 

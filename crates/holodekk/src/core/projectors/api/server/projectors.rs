@@ -9,7 +9,7 @@ use axum::{
 };
 use serde::Deserialize;
 
-use holodekk::core::projectors::{
+use crate::core::projectors::{
     entities::Projector,
     repositories::ProjectorsRepository,
     services::{

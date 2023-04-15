@@ -5,7 +5,7 @@ use std::sync::Arc;
 use axum::{response::IntoResponse, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 
-use holodekk::core::projectors::{repositories::ProjectorsRepository, services::ProjectorsService};
+use crate::core::projectors::{repositories::ProjectorsRepository, services::ProjectorsService};
 
 pub struct ApiServices<R>
 where
