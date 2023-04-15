@@ -1,6 +1,9 @@
 use async_trait::async_trait;
 
-use crate::core::projectors::{entities::Projector, repositories::ProjectorsRepository};
+use crate::core::projectors::{
+    entities::Projector,
+    repositories::{ProjectorsQuery, ProjectorsRepository},
+};
 use crate::core::repositories::{Error, RepositoryId, RepositoryQuery, Result};
 
 use super::MemoryRepository;
@@ -25,10 +28,7 @@ impl ProjectorsRepository for MemoryRepository {
         self.db.projectors().exists(id)
     }
 
-    async fn projectors_find<T>(&self, query: T) -> Result<Vec<Projector>>
-    where
-        T: RepositoryQuery<Entity = Projector>,
-    {
+    async fn projectors_find(&self, query: ProjectorsQuery) -> Result<Vec<Projector>> {
         let projectors = self.db.projectors().all()?;
         let projectors = projectors
             .into_iter()

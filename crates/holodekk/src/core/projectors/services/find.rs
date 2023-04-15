@@ -1,18 +1,11 @@
 use async_trait::async_trait;
 use log::trace;
-#[cfg(test)]
-use mockall::{automock, predicate::*};
 
 use crate::core::projectors::entities::Projector;
 use crate::core::projectors::repositories::{ProjectorsQuery, ProjectorsRepository};
-use crate::core::{repositories::RepositoryQuery, services::Result};
+use crate::core::services::Result;
 
-use super::ProjectorsService;
-
-#[derive(Clone, Default, Debug, PartialEq)]
-pub struct ProjectorsFindInput {
-    pub fleet: Option<String>,
-}
+use super::{FindProjectors, ProjectorsFindInput, ProjectorsService};
 
 impl From<ProjectorsFindInput> for ProjectorsQuery {
     fn from(value: ProjectorsFindInput) -> Self {
@@ -24,24 +17,14 @@ impl From<ProjectorsFindInput> for ProjectorsQuery {
     }
 }
 
-#[cfg_attr(test, automock)]
 #[async_trait]
-pub trait Find {
-    /// Returns a list of [Projector] instances matching the criteria
-    async fn find(&self, input: ProjectorsFindInput) -> Result<Vec<Projector>>;
-}
-
-#[async_trait]
-impl<R> Find for ProjectorsService<R>
+impl<R> FindProjectors for ProjectorsService<R>
 where
     R: ProjectorsRepository,
 {
     async fn find(&self, input: ProjectorsFindInput) -> Result<Vec<Projector>> {
         trace!("ProjectorsService.find()");
-        let projectors = self
-            .repo
-            .projectors_find(ProjectorsQuery::from(input))
-            .await?;
+        let projectors = self.repo.projectors_find(input.into()).await?;
         Ok(projectors)
     }
 }
@@ -94,7 +77,7 @@ mod tests {
         let (cmd_tx, _cmd_rx) = tokio::sync::mpsc::channel(1);
 
         projectors_repository
-            .expect_projectors_find::<ProjectorsQuery>()
+            .expect_projectors_find()
             .return_const(Ok(vec![projector.clone()]));
 
         let service = ProjectorsService::new(

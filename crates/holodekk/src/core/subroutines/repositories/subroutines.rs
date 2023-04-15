@@ -29,6 +29,10 @@ pub struct SubroutinesQuery {
 }
 
 impl SubroutinesQuery {
+    pub fn builder() -> Self {
+        Self::default()
+    }
+
     pub fn for_subroutine_definition(&mut self, id: &str) -> &mut Self {
         self.subroutine_definition_id = Some(id.into());
         self
@@ -43,14 +47,18 @@ impl SubroutinesQuery {
         self.namespace = Some(namespace.into());
         self
     }
+
+    pub fn build(&self) -> Self {
+        Self {
+            fleet: self.fleet.clone(),
+            namespace: self.namespace.clone(),
+            subroutine_definition_id: self.subroutine_definition_id.clone(),
+        }
+    }
 }
 
 impl RepositoryQuery for SubroutinesQuery {
     type Entity = Subroutine;
-
-    fn builder() -> Self {
-        Self::default()
-    }
 
     fn matches(&self, record: &Subroutine) -> bool {
         if self.fleet.is_none()
@@ -75,14 +83,6 @@ impl RepositoryQuery for SubroutinesQuery {
                 }
             }
             true
-        }
-    }
-
-    fn build(&self) -> Self {
-        Self {
-            fleet: self.fleet.clone(),
-            namespace: self.namespace.clone(),
-            subroutine_definition_id: self.subroutine_definition_id.clone(),
         }
     }
 }

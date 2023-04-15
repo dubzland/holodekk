@@ -25,10 +25,8 @@ pub trait RepositoryId {
     fn id(&self) -> String;
 }
 
-pub trait RepositoryQuery: Default + Send {
-    type Entity;
+pub trait RepositoryQuery: Send + Sized {
+    type Entity: Sized;
 
-    fn builder() -> Self;
     fn matches(&self, record: &Self::Entity) -> bool;
-    fn build(&self) -> Self;
 }

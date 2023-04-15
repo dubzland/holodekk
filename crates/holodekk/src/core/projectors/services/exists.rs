@@ -1,30 +1,11 @@
-use async_trait::async_trait;
-#[cfg(test)]
-use mockall::{automock, predicate::*};
-
 use crate::core::projectors::repositories::{projector_repo_id, ProjectorsRepository};
 use crate::core::services::Result;
+use async_trait::async_trait;
 
-use super::ProjectorsService;
-
-#[derive(Clone, Debug)]
-pub struct ProjectorsExistsInput {
-    pub namespace: String,
-}
-
-#[cfg_attr(test, automock)]
-#[async_trait]
-pub trait Exists {
-    /// Checks for the existence of a [Projector](entities::Projector)
-    ///
-    /// # Arguments
-    ///
-    /// `input` ([ProjectorsExistsInput]) - parameters for the projector (currently only `namespace`)
-    async fn exists(&self, input: ProjectorsExistsInput) -> Result<bool>;
-}
+use super::{ProjectorExists, ProjectorsExistsInput, ProjectorsService};
 
 #[async_trait]
-impl<R> Exists for ProjectorsService<R>
+impl<R> ProjectorExists for ProjectorsService<R>
 where
     R: ProjectorsRepository,
 {

@@ -1,7 +1,5 @@
 use async_trait::async_trait;
 use log::{debug, info, trace, warn};
-#[cfg(test)]
-use mockall::{automock, predicate::*};
 use tokio::sync::mpsc::Sender;
 
 use crate::core::projectors::{
@@ -13,26 +11,10 @@ use crate::core::{
     services::{Error, Result},
 };
 
-use super::{ProjectorCommand, ProjectorsService};
-
-#[derive(Clone, Debug)]
-pub struct ProjectorsDeleteInput {
-    pub namespace: String,
-}
-
-#[cfg_attr(test, automock)]
-#[async_trait]
-pub trait Delete {
-    /// Stops a running [Projector]
-    ///
-    /// # Arguments
-    ///
-    /// `input` ([ProjectorsStopInput]) - parameters for the projector (currently only `namespace`)
-    async fn delete(&self, input: ProjectorsDeleteInput) -> Result<()>;
-}
+use super::{DeleteProjector, ProjectorCommand, ProjectorsDeleteInput, ProjectorsService};
 
 #[async_trait]
-impl<R> Delete for ProjectorsService<R>
+impl<R> DeleteProjector for ProjectorsService<R>
 where
     R: ProjectorsRepository,
 {
@@ -105,6 +87,7 @@ async fn send_shutdown_command(
 mod tests {
     use std::sync::Arc;
 
+    use mockall::predicate::*;
     use rstest::*;
 
     use crate::config::fixtures::{mock_config, MockConfig};

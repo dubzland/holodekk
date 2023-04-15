@@ -26,30 +26,30 @@ pub struct ProjectorsQuery {
 }
 
 impl ProjectorsQuery {
+    pub fn builder() -> Self {
+        Self::default()
+    }
+
     pub fn fleet_eq(&mut self, fleet: &str) -> &mut Self {
         self.fleet = Some(fleet.to_string());
         self
+    }
+
+    pub fn build(&self) -> Self {
+        Self {
+            fleet: self.fleet.clone(),
+        }
     }
 }
 
 impl RepositoryQuery for ProjectorsQuery {
     type Entity = Projector;
 
-    fn builder() -> Self {
-        Self::default()
-    }
-
     fn matches(&self, projector: &Projector) -> bool {
         if let Some(fleet) = self.fleet.as_ref() {
             &projector.fleet == fleet
         } else {
             true
-        }
-    }
-
-    fn build(&self) -> Self {
-        Self {
-            fleet: self.fleet.clone(),
         }
     }
 }
@@ -72,9 +72,7 @@ pub trait ProjectorsRepository: Send + Sync {
     async fn projectors_create(&self, projector: Projector) -> Result<Projector>;
     async fn projectors_delete(&self, id: &str) -> Result<()>;
     async fn projectors_exists(&self, id: &str) -> Result<bool>;
-    async fn projectors_find<T>(&self, query: T) -> Result<Vec<Projector>>
-    where
-        T: RepositoryQuery<Entity = Projector> + 'static;
+    async fn projectors_find(&self, query: ProjectorsQuery) -> Result<Vec<Projector>>;
     async fn projectors_get(&self, id: &str) -> Result<Projector>;
 }
 

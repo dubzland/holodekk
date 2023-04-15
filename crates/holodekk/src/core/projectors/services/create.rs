@@ -1,7 +1,5 @@
 use async_trait::async_trait;
 use log::{debug, info, trace, warn};
-#[cfg(test)]
-use mockall::{automock, predicate::*};
 use tokio::sync::mpsc::Sender;
 
 use crate::core::projectors::{
@@ -10,26 +8,10 @@ use crate::core::projectors::{
 };
 use crate::core::services::{Error, Result};
 
-use super::{ProjectorCommand, ProjectorsService};
-
-#[derive(Clone, Debug)]
-pub struct ProjectorsCreateInput {
-    pub namespace: String,
-}
-
-#[cfg_attr(test, automock)]
-#[async_trait]
-pub trait Create {
-    /// Starts a [Projector] instance
-    ///
-    /// # Arguments
-    ///
-    /// `input` ([ProjectorsStartInput])- parameters for the projector (currently only `namespace')
-    async fn create(&self, input: ProjectorsCreateInput) -> Result<Projector>;
-}
+use super::{CreateProjector, ProjectorCommand, ProjectorsCreateInput, ProjectorsService};
 
 #[async_trait]
-impl<R> Create for ProjectorsService<R>
+impl<R> CreateProjector for ProjectorsService<R>
 where
     R: ProjectorsRepository,
 {
@@ -98,6 +80,7 @@ async fn send_start_command(
 mod tests {
     use std::sync::Arc;
 
+    use mockall::predicate::*;
     use rstest::*;
 
     use crate::config::fixtures::{mock_config, MockConfig};

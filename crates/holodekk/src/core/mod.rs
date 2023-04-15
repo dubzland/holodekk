@@ -2,8 +2,8 @@ pub mod containers;
 pub mod projectors;
 pub mod repositories;
 pub mod subroutines;
-pub mod services {
 
+pub mod services {
     use tonic::Status;
 
     use crate::core::repositories;

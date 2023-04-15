@@ -29,6 +29,10 @@ pub struct SubroutineDefinitionsQuery {
 }
 
 impl SubroutineDefinitionsQuery {
+    pub fn builder() -> Self {
+        Self::default()
+    }
+
     pub fn name_eq<S>(&mut self, name: S) -> &mut Self
     where
         S: Into<String>,
@@ -49,14 +53,18 @@ impl SubroutineDefinitionsQuery {
         self.kind = Some(kind);
         self
     }
+
+    pub fn build(&self) -> Self {
+        Self {
+            name: self.name.clone(),
+            path: self.path.clone(),
+            kind: self.kind,
+        }
+    }
 }
 
 impl RepositoryQuery for SubroutineDefinitionsQuery {
     type Entity = SubroutineDefinition;
-
-    fn builder() -> Self {
-        Self::default()
-    }
     fn matches(&self, record: &SubroutineDefinition) -> bool {
         if self.name.is_none() && self.path.is_none() && self.kind.is_none() {
             true
@@ -77,14 +85,6 @@ impl RepositoryQuery for SubroutineDefinitionsQuery {
                 }
             }
             true
-        }
-    }
-
-    fn build(&self) -> Self {
-        Self {
-            name: self.name.clone(),
-            path: self.path.clone(),
-            kind: self.kind,
         }
     }
 }
