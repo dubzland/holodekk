@@ -144,7 +144,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn sends_stop_command_to_manager(
+    async fn sends_stop_command_to_manager_and_removes_record(
         mock_config: MockConfig,
         mut projectors_repository: MockProjectorsRepository,
         projector: Projector,

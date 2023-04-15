@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use log::debug;
+use log::info;
 
 use holodekk::{
     config::{HolodekkApiConfig, HolodekkConfig},
@@ -28,7 +28,9 @@ impl HolodekkServerHandle {
     }
 
     pub async fn stop(mut self) -> Result<(), tonic::transport::Error> {
+        info!("stopping Holodekk API server ...");
         self.api_server.stop().await.unwrap();
+        info!("stopping Projector worker service ...");
         self.projectors_worker.stop().await;
         Ok(())
     }
@@ -39,10 +41,10 @@ where
     C: HolodekkConfig + HolodekkApiConfig,
     R: ProjectorsRepository + 'static,
 {
-    debug!("starting Projector worker service ...");
+    info!("starting Projector worker service ...");
     let projectors_worker = projectors::worker::start_worker(config.clone());
 
-    debug!("starting Holodekk API server...");
+    info!("starting Holodekk API server...");
     let projectors_service = Arc::new(ProjectorsService::new(
         config.clone(),
         repo,

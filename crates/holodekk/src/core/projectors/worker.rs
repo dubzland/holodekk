@@ -177,7 +177,7 @@ where
     let (pidfile, uhura_listener, projector_listener, mut command) =
         build_command(config.clone(), namespace, child_fd);
 
-    info!("Launching uhura with: {:?}", command);
+    debug!("Launching uhura with: {:?}", command);
     let status = command
         .stdin(Stdio::null())
         .stdout(Stdio::null())
@@ -185,7 +185,7 @@ where
         .env_clear()
         .status()
         .expect("Unable to spawn projector");
-    info!("Status: {}", status);
+    debug!("Status: {}", status);
 
     if status.success() {
         let mut buf = [0; 256];

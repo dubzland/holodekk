@@ -46,7 +46,7 @@ where
             Err(Error::Duplicate)
         } else {
             // send spawn request to manager
-            info!("Spawning projector: {}", input.namespace);
+            info!("Spawning projector for namespace: {}", input.namespace);
             let projector: Projector = send_start_command(self.worker(), &input.namespace).await?;
             info!("Projector spawned: {:?}", projector);
 
