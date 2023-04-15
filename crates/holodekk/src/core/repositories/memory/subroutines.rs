@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
-pub use crate::core::entities::Subroutine;
-pub use crate::core::repositories::{Error, RepositoryQuery, Result, SubroutinesRepository};
+pub use crate::core::repositories::{Error, RepositoryQuery, Result};
+pub use crate::core::subroutines::{entities::Subroutine, repositories::SubroutinesRepository};
 
 pub(self) use super::MemoryRepository;
 
@@ -59,11 +59,13 @@ mod tests {
 
     use rstest::*;
 
-    use crate::core::{
-        entities::subroutine::{
-            definition::fixtures::subroutine_definition, fixtures::subroutine, SubroutineDefinition,
+    use crate::core::repositories::{memory::MemoryDatabase, Error, RepositoryId};
+    use crate::core::subroutines::{
+        entities::{
+            fixtures::{subroutine, subroutine_definition},
+            SubroutineDefinition,
         },
-        repositories::{memory::MemoryDatabase, Error, RepositoryId, SubroutinesQuery},
+        repositories::SubroutinesQuery,
     };
 
     use super::*;

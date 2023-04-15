@@ -1,5 +1,5 @@
-use crate::core::entities::{SubroutineDefinition, SubroutineKind};
 use crate::core::repositories::RepositoryId;
+use crate::core::subroutines::entities::{SubroutineDefinition, SubroutineKind};
 
 use super::entities::{RpcSubroutineDefinition, RpcSubroutineKind};
 

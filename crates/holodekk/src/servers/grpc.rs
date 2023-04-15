@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use std::sync::RwLock;
 
 use futures_util::FutureExt;
 use log::{debug, info, warn};
@@ -9,8 +10,9 @@ use tonic::transport::server::TcpIncoming;
 use crate::utils::{fs::cleanup, ConnectionInfo};
 
 pub struct GrpcServerHandle {
-    shutdown_tx: tokio::sync::oneshot::Sender<()>,
-    task_handle: tokio::task::JoinHandle<std::result::Result<(), tonic::transport::Error>>,
+    shutdown_tx: RwLock<Option<tokio::sync::oneshot::Sender<()>>>,
+    task_handle:
+        RwLock<Option<tokio::task::JoinHandle<std::result::Result<(), tonic::transport::Error>>>>,
 }
 
 impl GrpcServerHandle {
@@ -19,14 +21,18 @@ impl GrpcServerHandle {
         task_handle: tokio::task::JoinHandle<std::result::Result<(), tonic::transport::Error>>,
     ) -> Self {
         Self {
-            shutdown_tx,
-            task_handle,
+            shutdown_tx: RwLock::new(Some(shutdown_tx)),
+            task_handle: RwLock::new(Some(task_handle)),
         }
     }
 
-    pub async fn stop(self) -> std::result::Result<(), tonic::transport::Error> {
-        self.shutdown_tx.send(()).unwrap();
-        self.task_handle.await.unwrap()
+    pub async fn stop(&self) -> std::result::Result<(), tonic::transport::Error> {
+        let shutdown_tx = self.shutdown_tx.write().unwrap().take().unwrap();
+        let handle = self.task_handle.write().unwrap().take().unwrap();
+        shutdown_tx.send(()).unwrap();
+        handle.await.unwrap()
+        // self.task_handle.write().unwrap().take()
+        // await.unwrap()
     }
 }
 

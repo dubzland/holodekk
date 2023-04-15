@@ -23,7 +23,10 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 
 use holodekk::{
     config::HolodekkConfig,
-    core::repositories::RepositoryKind,
+    core::repositories::{
+        memory::{MemoryDatabase, MemoryRepository},
+        RepositoryKind,
+    },
     servers::ProjectorServer,
     utils::{
         libsee,
@@ -33,7 +36,7 @@ use holodekk::{
 };
 
 use uhura::config::UhuraConfig;
-use uhura::server::UhuraServer;
+use uhura::server::start_uhura_server;
 
 #[derive(thiserror::Error, Debug)]
 enum Error {
@@ -251,7 +254,14 @@ async fn main_loop(
     options: &Options,
     config: Arc<UhuraConfig>,
 ) -> std::result::Result<(), std::io::Error> {
-    let uhura_server = UhuraServer::start(config.clone());
+    let repo = match config.repo_kind() {
+        RepositoryKind::Memory => {
+            let db = MemoryDatabase::new();
+            Arc::new(MemoryRepository::new(Arc::new(db)))
+        }
+    };
+
+    let uhura_server = start_uhura_server(config.clone(), repo);
 
     let projector_server = ProjectorServer::start(config);
 

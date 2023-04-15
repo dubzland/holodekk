@@ -6,7 +6,11 @@ use clap::Parser;
 use log::debug;
 
 use holodekk::{
-    core::repositories::RepositoryKind,
+    config::HolodekkConfig,
+    core::repositories::{
+        memory::{MemoryDatabase, MemoryRepository},
+        RepositoryKind,
+    },
     utils::{
         signals::{SignalKind, Signals},
         ConnectionInfo,
@@ -14,7 +18,7 @@ use holodekk::{
 };
 
 use holodekkd::config::HolodekkdConfig;
-use holodekkd::server::HolodekkServer;
+use holodekkd::server::start_holodekk_server;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -77,7 +81,15 @@ async fn main() -> std::io::Result<()> {
         "Starting HolodekkServer with config: {:?}",
         holodekkd_config
     );
-    let holodekk = HolodekkServer::start(Arc::new(holodekkd_config));
+
+    let repo = match holodekkd_config.repo_kind() {
+        RepositoryKind::Memory => {
+            let db = MemoryDatabase::new();
+            Arc::new(MemoryRepository::new(Arc::new(db)))
+        }
+    };
+
+    let holodekk = start_holodekk_server(Arc::new(holodekkd_config), repo);
 
     let signal = Signals::new().await;
     match signal {

@@ -4,49 +4,31 @@ use std::sync::Arc;
 
 use axum::{response::IntoResponse, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
-use tokio::sync::mpsc::Sender;
 
-use holodekk::{
-    config::HolodekkConfig, core::repositories::ProjectorsRepository,
-    core::services::projectors::ProjectorsService, managers::projector::ProjectorCommand,
-};
+use holodekk::core::projectors::{repositories::ProjectorsRepository, services::ProjectorsService};
 
-pub struct ApiServices<T>
+pub struct ApiServices<R>
 where
-    T: ProjectorsRepository,
+    R: ProjectorsRepository,
 {
-    repository: Arc<T>,
-    projectors_service: Arc<ProjectorsService<T>>,
+    projectors_service: Arc<ProjectorsService<R>>,
 }
 
-impl<T> ApiServices<T>
+impl<R> ApiServices<R>
 where
-    T: ProjectorsRepository,
+    R: ProjectorsRepository,
 {
-    pub fn repository(&self) -> Arc<T> {
-        self.repository.clone()
-    }
-
-    pub fn projectors(&self) -> Arc<ProjectorsService<T>> {
+    pub fn projectors(&self) -> Arc<ProjectorsService<R>> {
         self.projectors_service.clone()
     }
 }
 
-pub fn router<C, T>(
-    config: Arc<C>,
-    repository: Arc<T>,
-    cmd_tx: Sender<ProjectorCommand>,
-) -> axum::Router
+pub fn router<R>(projectors_service: Arc<ProjectorsService<R>>) -> axum::Router
 where
-    C: HolodekkConfig,
-    T: ProjectorsRepository + 'static,
+    R: ProjectorsRepository + 'static,
 {
     // Create the global services
-    let projectors_service = Arc::new(ProjectorsService::new(config, repository.clone(), cmd_tx));
-    let services = Arc::new(ApiServices {
-        repository,
-        projectors_service,
-    });
+    let services = Arc::new(ApiServices { projectors_service });
 
     Router::new()
         .route("/health", get(health))

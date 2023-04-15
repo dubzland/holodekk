@@ -1,4 +1,4 @@
-use crate::core::entities::{Subroutine, SubroutineStatus};
+use crate::core::subroutines::entities::{Subroutine, SubroutineStatus};
 
 use super::entities::RpcSubroutine;
 
@@ -39,7 +39,7 @@ mod tests {
     use crate::apis::grpc::subroutines::proto::entities::{
         RpcSubroutine, RpcSubroutineStatus, RpcSubroutineStatusCode,
     };
-    use crate::core::entities::{Subroutine, SubroutineStatus};
+    use crate::core::subroutines::entities::{Subroutine, SubroutineStatus};
 
     #[test]
     fn converts_to_subroutine_from_rpc_subroutine() {

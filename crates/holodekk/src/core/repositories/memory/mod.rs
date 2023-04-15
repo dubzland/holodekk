@@ -32,8 +32,8 @@ impl MemoryRepository {
 mod tests {
     use rstest::*;
 
-    use crate::core::entities::subroutine::fixtures::subroutine;
     use crate::core::repositories::{RepositoryId, Result};
+    use crate::core::subroutines::entities::fixtures::subroutine;
 
     use super::*;
 

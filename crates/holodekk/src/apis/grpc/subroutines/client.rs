@@ -1,6 +1,6 @@
 use tonic::transport::Channel;
 
-use crate::core::entities::Subroutine;
+use crate::core::subroutines::entities::Subroutine;
 use crate::errors::grpc::GrpcClientResult;
 
 use super::proto::entities::RpcCreateSubroutineRequest;

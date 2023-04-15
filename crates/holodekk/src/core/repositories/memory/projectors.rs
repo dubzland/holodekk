@@ -1,9 +1,7 @@
 use async_trait::async_trait;
 
-use crate::core::entities::Projector;
-use crate::core::repositories::{
-    Error, ProjectorsRepository, RepositoryId, RepositoryQuery, Result,
-};
+use crate::core::projectors::{entities::Projector, repositories::ProjectorsRepository};
+use crate::core::repositories::{Error, RepositoryId, RepositoryQuery, Result};
 
 use super::MemoryRepository;
 
@@ -50,8 +48,11 @@ mod tests {
 
     use rstest::*;
 
-    use crate::core::entities::projector::fixtures::projector;
-    use crate::core::repositories::{self, memory::MemoryDatabase, ProjectorsQuery, RepositoryId};
+    use crate::core::projectors::{
+        entities::{fixtures::projector, Projector},
+        repositories::ProjectorsQuery,
+    };
+    use crate::core::repositories::{self, memory::MemoryDatabase, RepositoryId};
 
     use super::*;
 

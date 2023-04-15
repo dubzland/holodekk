@@ -1,4 +1,4 @@
-use crate::core::entities::SubroutineKind;
+use crate::core::subroutines::entities::SubroutineKind;
 
 use super::entities::RpcSubroutineKind;
 
@@ -22,7 +22,7 @@ impl From<RpcSubroutineKind> for SubroutineKind {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::entities::SubroutineKind;
+    use crate::core::subroutines::entities::SubroutineKind;
 
     use crate::apis::grpc::subroutines::proto::entities::RpcSubroutineKind;
 

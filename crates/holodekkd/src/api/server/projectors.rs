@@ -9,10 +9,10 @@ use axum::{
 };
 use serde::Deserialize;
 
-use holodekk::core::{
+use holodekk::core::projectors::{
     entities::Projector,
     repositories::ProjectorsRepository,
-    services::projectors::{
+    services::{
         Create, Delete, Exists, Find, ProjectorsCreateInput, ProjectorsDeleteInput,
         ProjectorsExistsInput, ProjectorsFindInput,
     },
@@ -20,9 +20,9 @@ use holodekk::core::{
 
 use super::ApiServices;
 
-pub fn routes<T>() -> Router<Arc<ApiServices<T>>>
+pub fn routes<R>() -> Router<Arc<ApiServices<R>>>
 where
-    T: ProjectorsRepository + 'static,
+    R: ProjectorsRepository + 'static,
 {
     Router::new()
         .route("/", get(list))
@@ -30,9 +30,9 @@ where
         .route("/:namespace", delete(stop))
 }
 
-async fn list<T>(State(state): State<Arc<ApiServices<T>>>) -> impl IntoResponse
+async fn list<R>(State(state): State<Arc<ApiServices<R>>>) -> impl IntoResponse
 where
-    T: ProjectorsRepository,
+    R: ProjectorsRepository,
 {
     let projectors = state
         .projectors()
@@ -47,12 +47,12 @@ struct NewProjector {
     namespace: String,
 }
 
-async fn start<T>(
-    State(state): State<Arc<ApiServices<T>>>,
+async fn start<R>(
+    State(state): State<Arc<ApiServices<R>>>,
     Json(new_projector): Json<NewProjector>,
 ) -> Result<Json<Projector>, (StatusCode, String)>
 where
-    T: ProjectorsRepository,
+    R: ProjectorsRepository,
 {
     if state
         .projectors()
@@ -78,12 +78,12 @@ where
     }
 }
 
-async fn stop<T>(
-    State(state): State<Arc<ApiServices<T>>>,
+async fn stop<R>(
+    State(state): State<Arc<ApiServices<R>>>,
     Path(namespace): Path<String>,
 ) -> Result<(), (StatusCode, String)>
 where
-    T: ProjectorsRepository,
+    R: ProjectorsRepository,
 {
     if state
         .projectors()

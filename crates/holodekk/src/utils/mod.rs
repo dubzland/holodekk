@@ -9,7 +9,19 @@ use std::fmt;
 use std::net::Ipv4Addr;
 use std::path::{Path, PathBuf};
 
+use async_trait::async_trait;
 use serde::Serialize;
+
+#[async_trait]
+pub trait TaskHandle {
+    async fn stop(&mut self);
+}
+
+pub trait Worker: TaskHandle + Send + Sync {
+    type Command;
+
+    fn sender(&self) -> Option<tokio::sync::mpsc::Sender<Self::Command>>;
+}
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConnectionInfoError {

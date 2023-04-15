@@ -1,9 +1,7 @@
 use std::{collections::HashMap, sync::RwLock};
 
-use crate::core::{
-    entities::SubroutineDefinition,
-    repositories::{Error, RepositoryId, Result},
-};
+use crate::core::repositories::{Error, RepositoryId, Result};
+use crate::core::subroutines::entities::SubroutineDefinition;
 
 #[derive(Debug)]
 pub struct SubroutineDefinitionsMemoryStore {
