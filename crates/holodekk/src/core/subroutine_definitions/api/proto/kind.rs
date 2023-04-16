@@ -1,6 +1,6 @@
-use crate::core::subroutines::entities::SubroutineKind;
+use crate::core::subroutine_definitions::entities::SubroutineKind;
 
-use super::entities::RpcSubroutineKind;
+use super::enums::RpcSubroutineKind;
 
 impl From<SubroutineKind> for RpcSubroutineKind {
     fn from(kind: SubroutineKind) -> Self {
@@ -22,9 +22,9 @@ impl From<RpcSubroutineKind> for SubroutineKind {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::subroutines::entities::SubroutineKind;
+    use crate::core::subroutine_definitions::entities::SubroutineKind;
 
-    use crate::core::subroutines::api::proto::entities::RpcSubroutineKind;
+    use crate::core::subroutine_definitions::api::proto::enums::RpcSubroutineKind;
 
     #[test]
     fn converts_to_ruby_from_rpc_ruby() {

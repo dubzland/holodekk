@@ -5,9 +5,9 @@ use async_trait::async_trait;
 use mockall::{automock, predicate::*};
 use sha2::{Digest, Sha256};
 
-use crate::core::subroutines::entities::{SubroutineDefinition, SubroutineKind};
-
 use crate::core::repositories::{RepositoryId, RepositoryQuery, Result};
+
+use super::entities::{SubroutineDefinition, SubroutineKind};
 
 pub fn subroutine_definition_repo_id(name: &str) -> String {
     let mut hasher = Sha256::new();
@@ -17,7 +17,7 @@ pub fn subroutine_definition_repo_id(name: &str) -> String {
 
 impl RepositoryId for SubroutineDefinition {
     fn id(&self) -> String {
-        subroutine_definition_repo_id(&self.name)
+        subroutine_definition_repo_id(self.name())
     }
 }
 
@@ -70,17 +70,17 @@ impl RepositoryQuery for SubroutineDefinitionsQuery {
             true
         } else {
             if let Some(name) = self.name.as_ref() {
-                if name != &record.name {
+                if name != record.name() {
                     return false;
                 }
             }
             if let Some(path) = self.path.as_ref() {
-                if path != &record.path {
+                if path != record.path() {
                     return false;
                 }
             }
-            if let Some(kind) = self.kind.as_ref() {
-                if kind != &record.kind {
+            if let Some(kind) = self.kind {
+                if kind != record.kind() {
                     return false;
                 }
             }
@@ -102,4 +102,16 @@ pub trait SubroutineDefinitionsRepository: Send + Sync + 'static {
     where
         T: RepositoryQuery<Entity = SubroutineDefinition> + 'static;
     async fn subroutine_definitions_get(&self, id: &str) -> Result<SubroutineDefinition>;
+}
+
+#[cfg(test)]
+pub(crate) mod fixtures {
+    use rstest::*;
+
+    use super::MockSubroutineDefinitionsRepository;
+
+    #[fixture]
+    pub(crate) fn subroutine_definitions_repository() -> MockSubroutineDefinitionsRepository {
+        MockSubroutineDefinitionsRepository::default()
+    }
 }

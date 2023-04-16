@@ -4,7 +4,6 @@ package subroutines;
 
 service RpcSubroutines {
 	rpc Create(RpcCreateSubroutineRequest) returns (RpcSubroutine) {}
-	/* rpc Status(RpcStatusRequest) returns (RpcSubroutineStatus) {} */
 }
 
 enum RpcSubroutineStatusCode {
@@ -14,30 +13,12 @@ enum RpcSubroutineStatusCode {
 	CRASHED = 3;
 }
 
-enum RpcSubroutineKind {
-	UNKNOWN_SUBROUTINE_KIND = 0;
-	RUBY = 1;
-}
-
-message RpcSubroutineDefinition {
-	string id = 1;
-	string name = 2;
-	string path = 3;
-	RpcSubroutineKind kind = 4;
-}
-
 message RpcSubroutine {
 	string fleet = 1;
 	string namespace = 2;
 	string path = 3;
 	RpcSubroutineStatus status = 4;
 	string subroutine_definition_id = 5;
-}
-
-message RpcCreateSubroutineDefinitionRequest {
-	string name = 1;
-	string path = 2;
-	RpcSubroutineKind kind = 3;
 }
 
 message RpcCreateSubroutineRequest {

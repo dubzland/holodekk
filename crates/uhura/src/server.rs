@@ -4,12 +4,10 @@ use log::debug;
 
 use holodekk::{
     config::{HolodekkConfig, ProjectorConfig, UhuraApiConfig},
-    core::subroutines::api::server::subroutines_api_server,
+    core::subroutine_definitions::repositories::SubroutineDefinitionsRepository,
     core::subroutines::{
-        self,
-        repositories::{SubroutineDefinitionsRepository, SubroutinesRepository},
-        services::subroutines::SubroutinesService,
-        worker::SubroutinesWorker,
+        self, api::server::subroutines_api_server, repositories::SubroutinesRepository,
+        services::SubroutinesService, worker::SubroutinesWorker,
     },
     utils::{
         servers::{start_grpc_server, GrpcServerHandle},

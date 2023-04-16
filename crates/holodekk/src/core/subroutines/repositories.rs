@@ -98,3 +98,15 @@ pub trait SubroutinesRepository: Send + Sync {
         T: RepositoryQuery<Entity = Subroutine> + 'static;
     async fn subroutines_get(&self, id: &str) -> Result<Subroutine>;
 }
+
+#[cfg(test)]
+pub(crate) mod fixtures {
+    use rstest::*;
+
+    use super::MockSubroutinesRepository;
+
+    #[fixture]
+    pub(crate) fn subroutines_repository() -> MockSubroutinesRepository {
+        MockSubroutinesRepository::default()
+    }
+}

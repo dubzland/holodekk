@@ -9,7 +9,7 @@ pub use status::*;
 
 use std::sync::Arc;
 
-use crate::core::subroutines::repositories::SubroutineDefinitionsRepository;
+use crate::core::subroutine_definitions::repositories::SubroutineDefinitionsRepository;
 
 #[derive(Clone, Debug)]
 pub struct SubroutineDefinitionsService<T>

@@ -59,13 +59,10 @@ mod tests {
 
     use rstest::*;
 
-    use crate::core::repositories::{memory::MemoryDatabase, Error, RepositoryId};
-    use crate::core::subroutines::{
-        entities::{
-            fixtures::{subroutine, subroutine_definition},
-            SubroutineDefinition,
-        },
-        repositories::SubroutinesQuery,
+    use crate::core::{
+        repositories::{memory::MemoryDatabase, Error, RepositoryId},
+        subroutine_definitions::entities::{fixtures::subroutine_definition, SubroutineDefinition},
+        subroutines::{entities::fixtures::subroutine, repositories::SubroutinesQuery},
     };
 
     use super::*;

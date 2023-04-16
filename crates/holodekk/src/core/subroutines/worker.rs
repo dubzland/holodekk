@@ -15,10 +15,10 @@ use nix::{
 use serde::Deserialize;
 
 use crate::config::{HolodekkConfig, ProjectorConfig};
-use crate::core::repositories::RepositoryId;
+use crate::core::subroutine_definitions::entities::SubroutineDefinition;
 use crate::utils::{TaskHandle, Worker};
 
-use super::entities::{Subroutine, SubroutineDefinition, SubroutineStatus};
+use super::entities::{Subroutine, SubroutineStatus};
 
 #[derive(Debug)]
 pub enum SubroutineCommand {
@@ -103,7 +103,7 @@ where
                     definition,
                     resp,
                 } => {
-                    println!("spawning {}:{}", namespace, &definition.name);
+                    println!("spawning {}:{}", namespace, &definition.name());
                     let subroutine =
                         spawn_subroutine(config.clone(), &namespace, definition.clone()).unwrap();
                     resp.send(Ok(subroutine)).unwrap();
@@ -136,7 +136,7 @@ pub async fn subroutine_manager<C>(
                 definition,
                 resp,
             } => {
-                println!("spawning {}:{}", namespace, &definition.name);
+                println!("spawning {}:{}", namespace, &definition.name());
                 let subroutine =
                     spawn_subroutine(config.clone(), &namespace, definition.clone()).unwrap();
                 resp.send(Ok(subroutine)).unwrap();
@@ -162,7 +162,7 @@ where
     C: HolodekkConfig + ProjectorConfig,
 {
     let mut root_path = config.projector_path().clone();
-    root_path.push(definition.name.clone());
+    root_path.push(definition.name());
 
     // Ensure the root directory exists
     if !root_path.exists() {
@@ -193,11 +193,11 @@ where
 
     let mut command = Command::new(subroutine_bin);
     command.arg("--name");
-    command.arg(definition.name.clone());
+    command.arg(definition.name());
     command.arg("--pidfile");
     command.arg(&shim_pidfile);
     command.arg("--subroutine-directory");
-    command.arg(&definition.path);
+    command.arg(definition.path());
     command.arg("--subroutine-pidfile");
     command.arg(&subroutine_pidfile);
     command.arg("--log-file");
@@ -258,7 +258,7 @@ where
                 Pid::from_raw(pid)
             }
         };
-        let mut i = Subroutine::new(config.fleet(), namespace, subroutine_root, &definition.id());
+        let mut i = Subroutine::new(config.fleet(), namespace, subroutine_root, definition.id());
         i.status = SubroutineStatus::Running(pid.as_raw() as u32);
         debug!("Subroutine spawned with pid: {}", pid);
         drop(sync_pipe);
@@ -279,14 +279,19 @@ pub fn shutdown_subroutine(
             Ok(_) => {
                 debug!(
                     "stopped subroutine {} running in namespace {} with pid {}",
-                    definition.name, subroutine.namespace, pid
+                    definition.name(),
+                    subroutine.namespace,
+                    pid
                 );
                 Ok(())
             }
             Err(err) => {
                 warn!(
                     "failed stop subroutine {} running in namespace {} with pid {}: {}",
-                    definition.name, subroutine.namespace, pid, err
+                    definition.name(),
+                    subroutine.namespace,
+                    pid,
+                    err
                 );
                 Err(ShutdownError::from(err))
             }

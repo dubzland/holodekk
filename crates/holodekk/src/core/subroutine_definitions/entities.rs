@@ -1,0 +1,66 @@
+use std::path::PathBuf;
+
+use serde::{Deserialize, Serialize};
+
+use super::repositories::subroutine_definition_repo_id;
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+pub enum SubroutineKind {
+    Unknown,
+    Ruby,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct SubroutineDefinition {
+    id: String,
+    name: String,
+    path: PathBuf,
+    kind: SubroutineKind,
+}
+
+impl SubroutineDefinition {
+    pub fn new<S, P>(name: S, path: P, kind: SubroutineKind) -> Self
+    where
+        S: AsRef<str> + Into<String>,
+        P: Into<PathBuf>,
+    {
+        Self {
+            id: subroutine_definition_repo_id(name.as_ref()),
+            name: name.into(),
+            path: path.into(),
+            kind,
+        }
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn path(&self) -> &PathBuf {
+        &self.path
+    }
+
+    pub fn kind(&self) -> SubroutineKind {
+        self.kind
+    }
+}
+
+#[cfg(test)]
+pub mod fixtures {
+    use rstest::*;
+
+    use super::*;
+
+    #[fixture]
+    pub(crate) fn subroutine_definition() -> SubroutineDefinition {
+        SubroutineDefinition::new(
+            "test/sub",
+            "/tmp/holodekk/subroutines/test/sub",
+            SubroutineKind::Ruby,
+        )
+    }
+}

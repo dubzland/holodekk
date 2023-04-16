@@ -1,6 +1,7 @@
 pub mod containers;
 pub mod projectors;
 pub mod repositories;
+pub mod subroutine_definitions;
 pub mod subroutines;
 
 pub mod services {

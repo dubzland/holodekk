@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package subroutine_definitions;
+
+service RpcSubroutineDefinitions {
+	rpc Create(RpcCreateSubroutineDefinitionRequest) returns (RpcSubroutineDefinition) {}
+}
+
+enum RpcSubroutineKind {
+	UNKNOWN_SUBROUTINE_KIND = 0;
+	RUBY = 1;
+}
+
+message RpcSubroutineDefinition {
+	string id = 1;
+	string name = 2;
+	string path = 3;
+	RpcSubroutineKind kind = 4;
+}
+
+message RpcCreateSubroutineDefinitionRequest {
+	string name = 1;
+	string path = 2;
+	RpcSubroutineKind kind = 3;
+}

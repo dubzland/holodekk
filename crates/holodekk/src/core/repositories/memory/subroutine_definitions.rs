@@ -1,8 +1,10 @@
 use async_trait::async_trait;
 
-use crate::core::repositories::{Error, RepositoryQuery, Result};
-use crate::core::subroutines::{
-    entities::SubroutineDefinition, repositories::SubroutineDefinitionsRepository,
+use crate::core::{
+    repositories::{Error, RepositoryQuery, Result},
+    subroutine_definitions::{
+        entities::SubroutineDefinition, repositories::SubroutineDefinitionsRepository,
+    },
 };
 
 pub(self) use super::MemoryRepository;
@@ -56,8 +58,8 @@ mod tests {
 
     use rstest::*;
 
-    use crate::core::repositories::{memory::MemoryDatabase, RepositoryId};
-    use crate::core::subroutines::{
+    use crate::core::repositories::memory::MemoryDatabase;
+    use crate::core::subroutine_definitions::{
         entities::fixtures::subroutine_definition, repositories::SubroutineDefinitionsQuery,
     };
 
@@ -239,7 +241,7 @@ mod tests {
         let res = repo
             .subroutine_definitions_find(
                 SubroutineDefinitionsQuery::builder()
-                    .name_eq(&subroutine_definition.name)
+                    .name_eq(subroutine_definition.name())
                     .build(),
             )
             .await?;

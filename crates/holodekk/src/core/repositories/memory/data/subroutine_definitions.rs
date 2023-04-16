@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::RwLock};
 
-use crate::core::repositories::{Error, RepositoryId, Result};
-use crate::core::subroutines::entities::SubroutineDefinition;
+use crate::core::repositories::{Error, Result};
+use crate::core::subroutine_definitions::entities::SubroutineDefinition;
 
 #[derive(Debug)]
 pub struct SubroutineDefinitionsMemoryStore {
@@ -18,13 +18,13 @@ impl Default for SubroutineDefinitionsMemoryStore {
 
 impl SubroutineDefinitionsMemoryStore {
     pub fn add(&self, definition: SubroutineDefinition) -> Result<()> {
-        if self.records.read().unwrap().contains_key(&definition.id()) {
+        if self.records.read().unwrap().contains_key(definition.id()) {
             Err(Error::AlreadyExists)
         } else {
             self.records
                 .write()
                 .unwrap()
-                .insert(definition.id(), definition);
+                .insert(definition.id().into(), definition);
             Ok(())
         }
     }

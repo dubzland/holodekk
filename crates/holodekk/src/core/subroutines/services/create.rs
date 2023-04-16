@@ -5,9 +5,12 @@ use mockall::{automock, predicate::*};
 use tokio::sync::mpsc::Sender;
 
 use crate::core::services::{Error, Result};
+use crate::core::subroutine_definitions::{
+    entities::SubroutineDefinition, repositories::SubroutineDefinitionsRepository,
+};
 use crate::core::subroutines::{
-    entities::{Subroutine, SubroutineDefinition},
-    repositories::{subroutine_repo_id, SubroutineDefinitionsRepository, SubroutinesRepository},
+    entities::Subroutine,
+    repositories::{subroutine_repo_id, SubroutinesRepository},
 };
 
 use super::{SubroutineCommand, SubroutinesService};
@@ -51,7 +54,8 @@ where
             // send spawn request to manager
             info!(
                 "Spawning subroutine {} in namespace {}",
-                subroutine_definition.name, input.namespace
+                subroutine_definition.name(),
+                input.namespace
             );
             let subroutine: Subroutine = send_start_command(
                 self.worker(),
