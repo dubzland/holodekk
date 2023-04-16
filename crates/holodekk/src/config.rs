@@ -79,23 +79,37 @@ pub mod fixtures {
         projector_path: PathBuf,
     }
 
-    impl Default for MockConfig {
-        fn default() -> Self {
-            let holodekk_root_path: PathBuf = "/tmp".into();
-
-            let mut projectors_root_path = holodekk_root_path.clone();
-            projectors_root_path.push("projectors");
-
-            let mut subroutines_root_path = holodekk_root_path.clone();
-            subroutines_root_path.push("subroutines");
-
-            let mut projector_path = projectors_root_path.clone();
+    impl MockConfig {
+        pub fn new<P: AsRef<Path>>(root: P) -> Self {
+            let mut projector_path = root.as_ref().to_owned();
+            projector_path.push("projectors");
             projector_path.push("test");
 
             Self {
-                paths: HolodekkPaths::new("/tmp", "/tmp/bin"),
+                paths: HolodekkPaths::new(root.as_ref().to_owned(), PathBuf::from("/tmp/bin")),
                 projector_path,
             }
+        }
+    }
+
+    impl Default for MockConfig {
+        fn default() -> Self {
+            let holodekk_root_path: PathBuf = "/tmp".into();
+            Self::new(holodekk_root_path)
+
+            //             let mut projectors_root_path = holodekk_root_path.clone();
+            //             projectors_root_path.push("projectors");
+
+            //             let mut subroutines_root_path = holodekk_root_path.clone();
+            //             subroutines_root_path.push("subroutines");
+
+            //             let mut projector_path = projectors_root_path.clone();
+            //             projector_path.push("test");
+
+            //             Self {
+            //                 paths: HolodekkPaths::new("/tmp", "/tmp/bin"),
+            //                 projector_path,
+            //             }
         }
     }
 

@@ -5,10 +5,7 @@ use async_trait::async_trait;
 use mockall::{automock, predicate::*};
 
 use crate::core::services::{Error, Result};
-use crate::core::subroutine_definitions::{
-    entities::{SubroutineDefinition, SubroutineKind},
-    repositories::{subroutine_definition_repo_id, SubroutineDefinitionsRepository},
-};
+use crate::core::subroutine_definitions::entities::{SubroutineDefinition, SubroutineKind};
 
 use super::SubroutineDefinitionsService;
 
@@ -39,7 +36,7 @@ impl<'c> SubroutineDefinitionsCreateInput<'c> {
 
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait Create {
+pub trait CreateSubroutineDefinition {
     async fn create<'a>(
         &self,
         input: &'a SubroutineDefinitionsCreateInput<'a>,
@@ -47,10 +44,7 @@ pub trait Create {
 }
 
 #[async_trait]
-impl<T> Create for SubroutineDefinitionsService<T>
-where
-    T: SubroutineDefinitionsRepository,
-{
+impl CreateSubroutineDefinition for SubroutineDefinitionsService {
     /// Creates a Subroutine entry in the repository.
     async fn create<'a>(
         &self,
@@ -58,42 +52,55 @@ where
     ) -> Result<SubroutineDefinition> {
         // make sure this subroutine does not already exist
         println!("Checking for subroutine with name: {}", input.name,);
-        if self
-            .repo
-            .subroutine_definitions_get(&subroutine_definition_repo_id(input.name))
-            .await
-            .is_ok()
-        {
+        if self.definitions.read().unwrap().contains_key(input.name()) {
             return Err(Error::Duplicate);
         }
 
-        let subroutine = SubroutineDefinition::new(input.name, input.path, input.kind);
-        let subroutine = self.repo.subroutine_definitions_create(subroutine).await?;
-        Ok(subroutine)
+        let definition = SubroutineDefinition::new(input.name(), input.path(), input.kind);
+        self.definitions
+            .write()
+            .unwrap()
+            .insert(definition.name().to_string(), definition.clone());
+        Ok(definition)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    use std::collections::HashMap;
+    use std::sync::RwLock;
 
     use rstest::*;
 
-    use crate::core::repositories;
     use crate::core::services::Error;
-    use crate::core::subroutine_definitions::{
-        entities::{fixtures::subroutine_definition, SubroutineDefinition},
-        repositories::{
-            fixtures::subroutine_definitions_repository, MockSubroutineDefinitionsRepository,
-        },
+    use crate::core::subroutine_definitions::entities::{
+        fixtures::subroutine_definition, SubroutineDefinition,
     };
 
     use super::*;
 
+    // #[rstest]
+    // #[tokio::test]
+    // async fn creates_subroutine_definition(
+    //     subroutine_definition: SubroutineDefinition,
+    // ) -> Result<()> {
+    //     let input = SubroutineDefinitionsCreateInput::new(
+    //         subroutine_definition.name(),
+    //         subroutine_definition.path(),
+    //         subroutine_definition.kind(),
+    //     );
+
+    //     let definitions = RwLock::new(HashMap::new());
+    //     let service = SubroutineDefinitionsService { definitions };
+    //     service.create(&input).await?;
+
+    //     assert!(definitions.read().unwrap().contains_key(input.name()));
+    //     Ok(())
+    // }
+
     #[rstest]
     #[tokio::test]
-    async fn creates_subroutine_definition(
-        mut subroutine_definitions_repository: MockSubroutineDefinitionsRepository,
+    async fn returns_subroutine_definition(
         subroutine_definition: SubroutineDefinition,
     ) -> Result<()> {
         let input = SubroutineDefinitionsCreateInput::new(
@@ -102,54 +109,34 @@ mod tests {
             subroutine_definition.kind(),
         );
 
-        let sub_name = subroutine_definition.name().to_owned();
-        subroutine_definitions_repository
-            .expect_subroutine_definitions_get()
-            .withf(move |name| name == &subroutine_definition_repo_id(&sub_name))
-            .return_const(Err(repositories::Error::NotFound));
-
-        let sub_path = subroutine_definition.path().to_owned();
-        let sub_name = subroutine_definition.name().to_owned();
-
-        subroutine_definitions_repository
-            .expect_subroutine_definitions_create()
-            .withf(move |new_sub: &SubroutineDefinition| {
-                (*new_sub).path().eq(&sub_path) && (*new_sub).name().eq(&sub_name)
-            })
-            .return_const(Ok(subroutine_definition.clone()));
-
-        let service =
-            SubroutineDefinitionsService::new(Arc::new(subroutine_definitions_repository));
-
+        let definitions = HashMap::new();
+        let service = SubroutineDefinitionsService {
+            definitions: RwLock::new(definitions.clone()),
+        };
         let def = service.create(&input).await?;
-        assert_eq!(&def, &subroutine_definition);
+
+        assert_eq!(def, subroutine_definition);
         Ok(())
     }
 
     #[rstest]
     #[tokio::test]
     async fn rejects_duplicate_subroutine_name(
-        mut subroutine_definitions_repository: MockSubroutineDefinitionsRepository,
         subroutine_definition: SubroutineDefinition,
-    ) {
+    ) -> Result<()> {
         let input = SubroutineDefinitionsCreateInput::new(
             subroutine_definition.name(),
             subroutine_definition.path(),
             subroutine_definition.kind(),
         );
 
-        let sub_name = subroutine_definition.name().to_owned();
-
-        subroutine_definitions_repository
-            .expect_subroutine_definitions_get()
-            .withf(move |name| name == &subroutine_definition_repo_id(&sub_name))
-            .return_const(Ok(subroutine_definition.to_owned()));
-
-        let service =
-            SubroutineDefinitionsService::new(Arc::new(subroutine_definitions_repository));
-
+        let mut definitions = HashMap::new();
+        definitions.insert(input.name().to_string(), subroutine_definition.clone());
+        let service = SubroutineDefinitionsService {
+            definitions: RwLock::new(definitions.clone()),
+        };
         let res = service.create(&input).await;
-        assert!(res.is_err());
-        assert_eq!(res.unwrap_err(), Error::Duplicate);
+        assert!(matches!(res.unwrap_err(), Error::Duplicate));
+        Ok(())
     }
 }

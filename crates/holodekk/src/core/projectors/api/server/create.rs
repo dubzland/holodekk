@@ -9,12 +9,12 @@ use crate::core::projectors::{
 
 use super::ApiServices;
 
-pub async fn handler<S>(
-    State(state): State<Arc<ApiServices<S>>>,
+pub async fn handler<P, D>(
+    State(state): State<Arc<ApiServices<P, D>>>,
     Json(new_projector): Json<NewProjector>,
 ) -> Result<impl IntoResponse, crate::core::services::Error>
 where
-    S: CreateProjector,
+    P: CreateProjector,
 {
     let projector = state
         .projectors()
@@ -32,6 +32,7 @@ mod tests {
     use crate::core::projectors::entities::{fixtures::projector, Projector};
     use crate::core::projectors::services::MockCreateProjector;
     use crate::core::services::Error;
+    use crate::core::subroutine_definitions::services::MockCreateSubroutineDefinition;
 
     use super::*;
 
@@ -44,6 +45,7 @@ mod tests {
     fn mock_app(mock_service: MockCreateProjector) -> Router {
         let services = Arc::new(ApiServices {
             projectors_service: Arc::new(mock_service),
+            definitions_service: Arc::new(MockCreateSubroutineDefinition::default()),
         });
 
         Router::new().route("/", post(handler)).with_state(services)

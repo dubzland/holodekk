@@ -15,23 +15,33 @@ use crate::core::projectors::services::{
     CreateProjector, DeleteProjector, FindProjectors, GetProjector,
 };
 use crate::core::services::Error;
+use crate::core::subroutine_definitions::services::CreateSubroutineDefinition;
 
-pub struct ApiServices<S> {
-    projectors_service: Arc<S>,
+pub struct ApiServices<P, D> {
+    projectors_service: Arc<P>,
+    definitions_service: Arc<D>,
 }
 
-impl<S> ApiServices<S> {
-    pub fn projectors(&self) -> Arc<S> {
+impl<P, D> ApiServices<P, D> {
+    pub fn projectors(&self) -> Arc<P> {
         self.projectors_service.clone()
+    }
+
+    pub fn definitions(&self) -> Arc<D> {
+        self.definitions_service.clone()
     }
 }
 
-pub fn router<S>(projectors_service: Arc<S>) -> axum::Router
+pub fn router<P, D>(projectors_service: Arc<P>, definitions_service: Arc<D>) -> axum::Router
 where
-    S: CreateProjector + DeleteProjector + FindProjectors + GetProjector + Send + Sync + 'static,
+    P: CreateProjector + DeleteProjector + FindProjectors + GetProjector + Send + Sync + 'static,
+    D: CreateSubroutineDefinition + Send + Sync + 'static,
 {
     // Create the global services
-    let services = Arc::new(ApiServices { projectors_service });
+    let services = Arc::new(ApiServices {
+        projectors_service,
+        definitions_service,
+    });
 
     Router::new()
         .route("/", get(list::handler))

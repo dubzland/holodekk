@@ -9,11 +9,11 @@ use crate::core::projectors::{
 
 use super::ApiServices;
 
-pub async fn handler<S>(
-    State(state): State<Arc<ApiServices<S>>>,
+pub async fn handler<P, D>(
+    State(state): State<Arc<ApiServices<P, D>>>,
 ) -> Result<Json<Vec<Projector>>, (StatusCode, String)>
 where
-    S: FindProjectors,
+    P: FindProjectors,
 {
     let projectors = state
         .projectors()
@@ -31,6 +31,7 @@ mod tests {
 
     use crate::core::projectors::entities::fixtures::projector;
     use crate::core::projectors::services::MockFindProjectors;
+    use crate::core::subroutine_definitions::services::MockCreateSubroutineDefinition;
 
     use super::*;
 
@@ -43,6 +44,7 @@ mod tests {
     fn mock_app(mock_find: MockFindProjectors) -> Router {
         let services = Arc::new(ApiServices {
             projectors_service: Arc::new(mock_find),
+            definitions_service: Arc::new(MockCreateSubroutineDefinition::default()),
         });
 
         Router::new().route("/", get(handler)).with_state(services)

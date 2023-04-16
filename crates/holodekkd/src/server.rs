@@ -13,6 +13,7 @@ use holodekk::{
         services::ProjectorsService,
         worker::ProjectorsWorker,
     },
+    core::subroutine_definitions::services::SubroutineDefinitionsService,
     utils::{
         servers::{start_http_server, HttpServerHandle},
         ConnectionInfo, TaskHandle, Worker,
@@ -41,13 +42,16 @@ impl HolodekkServerHandle {
     }
 }
 
-pub fn router<R>(projectors_service: Arc<ProjectorsService<R>>) -> axum::Router
+pub fn router<R>(
+    projectors_service: Arc<ProjectorsService<R>>,
+    definitions_service: Arc<SubroutineDefinitionsService>,
+) -> axum::Router
 where
     R: ProjectorsRepository + 'static,
 {
     Router::new().nest("/", crate::api::router()).nest(
         "/projectors",
-        projectors::api::server::router(projectors_service),
+        projectors::api::server::router(projectors_service, definitions_service),
     )
 }
 
@@ -68,8 +72,13 @@ where
         repo,
         projectors_worker.sender().unwrap(),
     ));
+    let definitions_service = SubroutineDefinitionsService::init(config.clone())
+        .expect("Unable to initialize subroutine definitions");
     let api_config = config.holodekk_api_config().clone();
-    let api_server = start_http_server(&api_config, router(projectors_service));
+    let api_server = start_http_server(
+        &api_config,
+        router(projectors_service, Arc::new(definitions_service)),
+    );
     HolodekkServerHandle::new(projectors_worker, api_server)
 }
 

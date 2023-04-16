@@ -9,12 +9,12 @@ use crate::core::projectors::services::{DeleteProjector, ProjectorsDeleteInput};
 
 use super::{internal_error, ApiServices};
 
-pub async fn handler<S>(
-    State(state): State<Arc<ApiServices<S>>>,
+pub async fn handler<P, D>(
+    State(state): State<Arc<ApiServices<P, D>>>,
     Path(id): Path<String>,
 ) -> Result<(), (StatusCode, String)>
 where
-    S: DeleteProjector,
+    P: DeleteProjector,
 {
     state
         .projectors()
