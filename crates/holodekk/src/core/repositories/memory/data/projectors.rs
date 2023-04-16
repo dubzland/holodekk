@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::RwLock};
 
 use crate::core::projectors::entities::Projector;
-use crate::core::repositories::{Error, RepositoryId, Result};
+use crate::core::repositories::{Error, Result};
 
 #[derive(Debug)]
 pub struct ProjectorsMemoryStore {
@@ -18,13 +18,13 @@ impl Default for ProjectorsMemoryStore {
 
 impl ProjectorsMemoryStore {
     pub fn add(&self, projector: Projector) -> Result<()> {
-        if self.records.read().unwrap().contains_key(&projector.id()) {
+        if self.records.read().unwrap().contains_key(projector.id()) {
             Err(Error::AlreadyExists)
         } else {
             self.records
                 .write()
                 .unwrap()
-                .insert(projector.id(), projector);
+                .insert(projector.id().to_string(), projector);
             Ok(())
         }
     }

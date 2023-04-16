@@ -18,9 +18,7 @@ where
 {
     let projector = state
         .projectors()
-        .create(ProjectorsCreateInput {
-            namespace: new_projector.namespace,
-        })
+        .create(&ProjectorsCreateInput::new(&new_projector.namespace))
         .await?;
     Ok((StatusCode::CREATED, Json(projector)))
 }
@@ -56,7 +54,7 @@ mod tests {
     async fn responds_with_conflict_when_projector_exists(mut mock_service: MockCreateProjector) {
         mock_service
             .expect_create()
-            .withf(|input| input.namespace == "test")
+            .withf(|input| input.namespace() == "test")
             .return_const(Err(Error::Duplicate));
 
         let body = Body::from(
@@ -86,7 +84,7 @@ mod tests {
     async fn responds_with_created(mut mock_service: MockCreateProjector, projector: Projector) {
         mock_service
             .expect_create()
-            .withf(|input| input.namespace == "test")
+            .withf(|input| input.namespace() == "test")
             .return_const(Ok(projector));
 
         let body = Body::from(
@@ -119,7 +117,7 @@ mod tests {
     ) {
         mock_service
             .expect_create()
-            .withf(|input| input.namespace == "test")
+            .withf(|input| input.namespace() == "test")
             .return_const(Ok(projector.clone()));
 
         let body = Body::from(
@@ -143,6 +141,6 @@ mod tests {
 
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
         let p: Projector = serde_json::from_slice(&body).unwrap();
-        assert_eq!(p.id, projector.id);
+        assert_eq!(p.id(), projector.id());
     }
 }

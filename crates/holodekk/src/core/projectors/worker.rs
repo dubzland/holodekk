@@ -213,7 +213,7 @@ where
             projector_listener,
             pid,
         );
-        debug!("Uhura spawned with pid: {}", p.pid);
+        debug!("Uhura spawned with pid: {}", p.pid());
         drop(sync_pipe);
         Ok(p)
     } else {
@@ -224,18 +224,21 @@ where
 
 pub fn shutdown_projector(projector: Projector) -> std::result::Result<(), ShutdownError> {
     // TODO: check to see if uhura is still running before blindly killing it
-    match kill(Pid::from_raw(projector.pid), SIGINT) {
+    match kill(Pid::from_raw(projector.pid().to_owned()), SIGINT) {
         Ok(_) => {
             debug!(
                 "stopped uhura running for namespace {} with pid {}",
-                projector.namespace, projector.pid
+                projector.namespace(),
+                projector.pid()
             );
             Ok(())
         }
         Err(err) => {
             warn!(
                 "failed stop uhura running for namespace {} with pid {}: {}",
-                projector.namespace, projector.pid, err
+                projector.namespace(),
+                projector.pid(),
+                err
             );
             Err(ShutdownError::from(err))
         }

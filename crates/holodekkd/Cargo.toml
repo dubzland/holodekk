@@ -19,6 +19,7 @@ tokio.workspace = true
 tonic.workspace = true
 uhura.workspace = true
 uuid.workspace = true
+walkdir.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true

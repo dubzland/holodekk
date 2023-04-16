@@ -1,31 +1,50 @@
 use async_trait::async_trait;
 use log::{debug, info, trace, warn};
+#[cfg(test)]
+use mockall::*;
 use tokio::sync::mpsc::Sender;
 
-use crate::core::projectors::{
-    entities::Projector,
-    repositories::{projector_repo_id, ProjectorsRepository},
-};
+use crate::core::projectors::{entities::Projector, repositories::ProjectorsRepository};
 use crate::core::{
     repositories,
     services::{Error, Result},
 };
 
-use super::{DeleteProjector, ProjectorCommand, ProjectorsDeleteInput, ProjectorsService};
+use super::{ProjectorCommand, ProjectorsService};
+
+#[derive(Clone, Debug)]
+pub struct ProjectorsDeleteInput<'d> {
+    id: &'d str,
+}
+
+impl<'d> ProjectorsDeleteInput<'d> {
+    pub fn new(id: &'d str) -> Self {
+        Self { id }
+    }
+
+    pub fn id(&self) -> &str {
+        self.id
+    }
+}
+
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub trait DeleteProjector {
+    async fn delete<'a>(&self, input: &'a ProjectorsDeleteInput<'a>) -> Result<()>;
+}
 
 #[async_trait]
 impl<R> DeleteProjector for ProjectorsService<R>
 where
     R: ProjectorsRepository,
 {
-    async fn delete(&self, input: ProjectorsDeleteInput) -> Result<()> {
+    async fn delete<'a>(&self, input: &'a ProjectorsDeleteInput<'a>) -> Result<()> {
         trace!("ProjectorsService.stop({:?})", input);
 
         // ensure a projector is actually running
-        let id = projector_repo_id(&self.fleet, &input.namespace);
         let projector = self
             .repo
-            .projectors_get(&id)
+            .projectors_get(input.id())
             .await
             .map_err(|err| match err {
                 repositories::Error::NotFound => Error::NotFound,
@@ -33,12 +52,20 @@ where
             })?;
 
         // send the shutdown command to the manager
-        info!("Shutting down projector: {}", input.namespace);
+        info!(
+            "Shutting down projector: {}:({})",
+            input.id(),
+            projector.namespace(),
+        );
         send_shutdown_command(self.worker(), projector.clone()).await?;
-        info!("Projector shutdown complete: {}", input.namespace);
+        info!(
+            "Projector shutdown complete: {}:({})",
+            input.id(),
+            projector.namespace(),
+        );
 
         // remove projector from the repository
-        self.repo.projectors_delete(&projector.id).await?;
+        self.repo.projectors_delete(projector.id()).await?;
         Ok(())
     }
 }
@@ -116,9 +143,7 @@ mod tests {
             cmd_tx,
         );
         let res = service
-            .delete(ProjectorsDeleteInput {
-                namespace: "nonexistent".to_string(),
-            })
+            .delete(&ProjectorsDeleteInput::new("nonexistent"))
             .await;
 
         assert!(res.is_err());
@@ -149,10 +174,11 @@ mod tests {
             }
         });
 
+        let id = projector.id().to_string();
         // expect deletion
         projectors_repository
             .expect_projectors_delete()
-            .with(eq(projector.id))
+            .with(eq(id))
             .return_const(Ok(()));
 
         let service = ProjectorsService::new(
@@ -162,9 +188,7 @@ mod tests {
         );
 
         service
-            .delete(ProjectorsDeleteInput {
-                namespace: "nonexistent".to_string(),
-            })
+            .delete(&ProjectorsDeleteInput::new(projector.id()))
             .await
             .unwrap();
     }

@@ -1,5 +1,7 @@
 use async_trait::async_trait;
 use log::{debug, info, trace, warn};
+#[cfg(test)]
+use mockall::*;
 use tokio::sync::mpsc::Sender;
 
 use crate::core::projectors::{
@@ -8,18 +10,39 @@ use crate::core::projectors::{
 };
 use crate::core::services::{Error, Result};
 
-use super::{CreateProjector, ProjectorCommand, ProjectorsCreateInput, ProjectorsService};
+use super::{ProjectorCommand, ProjectorsService};
+
+#[derive(Clone, Debug)]
+pub struct ProjectorsCreateInput<'c> {
+    namespace: &'c str,
+}
+
+impl<'c> ProjectorsCreateInput<'c> {
+    pub fn new(namespace: &'c str) -> Self {
+        Self { namespace }
+    }
+
+    pub fn namespace(&self) -> &str {
+        self.namespace
+    }
+}
+
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub trait CreateProjector {
+    async fn create<'a>(&self, input: &'a ProjectorsCreateInput<'a>) -> Result<Projector>;
+}
 
 #[async_trait]
 impl<R> CreateProjector for ProjectorsService<R>
 where
     R: ProjectorsRepository,
 {
-    async fn create(&self, input: ProjectorsCreateInput) -> Result<Projector> {
+    async fn create<'a>(&self, input: &'a ProjectorsCreateInput<'a>) -> Result<Projector> {
         trace!("ProjectorsService.create({:?})", input);
 
         // ensure a projector is not already running for this namespace
-        let id = projector_repo_id(&self.fleet, &input.namespace);
+        let id = projector_repo_id(&self.fleet, input.namespace());
         if self.repo.projectors_exists(&id).await? {
             warn!(
                 "projector already running for namespace: {}",
@@ -29,7 +52,7 @@ where
         } else {
             // send spawn request to manager
             info!("Spawning projector for namespace: {}", input.namespace);
-            let projector: Projector = send_start_command(self.worker(), &input.namespace).await?;
+            let projector: Projector = send_start_command(self.worker(), input.namespace()).await?;
             info!("Projector spawned: {:?}", projector);
 
             // store the projector and return it
@@ -110,8 +133,8 @@ mod tests {
         );
 
         let res = service
-            .create(ProjectorsCreateInput {
-                namespace: "existing".to_string(),
+            .create(&ProjectorsCreateInput {
+                namespace: "existing",
             })
             .await;
 
@@ -157,8 +180,8 @@ mod tests {
         );
 
         service
-            .create(ProjectorsCreateInput {
-                namespace: "nonexistent".to_string(),
+            .create(&ProjectorsCreateInput {
+                namespace: "nonexistent",
             })
             .await
             .unwrap();

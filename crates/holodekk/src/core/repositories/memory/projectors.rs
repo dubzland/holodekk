@@ -4,7 +4,7 @@ use crate::core::projectors::{
     entities::Projector,
     repositories::{ProjectorsQuery, ProjectorsRepository},
 };
-use crate::core::repositories::{Error, RepositoryId, RepositoryQuery, Result};
+use crate::core::repositories::{Error, RepositoryQuery, Result};
 
 use super::MemoryRepository;
 
@@ -12,7 +12,7 @@ use super::MemoryRepository;
 impl ProjectorsRepository for MemoryRepository {
     async fn projectors_create(&self, projector: Projector) -> Result<Projector> {
         // Ensure the projector doesn't exist
-        if self.db.projectors().exists(&projector.id())? {
+        if self.db.projectors().exists(projector.id())? {
             Err(Error::AlreadyExists)
         } else {
             self.db.projectors().add(projector.clone())?;
@@ -52,7 +52,7 @@ mod tests {
         entities::{fixtures::projector, Projector},
         repositories::ProjectorsQuery,
     };
-    use crate::core::repositories::{self, memory::MemoryDatabase, RepositoryId};
+    use crate::core::repositories::{self, memory::MemoryDatabase};
 
     use super::*;
 
@@ -172,7 +172,7 @@ mod tests {
         assert!(repo
             .projectors_find(
                 ProjectorsQuery::builder()
-                    .fleet_eq(&format!("{}nonexistent", projector.fleet))
+                    .fleet_eq(&format!("{}nonexistent", projector.fleet()))
                     .build()
             )
             .await?
@@ -188,7 +188,7 @@ mod tests {
         let res = repo
             .projectors_find(
                 ProjectorsQuery::builder()
-                    .fleet_eq(&projector.fleet)
+                    .fleet_eq(&projector.fleet())
                     .build(),
             )
             .await?;

@@ -9,13 +9,13 @@ use super::repositories::projector_repo_id;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Projector {
-    pub id: String,
-    pub fleet: String,
-    pub namespace: String,
-    pub pidfile: PathBuf,
-    pub uhura_address: ConnectionInfo,
-    pub projector_address: ConnectionInfo,
-    pub pid: i32,
+    id: String,
+    fleet: String,
+    namespace: String,
+    pidfile: PathBuf,
+    uhura_address: ConnectionInfo,
+    projector_address: ConnectionInfo,
+    pid: i32,
 }
 
 impl Projector {
@@ -41,6 +41,34 @@ impl Projector {
             projector_address,
             pid: pid.as_raw(),
         }
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn fleet(&self) -> &str {
+        &self.fleet
+    }
+
+    pub fn namespace(&self) -> &str {
+        &self.namespace
+    }
+
+    pub fn pidfile(&self) -> &PathBuf {
+        &self.pidfile
+    }
+
+    pub fn uhura_address(&self) -> &ConnectionInfo {
+        &self.uhura_address
+    }
+
+    pub fn projector_address(&self) -> &ConnectionInfo {
+        &self.projector_address
+    }
+
+    pub fn pid(&self) -> &i32 {
+        &self.pid
     }
 }
 

@@ -12,7 +12,7 @@ use axum::{
 };
 
 use crate::core::projectors::services::{
-    CreateProjector, DeleteProjector, FindProjectors, ProjectorExists,
+    CreateProjector, DeleteProjector, FindProjectors, GetProjector,
 };
 use crate::core::services::Error;
 
@@ -28,7 +28,7 @@ impl<S> ApiServices<S> {
 
 pub fn router<S>(projectors_service: Arc<S>) -> axum::Router
 where
-    S: CreateProjector + DeleteProjector + FindProjectors + ProjectorExists + Send + Sync + 'static,
+    S: CreateProjector + DeleteProjector + FindProjectors + GetProjector + Send + Sync + 'static,
 {
     // Create the global services
     let services = Arc::new(ApiServices { projectors_service });
@@ -36,7 +36,7 @@ where
     Router::new()
         .route("/", get(list::handler))
         .route("/", post(create::handler))
-        .route("/:namespace", delete(stop::handler))
+        .route("/:id", delete(stop::handler))
         .with_state(services)
 }
 

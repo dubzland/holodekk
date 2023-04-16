@@ -1,17 +1,45 @@
 use async_trait::async_trait;
 use log::trace;
+#[cfg(test)]
+use mockall::*;
 
 use crate::core::projectors::entities::Projector;
 use crate::core::projectors::repositories::{ProjectorsQuery, ProjectorsRepository};
 use crate::core::services::Result;
 
-use super::{FindProjectors, ProjectorsFindInput, ProjectorsService};
+use super::ProjectorsService;
 
-impl From<ProjectorsFindInput> for ProjectorsQuery {
-    fn from(value: ProjectorsFindInput) -> Self {
+#[derive(Clone, Default, Debug, PartialEq)]
+pub struct ProjectorsFindInput<'f> {
+    fleet: Option<&'f str>,
+    namespace: Option<&'f str>,
+}
+
+impl<'f> ProjectorsFindInput<'f> {
+    pub fn new(fleet: Option<&'f str>, namespace: Option<&'f str>) -> Self {
+        Self { fleet, namespace }
+    }
+
+    pub fn fleet(&self) -> Option<&str> {
+        self.fleet
+    }
+
+    pub fn namespace(&self) -> Option<&str> {
+        self.namespace
+    }
+}
+
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub trait FindProjectors {
+    async fn find<'a>(&self, input: &'a ProjectorsFindInput<'a>) -> Result<Vec<Projector>>;
+}
+
+impl From<&'_ ProjectorsFindInput<'_>> for ProjectorsQuery {
+    fn from(value: &ProjectorsFindInput) -> Self {
         let mut query = ProjectorsQuery::builder();
-        if let Some(fleet) = value.fleet {
-            query.fleet_eq(&fleet);
+        if let Some(fleet) = value.fleet() {
+            query.fleet_eq(fleet);
         }
         query.build()
     }
@@ -22,9 +50,10 @@ impl<R> FindProjectors for ProjectorsService<R>
 where
     R: ProjectorsRepository,
 {
-    async fn find(&self, input: ProjectorsFindInput) -> Result<Vec<Projector>> {
+    async fn find<'a>(&self, input: &'a ProjectorsFindInput<'a>) -> Result<Vec<Projector>> {
         trace!("ProjectorsService.find()");
-        let projectors = self.repo.projectors_find(input.into()).await?;
+        let query = ProjectorsQuery::from(input);
+        let projectors = self.repo.projectors_find(query).await?;
         Ok(projectors)
     }
 }
@@ -54,7 +83,7 @@ mod tests {
 
         projectors_repository
             .expect_projectors_find()
-            .withf(|query: &ProjectorsQuery| query.fleet == None)
+            .withf(|query: &ProjectorsQuery| query.fleet().is_none())
             .return_const(Ok(vec![]));
 
         let service = ProjectorsService::new(
@@ -63,7 +92,7 @@ mod tests {
             cmd_tx,
         );
 
-        service.find(ProjectorsFindInput::default()).await?;
+        service.find(&ProjectorsFindInput::default()).await?;
         Ok(())
     }
 
@@ -86,7 +115,7 @@ mod tests {
             cmd_tx,
         );
 
-        let projectors = service.find(ProjectorsFindInput::default()).await?;
+        let projectors = service.find(&ProjectorsFindInput::default()).await?;
         assert_eq!(projectors, vec![projector]);
         Ok(())
     }

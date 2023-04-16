@@ -17,7 +17,7 @@ where
 {
     let projectors = state
         .projectors()
-        .find(ProjectorsFindInput::default())
+        .find(&ProjectorsFindInput::default())
         .await
         .unwrap();
     Ok(Json(projectors))
@@ -26,7 +26,6 @@ where
 #[cfg(test)]
 mod tests {
     use axum::{body::Body, http::Request, routing::get, Router};
-    use mockall::predicate::*;
     use rstest::*;
     use tower::ServiceExt;
 
@@ -52,9 +51,10 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn gets_projectors(mut mock_find: MockFindProjectors) {
+        let input = ProjectorsFindInput::default();
         mock_find
             .expect_find()
-            .with(eq(ProjectorsFindInput::default()))
+            .withf(move |i| i == &input)
             .return_const(Ok(vec![]));
 
         mock_app(mock_find)
@@ -66,9 +66,11 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn responds_with_ok(mut mock_find: MockFindProjectors) {
+        let input = ProjectorsFindInput::default();
+
         mock_find
             .expect_find()
-            .with(eq(ProjectorsFindInput::default()))
+            .withf(move |i| i == &input)
             .return_const(Ok(vec![]));
 
         let response = mock_app(mock_find)
@@ -82,9 +84,11 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_projectors(projector: Projector, mut mock_find: MockFindProjectors) {
+        let input = ProjectorsFindInput::default();
+
         mock_find
             .expect_find()
-            .with(eq(ProjectorsFindInput::default()))
+            .withf(move |i| i == &input)
             .return_const(Ok(vec![projector.clone()]));
 
         let response = mock_app(mock_find)
@@ -94,6 +98,6 @@ mod tests {
 
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
         let p: Vec<Projector> = serde_json::from_slice(&body).unwrap();
-        assert_eq!(p.first().unwrap().id, projector.id);
+        assert_eq!(p.first().unwrap().id(), projector.id());
     }
 }

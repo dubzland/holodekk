@@ -89,7 +89,7 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
-    let holodekk = start_holodekk_server(Arc::new(holodekkd_config), repo);
+    let holodekk = start_holodekk_server(Arc::new(holodekkd_config), repo).await;
 
     let signal = Signals::new().await;
     match signal {

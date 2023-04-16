@@ -16,13 +16,13 @@ pub fn projector_repo_id(fleet: &str, namespace: &str) -> String {
 
 impl RepositoryId for Projector {
     fn id(&self) -> String {
-        projector_repo_id(&self.fleet, &self.namespace)
+        projector_repo_id(self.fleet(), self.namespace())
     }
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ProjectorsQuery {
-    pub fleet: Option<String>,
+    fleet: Option<String>,
 }
 
 impl ProjectorsQuery {
@@ -40,6 +40,10 @@ impl ProjectorsQuery {
             fleet: self.fleet.clone(),
         }
     }
+
+    pub fn fleet(&self) -> Option<&str> {
+        self.fleet.as_deref()
+    }
 }
 
 impl RepositoryQuery for ProjectorsQuery {
@@ -47,7 +51,7 @@ impl RepositoryQuery for ProjectorsQuery {
 
     fn matches(&self, projector: &Projector) -> bool {
         if let Some(fleet) = self.fleet.as_ref() {
-            &projector.fleet == fleet
+            projector.fleet() == fleet
         } else {
             true
         }

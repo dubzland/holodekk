@@ -5,34 +5,21 @@ use axum::{
     http::StatusCode,
 };
 
-use crate::core::projectors::services::{
-    DeleteProjector, ProjectorExists, ProjectorsDeleteInput, ProjectorsExistsInput,
-};
+use crate::core::projectors::services::{DeleteProjector, ProjectorsDeleteInput};
 
 use super::{internal_error, ApiServices};
 
 pub async fn handler<S>(
     State(state): State<Arc<ApiServices<S>>>,
-    Path(namespace): Path<String>,
+    Path(id): Path<String>,
 ) -> Result<(), (StatusCode, String)>
 where
-    S: ProjectorExists + DeleteProjector,
+    S: DeleteProjector,
 {
-    if state
+    state
         .projectors()
-        .exists(ProjectorsExistsInput {
-            namespace: namespace.clone(),
-        })
+        .delete(&ProjectorsDeleteInput::new(&id))
         .await
-        .map_err(internal_error)?
-    {
-        state
-            .projectors()
-            .delete(ProjectorsDeleteInput { namespace })
-            .await
-            .map_err(internal_error)?;
-        Ok(())
-    } else {
-        Ok(())
-    }
+        .map_err(internal_error)?;
+    Ok(())
 }
