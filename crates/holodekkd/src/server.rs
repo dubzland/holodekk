@@ -53,6 +53,21 @@ where
     definitions_service: Arc<SubroutineDefinitionsService>,
 }
 
+impl<R> ApiServices<R>
+where
+    R: ProjectorsRepository,
+{
+    pub fn new(
+        projectors_service: Arc<ProjectorsService<R>>,
+        definitions_service: Arc<SubroutineDefinitionsService>,
+    ) -> Self {
+        Self {
+            projectors_service,
+            definitions_service,
+        }
+    }
+}
+
 impl<R> ProjectorApiServices<ProjectorsService<R>> for ApiServices<R>
 where
     R: ProjectorsRepository,
@@ -100,10 +115,7 @@ where
     let definitions_service = SubroutineDefinitionsService::init(config.clone())
         .expect("Unable to initialize subroutine definitions");
     let api_config = config.holodekk_api_config().clone();
-    let api_services = ApiServices {
-        projectors_service,
-        definitions_service: Arc::new(definitions_service),
-    };
+    let api_services = ApiServices::new(projectors_service, Arc::new(definitions_service));
     let api_server = start_http_server(&api_config, router(Arc::new(api_services)));
     HolodekkServerHandle::new(projectors_worker, api_server)
 }
