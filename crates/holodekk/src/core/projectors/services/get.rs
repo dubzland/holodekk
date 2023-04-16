@@ -8,24 +8,24 @@ use crate::core::services::{Error, Result};
 use super::ProjectorsService;
 
 #[derive(Clone, Debug)]
-pub struct ProjectorsGetInput {
-    id: String,
+pub struct ProjectorsGetInput<'g> {
+    id: &'g str,
 }
 
-impl ProjectorsGetInput {
-    pub fn new(id: &str) -> Self {
-        Self { id: id.into() }
+impl<'g> ProjectorsGetInput<'g> {
+    pub fn new(id: &'g str) -> Self {
+        Self { id }
     }
 
     pub fn id(&self) -> &str {
-        &self.id
+        self.id
     }
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait GetProjector {
-    async fn get<'a>(&self, input: &'a ProjectorsGetInput) -> Result<Projector>;
+    async fn get<'a>(&self, input: &'a ProjectorsGetInput<'a>) -> Result<Projector>;
 }
 
 #[async_trait]
@@ -83,9 +83,7 @@ mod tests {
 
         assert_eq!(
             service
-                .get(&ProjectorsGetInput {
-                    id: projector.id().to_string()
-                })
+                .get(&ProjectorsGetInput::new(projector.id()))
                 .await?,
             projector
         );
@@ -112,9 +110,7 @@ mod tests {
 
         assert!(matches!(
             service
-                .get(&ProjectorsGetInput {
-                    id: "nonexistent".to_string(),
-                })
+                .get(&ProjectorsGetInput::new("nonexistent"))
                 .await
                 .unwrap_err(),
             Error::NotFound
