@@ -7,12 +7,13 @@ use crate::core::projectors::{
     services::{FindProjectors, ProjectorsFindInput},
 };
 
-use super::ApiServices;
+use super::ProjectorApiServices;
 
-pub async fn handler<P, D>(
-    State(state): State<Arc<ApiServices<P, D>>>,
+pub async fn handler<S, P>(
+    State(state): State<Arc<S>>,
 ) -> Result<Json<Vec<Projector>>, (StatusCode, String)>
 where
+    S: ProjectorApiServices<P>,
     P: FindProjectors,
 {
     let projectors = state
@@ -29,9 +30,9 @@ mod tests {
     use rstest::*;
     use tower::ServiceExt;
 
+    use crate::core::projectors::api::server::MockProjectorApiServices;
     use crate::core::projectors::entities::fixtures::projector;
     use crate::core::projectors::services::MockFindProjectors;
-    use crate::core::subroutine_definitions::services::MockCreateSubroutineDefinition;
 
     use super::*;
 
@@ -41,25 +42,37 @@ mod tests {
     }
 
     #[fixture]
-    fn mock_app(mock_find: MockFindProjectors) -> Router {
-        let services = Arc::new(ApiServices {
-            projectors_service: Arc::new(mock_find),
-            definitions_service: Arc::new(MockCreateSubroutineDefinition::default()),
-        });
+    fn mock_services() -> MockProjectorApiServices<MockFindProjectors> {
+        MockProjectorApiServices::default()
+    }
 
-        Router::new().route("/", get(handler)).with_state(services)
+    #[fixture]
+    fn mock_app(
+        mut mock_services: MockProjectorApiServices<MockFindProjectors>,
+        mock_find: MockFindProjectors,
+    ) -> Router {
+        mock_services
+            .expect_projectors()
+            .return_const(Arc::new(mock_find));
+
+        Router::new()
+            .route("/", get(handler))
+            .with_state(Arc::new(mock_services))
     }
 
     #[rstest]
     #[tokio::test]
-    async fn gets_projectors(mut mock_find: MockFindProjectors) {
+    async fn gets_projectors(
+        mock_services: MockProjectorApiServices<MockFindProjectors>,
+        mut mock_find: MockFindProjectors,
+    ) {
         let input = ProjectorsFindInput::default();
         mock_find
             .expect_find()
             .withf(move |i| i == &input)
             .return_const(Ok(vec![]));
 
-        mock_app(mock_find)
+        mock_app(mock_services, mock_find)
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
             .await
             .unwrap();
@@ -67,7 +80,10 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn responds_with_ok(mut mock_find: MockFindProjectors) {
+    async fn responds_with_ok(
+        mock_services: MockProjectorApiServices<MockFindProjectors>,
+        mut mock_find: MockFindProjectors,
+    ) {
         let input = ProjectorsFindInput::default();
 
         mock_find
@@ -75,7 +91,7 @@ mod tests {
             .withf(move |i| i == &input)
             .return_const(Ok(vec![]));
 
-        let response = mock_app(mock_find)
+        let response = mock_app(mock_services, mock_find)
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
             .await
             .unwrap();
@@ -85,7 +101,11 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn returns_projectors(projector: Projector, mut mock_find: MockFindProjectors) {
+    async fn returns_projectors(
+        mock_services: MockProjectorApiServices<MockFindProjectors>,
+        projector: Projector,
+        mut mock_find: MockFindProjectors,
+    ) {
         let input = ProjectorsFindInput::default();
 
         mock_find
@@ -93,7 +113,7 @@ mod tests {
             .withf(move |i| i == &input)
             .return_const(Ok(vec![projector.clone()]));
 
-        let response = mock_app(mock_find)
+        let response = mock_app(mock_services, mock_find)
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
             .await
             .unwrap();

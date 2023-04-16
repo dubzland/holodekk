@@ -7,13 +7,14 @@ use crate::core::projectors::{
     services::{CreateProjector, ProjectorsCreateInput},
 };
 
-use super::ApiServices;
+use super::ProjectorApiServices;
 
-pub async fn handler<P, D>(
-    State(state): State<Arc<ApiServices<P, D>>>,
+pub async fn handler<S, P>(
+    State(state): State<Arc<S>>,
     Json(new_projector): Json<NewProjector>,
 ) -> Result<impl IntoResponse, crate::core::services::Error>
 where
+    S: ProjectorApiServices<P>,
     P: CreateProjector,
 {
     let projector = state
@@ -29,32 +30,45 @@ mod tests {
     use rstest::*;
     use tower::ServiceExt;
 
+    use crate::core::projectors::api::server::MockProjectorApiServices;
     use crate::core::projectors::entities::{fixtures::projector, Projector};
     use crate::core::projectors::services::MockCreateProjector;
     use crate::core::services::Error;
-    use crate::core::subroutine_definitions::services::MockCreateSubroutineDefinition;
 
     use super::*;
 
     #[fixture]
-    fn mock_service() -> MockCreateProjector {
+    fn mock_services() -> MockProjectorApiServices<MockCreateProjector> {
+        MockProjectorApiServices::default()
+    }
+
+    #[fixture]
+    fn mock_create() -> MockCreateProjector {
         MockCreateProjector::default()
     }
 
     #[fixture]
-    fn mock_app(mock_service: MockCreateProjector) -> Router {
-        let services = Arc::new(ApiServices {
-            projectors_service: Arc::new(mock_service),
-            definitions_service: Arc::new(MockCreateSubroutineDefinition::default()),
-        });
+    fn mock_app(
+        mut mock_services: MockProjectorApiServices<MockCreateProjector>,
+        mock_create: MockCreateProjector,
+    ) -> Router {
+        mock_services
+            .expect_projectors()
+            .return_const(Arc::new(mock_create));
 
-        Router::new().route("/", post(handler)).with_state(services)
+        Router::new()
+            .route("/", post(handler))
+            .with_state(Arc::new(mock_services))
     }
 
     #[rstest]
     #[tokio::test]
-    async fn responds_with_conflict_when_projector_exists(mut mock_service: MockCreateProjector) {
-        mock_service
+    async fn responds_with_conflict_when_projector_exists(
+        mock_services: MockProjectorApiServices<MockCreateProjector>,
+
+        mut mock_create: MockCreateProjector,
+    ) {
+        mock_create
             .expect_create()
             .withf(|input| input.namespace() == "test")
             .return_const(Err(Error::Duplicate));
@@ -66,7 +80,7 @@ mod tests {
             .unwrap(),
         );
 
-        let response = mock_app(mock_service)
+        let response = mock_app(mock_services, mock_create)
             .oneshot(
                 Request::builder()
                     .method("POST")
@@ -83,8 +97,13 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn responds_with_created(mut mock_service: MockCreateProjector, projector: Projector) {
-        mock_service
+    async fn responds_with_created(
+        mock_services: MockProjectorApiServices<MockCreateProjector>,
+
+        mut mock_create: MockCreateProjector,
+        projector: Projector,
+    ) {
+        mock_create
             .expect_create()
             .withf(|input| input.namespace() == "test")
             .return_const(Ok(projector));
@@ -96,7 +115,7 @@ mod tests {
             .unwrap(),
         );
 
-        let response = mock_app(mock_service)
+        let response = mock_app(mock_services, mock_create)
             .oneshot(
                 Request::builder()
                     .method("POST")
@@ -114,10 +133,12 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_the_new_projector(
-        mut mock_service: MockCreateProjector,
+        mock_services: MockProjectorApiServices<MockCreateProjector>,
+
+        mut mock_create: MockCreateProjector,
         projector: Projector,
     ) {
-        mock_service
+        mock_create
             .expect_create()
             .withf(|input| input.namespace() == "test")
             .return_const(Ok(projector.clone()));
@@ -129,7 +150,7 @@ mod tests {
             .unwrap(),
         );
 
-        let response = mock_app(mock_service)
+        let response = mock_app(mock_services, mock_create)
             .oneshot(
                 Request::builder()
                     .method("POST")

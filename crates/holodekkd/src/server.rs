@@ -8,12 +8,15 @@ use holodekk::{
     config::{HolodekkApiConfig, HolodekkConfig},
     core::projectors::{
         self,
+        api::server::ProjectorApiServices,
         entities::Projector,
         repositories::{ProjectorsQuery, ProjectorsRepository},
         services::ProjectorsService,
         worker::ProjectorsWorker,
     },
-    core::subroutine_definitions::services::SubroutineDefinitionsService,
+    core::subroutine_definitions::{
+        api::server::SubroutineDefinitionsApiServices, services::SubroutineDefinitionsService,
+    },
     utils::{
         servers::{start_http_server, HttpServerHandle},
         ConnectionInfo, TaskHandle, Worker,
@@ -42,17 +45,39 @@ impl HolodekkServerHandle {
     }
 }
 
-pub fn router<R>(
+pub struct ApiServices<R>
+where
+    R: ProjectorsRepository,
+{
     projectors_service: Arc<ProjectorsService<R>>,
     definitions_service: Arc<SubroutineDefinitionsService>,
-) -> axum::Router
+}
+
+impl<R> ProjectorApiServices<ProjectorsService<R>> for ApiServices<R>
+where
+    R: ProjectorsRepository,
+{
+    fn projectors(&self) -> Arc<ProjectorsService<R>> {
+        self.projectors_service.clone()
+    }
+}
+
+impl<R> SubroutineDefinitionsApiServices<SubroutineDefinitionsService> for ApiServices<R>
+where
+    R: ProjectorsRepository,
+{
+    fn definitions(&self) -> Arc<SubroutineDefinitionsService> {
+        self.definitions_service.clone()
+    }
+}
+
+pub fn router<R>(api_services: Arc<ApiServices<R>>) -> axum::Router
 where
     R: ProjectorsRepository + 'static,
 {
-    Router::new().nest("/", crate::api::router()).nest(
-        "/projectors",
-        projectors::api::server::router(projectors_service, definitions_service),
-    )
+    Router::new()
+        .nest("/", crate::api::router())
+        .nest("/projectors", projectors::api::server::router(api_services))
 }
 
 pub async fn start_holodekk_server<C, R>(config: Arc<C>, repo: Arc<R>) -> HolodekkServerHandle
@@ -75,10 +100,11 @@ where
     let definitions_service = SubroutineDefinitionsService::init(config.clone())
         .expect("Unable to initialize subroutine definitions");
     let api_config = config.holodekk_api_config().clone();
-    let api_server = start_http_server(
-        &api_config,
-        router(projectors_service, Arc::new(definitions_service)),
-    );
+    let api_services = ApiServices {
+        projectors_service,
+        definitions_service: Arc::new(definitions_service),
+    };
+    let api_server = start_http_server(&api_config, router(Arc::new(api_services)));
     HolodekkServerHandle::new(projectors_worker, api_server)
 }
 

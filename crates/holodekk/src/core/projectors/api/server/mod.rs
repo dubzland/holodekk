@@ -10,39 +10,27 @@ use axum::{
     routing::{delete, get, post},
     Router,
 };
+#[cfg(test)]
+use mockall::{automock, predicate::*};
 
 use crate::core::projectors::services::{
     CreateProjector, DeleteProjector, FindProjectors, GetProjector,
 };
 use crate::core::services::Error;
+use crate::core::subroutine_definitions::api::server::SubroutineDefinitionsApiServices;
 use crate::core::subroutine_definitions::services::CreateSubroutineDefinition;
 
-pub struct ApiServices<P, D> {
-    projectors_service: Arc<P>,
-    definitions_service: Arc<D>,
+#[cfg_attr(test, automock)]
+pub trait ProjectorApiServices<P> {
+    fn projectors(&self) -> Arc<P>;
 }
 
-impl<P, D> ApiServices<P, D> {
-    pub fn projectors(&self) -> Arc<P> {
-        self.projectors_service.clone()
-    }
-
-    pub fn definitions(&self) -> Arc<D> {
-        self.definitions_service.clone()
-    }
-}
-
-pub fn router<P, D>(projectors_service: Arc<P>, definitions_service: Arc<D>) -> axum::Router
+pub fn router<S, P, D>(services: Arc<S>) -> axum::Router
 where
+    S: ProjectorApiServices<P> + SubroutineDefinitionsApiServices<D> + Send + Sync + 'static,
     P: CreateProjector + DeleteProjector + FindProjectors + GetProjector + Send + Sync + 'static,
     D: CreateSubroutineDefinition + Send + Sync + 'static,
 {
-    // Create the global services
-    let services = Arc::new(ApiServices {
-        projectors_service,
-        definitions_service,
-    });
-
     Router::new()
         .route("/", get(list::handler))
         .route("/", post(create::handler))

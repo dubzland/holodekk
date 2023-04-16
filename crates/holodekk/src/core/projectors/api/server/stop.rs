@@ -7,13 +7,14 @@ use axum::{
 
 use crate::core::projectors::services::{DeleteProjector, ProjectorsDeleteInput};
 
-use super::{internal_error, ApiServices};
+use super::{internal_error, ProjectorApiServices};
 
-pub async fn handler<P, D>(
-    State(state): State<Arc<ApiServices<P, D>>>,
+pub async fn handler<S, P>(
+    State(state): State<Arc<S>>,
     Path(id): Path<String>,
 ) -> Result<(), (StatusCode, String)>
 where
+    S: ProjectorApiServices<P>,
     P: DeleteProjector,
 {
     state
