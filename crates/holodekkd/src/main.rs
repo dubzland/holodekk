@@ -1,5 +1,6 @@
+use std::fs;
 use std::net::Ipv4Addr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use clap::Parser;
@@ -56,6 +57,13 @@ struct Options {
     repository: RepositoryKind,
 }
 
+fn ensure_directory<P: AsRef<Path>>(path: P) -> std::io::Result<()> {
+    if !path.as_ref().exists() {
+        fs::create_dir_all(path)?;
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let options = Options::parse();
@@ -81,6 +89,11 @@ async fn main() -> std::io::Result<()> {
         "Starting HolodekkServer with config: {:?}",
         holodekkd_config
     );
+
+    // ensure required paths exist
+    ensure_directory(holodekkd_config.paths().root())?;
+    ensure_directory(holodekkd_config.paths().projectors())?;
+    ensure_directory(holodekkd_config.paths().subroutines())?;
 
     let repo = match holodekkd_config.repo_kind() {
         RepositoryKind::Memory => {
