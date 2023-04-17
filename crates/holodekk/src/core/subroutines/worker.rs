@@ -16,7 +16,7 @@ use serde::Deserialize;
 
 use crate::config::{HolodekkConfig, ProjectorConfig};
 use crate::core::subroutine_definitions::entities::SubroutineDefinition;
-use crate::utils::{TaskHandle, Worker};
+use crate::utils::Worker;
 
 use super::entities::{Subroutine, SubroutineStatus};
 
@@ -72,21 +72,19 @@ impl SubroutinesWorker {
 }
 
 #[async_trait]
-impl TaskHandle for SubroutinesWorker {
+impl Worker for SubroutinesWorker {
+    type Command = SubroutineCommand;
+
+    fn sender(&self) -> Option<tokio::sync::mpsc::Sender<SubroutineCommand>> {
+        self.cmd_tx.as_ref().cloned()
+    }
+
     async fn stop(&mut self) {
         if let Some(cmd_tx) = self.cmd_tx.take() {
             drop(cmd_tx);
         }
         let task_handle = self.task_handle.write().unwrap().take().unwrap();
         task_handle.await.unwrap()
-    }
-}
-
-impl Worker for SubroutinesWorker {
-    type Command = SubroutineCommand;
-
-    fn sender(&self) -> Option<tokio::sync::mpsc::Sender<SubroutineCommand>> {
-        self.cmd_tx.as_ref().cloned()
     }
 }
 

@@ -18,8 +18,9 @@ license-file = "LICENSE"
 holodekk = { path = "./crates/holodekk" }
 holodekkd = { path = "./crates/holodekkd" }
 uhura = { path = "./crates/uhura" }
-axum = "0.6.12"
+axum = { version = "0.6.12", features = ["multipart"] }
 async-trait = "0.1.67"
+bytes = "1.4.0"
 clap = { version = "4.1.6", features = ["derive"] }
 env_logger = "0.10.0"
 futures = "0.3.28"
@@ -40,6 +41,7 @@ tempfile = "3.5.0"
 thiserror = "1.0.40"
 tokio = { version = "1.26.0", features = ["full"] }
 tokio-stream = { version = "0.1.12", features = ["net"] }
+tokio-util = { version = "0.7.7", features = ["io"] }
 tonic = "0.8.3"
 tonic-build = "0.8.4"
 tower = "0.4.13"

@@ -1,42 +1,23 @@
 use async_trait::async_trait;
 use log::{debug, info, trace, warn};
-#[cfg(test)]
-use mockall::*;
 use tokio::sync::mpsc::Sender;
 
-use crate::core::projectors::{entities::Projector, repositories::ProjectorsRepository};
+use crate::core::projectors::{
+    entities::Projector, repositories::ProjectorsRepository, DeleteProjector, ProjectorsDeleteInput,
+};
 use crate::core::{
     repositories,
     services::{Error, Result},
 };
+use crate::utils::Worker;
 
 use super::{ProjectorCommand, ProjectorsService};
 
-#[derive(Clone, Debug)]
-pub struct ProjectorsDeleteInput<'d> {
-    id: &'d str,
-}
-
-impl<'d> ProjectorsDeleteInput<'d> {
-    pub fn new(id: &'d str) -> Self {
-        Self { id }
-    }
-
-    pub fn id(&self) -> &str {
-        self.id
-    }
-}
-
-#[cfg_attr(test, automock)]
 #[async_trait]
-pub trait DeleteProjector {
-    async fn delete<'a>(&self, input: &'a ProjectorsDeleteInput<'a>) -> Result<()>;
-}
-
-#[async_trait]
-impl<R> DeleteProjector for ProjectorsService<R>
+impl<R, W> DeleteProjector for ProjectorsService<R, W>
 where
     R: ProjectorsRepository,
+    W: Worker<Command = ProjectorCommand>,
 {
     async fn delete<'a>(&self, input: &'a ProjectorsDeleteInput<'a>) -> Result<()> {
         trace!("ProjectorsService.stop({:?})", input);
@@ -121,6 +102,7 @@ mod tests {
     use crate::core::projectors::{
         entities::{fixtures::projector, Projector},
         repositories::{fixtures::projectors_repository, MockProjectorsRepository},
+        worker::{fixtures::mock_projectors_worker, MockProjectorsWorker},
     };
     use crate::core::services::Error;
 
@@ -130,9 +112,9 @@ mod tests {
     #[tokio::test]
     async fn returns_error_for_non_existent_projector(
         mock_config: MockConfig,
+        mock_projectors_worker: MockProjectorsWorker,
         mut projectors_repository: MockProjectorsRepository,
     ) {
-        let (cmd_tx, _cmd_rx) = tokio::sync::mpsc::channel(1);
         projectors_repository
             .expect_projectors_get()
             .return_const(Err(repositories::Error::NotFound));
@@ -140,7 +122,7 @@ mod tests {
         let service = ProjectorsService::new(
             Arc::new(mock_config),
             Arc::new(projectors_repository),
-            cmd_tx,
+            mock_projectors_worker,
         );
         let res = service
             .delete(&ProjectorsDeleteInput::new("nonexistent"))
@@ -154,10 +136,12 @@ mod tests {
     #[tokio::test]
     async fn sends_stop_command_to_manager_and_removes_record(
         mock_config: MockConfig,
+        mut mock_projectors_worker: MockProjectorsWorker,
         mut projectors_repository: MockProjectorsRepository,
         projector: Projector,
     ) {
         let (cmd_tx, mut cmd_rx) = tokio::sync::mpsc::channel(1);
+        mock_projectors_worker.expect_sender().return_const(cmd_tx);
 
         // projector exists
         projectors_repository
@@ -184,7 +168,7 @@ mod tests {
         let service = ProjectorsService::new(
             Arc::new(mock_config),
             Arc::new(projectors_repository),
-            cmd_tx,
+            mock_projectors_worker,
         );
 
         service

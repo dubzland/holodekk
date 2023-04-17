@@ -1,42 +1,22 @@
 use async_trait::async_trait;
 use log::{debug, info, trace, warn};
-#[cfg(test)]
-use mockall::*;
 use tokio::sync::mpsc::Sender;
 
 use crate::core::projectors::{
     entities::Projector,
     repositories::{projector_repo_id, ProjectorsRepository},
+    CreateProjector, ProjectorsCreateInput,
 };
 use crate::core::services::{Error, Result};
+use crate::utils::Worker;
 
 use super::{ProjectorCommand, ProjectorsService};
 
-#[derive(Clone, Debug)]
-pub struct ProjectorsCreateInput<'c> {
-    namespace: &'c str,
-}
-
-impl<'c> ProjectorsCreateInput<'c> {
-    pub fn new(namespace: &'c str) -> Self {
-        Self { namespace }
-    }
-
-    pub fn namespace(&self) -> &str {
-        self.namespace
-    }
-}
-
-#[cfg_attr(test, automock)]
 #[async_trait]
-pub trait CreateProjector {
-    async fn create<'a>(&self, input: &'a ProjectorsCreateInput<'a>) -> Result<Projector>;
-}
-
-#[async_trait]
-impl<R> CreateProjector for ProjectorsService<R>
+impl<R, W> CreateProjector for ProjectorsService<R, W>
 where
     R: ProjectorsRepository,
+    W: Worker<Command = ProjectorCommand>,
 {
     async fn create<'a>(&self, input: &'a ProjectorsCreateInput<'a>) -> Result<Projector> {
         trace!("ProjectorsService.create({:?})", input);
@@ -110,6 +90,7 @@ mod tests {
     use crate::core::projectors::{
         entities::{fixtures::projector, Projector},
         repositories::{fixtures::projectors_repository, MockProjectorsRepository},
+        worker::{fixtures::mock_projectors_worker, MockProjectorsWorker},
     };
     use crate::core::services::Error;
 
@@ -120,8 +101,8 @@ mod tests {
     async fn returns_error_when_projector_already_running(
         mock_config: MockConfig,
         mut projectors_repository: MockProjectorsRepository,
+        mock_projectors_worker: MockProjectorsWorker,
     ) {
-        let (cmd_tx, _cmd_rx) = tokio::sync::mpsc::channel(1);
         projectors_repository
             .expect_projectors_exists()
             .return_const(Ok(true));
@@ -129,7 +110,7 @@ mod tests {
         let service = ProjectorsService::new(
             Arc::new(mock_config),
             Arc::new(projectors_repository),
-            cmd_tx,
+            mock_projectors_worker,
         );
 
         let res = service
@@ -147,9 +128,11 @@ mod tests {
     async fn sends_start_command_to_manager_and_adds_record(
         mock_config: MockConfig,
         mut projectors_repository: MockProjectorsRepository,
+        mut mock_projectors_worker: MockProjectorsWorker,
         projector: Projector,
     ) {
         let (cmd_tx, mut cmd_rx) = tokio::sync::mpsc::channel(1);
+        mock_projectors_worker.expect_sender().return_const(cmd_tx);
 
         // projector does not exist
         projectors_repository
@@ -176,7 +159,7 @@ mod tests {
         let service = ProjectorsService::new(
             Arc::new(mock_config),
             Arc::new(projectors_repository),
-            cmd_tx,
+            mock_projectors_worker,
         );
 
         service

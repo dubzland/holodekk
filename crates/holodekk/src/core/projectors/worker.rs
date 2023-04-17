@@ -7,6 +7,8 @@ use std::sync::{Arc, RwLock};
 
 use async_trait::async_trait;
 use log::{debug, error, info, warn};
+#[cfg(test)]
+use mockall::*;
 use nix::{
     fcntl::OFlag,
     sys::signal::{kill, SIGINT},
@@ -15,7 +17,7 @@ use nix::{
 use serde::Deserialize;
 
 use crate::config::HolodekkConfig;
-use crate::utils::{ConnectionInfo, TaskHandle, Worker};
+use crate::utils::{ConnectionInfo, Worker};
 
 use super::entities::Projector;
 
@@ -68,8 +70,15 @@ impl ProjectorsWorker {
     }
 }
 
+#[cfg_attr(test, automock)]
 #[async_trait]
-impl TaskHandle for ProjectorsWorker {
+impl Worker for ProjectorsWorker {
+    type Command = ProjectorCommand;
+
+    fn sender(&self) -> Option<tokio::sync::mpsc::Sender<ProjectorCommand>> {
+        self.cmd_tx.as_ref().cloned()
+    }
+
     async fn stop(&mut self) {
         if let Some(cmd_tx) = self.cmd_tx.take() {
             drop(cmd_tx);
@@ -79,15 +88,7 @@ impl TaskHandle for ProjectorsWorker {
     }
 }
 
-impl Worker for ProjectorsWorker {
-    type Command = ProjectorCommand;
-
-    fn sender(&self) -> Option<tokio::sync::mpsc::Sender<ProjectorCommand>> {
-        self.cmd_tx.as_ref().cloned()
-    }
-}
-
-pub fn start_worker<C>(config: Arc<C>) -> ProjectorsWorker
+pub fn start_worker<C>(config: Arc<C>) -> impl Worker<Command = ProjectorCommand>
 where
     C: HolodekkConfig,
 {
@@ -242,5 +243,17 @@ pub fn shutdown_projector(projector: Projector) -> std::result::Result<(), Shutd
             );
             Err(ShutdownError::from(err))
         }
+    }
+}
+
+#[cfg(test)]
+pub mod fixtures {
+    use rstest::*;
+
+    use super::*;
+
+    #[fixture]
+    pub fn mock_projectors_worker() -> MockProjectorsWorker {
+        MockProjectorsWorker::default()
     }
 }

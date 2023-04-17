@@ -26,6 +26,8 @@ pub enum HolodekkError {
     Io(#[from] std::io::Error),
     #[error("RPC Client error")]
     RpcClient(#[from] GrpcClientError),
+    #[error("Internal Service Error")]
+    ServiceError(#[from] holodekk::core::services::Error),
     // #[error("Invalid input.")]
     // ParseInt(#[from] ParseIntError),
 }

@@ -13,9 +13,7 @@ use axum::{
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
-use crate::core::projectors::services::{
-    CreateProjector, DeleteProjector, FindProjectors, GetProjector,
-};
+use crate::core::projectors::{CreateProjector, DeleteProjector, FindProjectors, GetProjector};
 use crate::core::services::Error;
 
 #[cfg_attr(test, automock)]

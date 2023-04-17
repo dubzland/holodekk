@@ -1,6 +1,6 @@
 use tonic::{Request, Response};
 
-use crate::core::subroutines::services::{Create, SubroutinesCreateInput};
+use crate::core::subroutines::{CreateSubroutine, SubroutinesCreateInput};
 
 use crate::core::subroutines::api::proto::{
     entities::{RpcCreateSubroutineRequest, RpcSubroutine},
@@ -12,7 +12,7 @@ use super::SubroutinesApiServer;
 #[tonic::async_trait]
 impl<S> RpcSubroutines for SubroutinesApiServer<S>
 where
-    S: Create + Send + Sync + 'static,
+    S: CreateSubroutine + Send + Sync + 'static,
 {
     async fn create(
         &self,

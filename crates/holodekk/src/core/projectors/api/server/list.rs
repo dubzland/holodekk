@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use axum::{extract::State, http::StatusCode, Json};
 
-use crate::core::projectors::{
-    entities::Projector,
-    services::{FindProjectors, ProjectorsFindInput},
-};
+use crate::core::projectors::{entities::Projector, FindProjectors, ProjectorsFindInput};
 
 use super::ProjectorApiServices;
 
@@ -32,7 +29,7 @@ mod tests {
 
     use crate::core::projectors::api::server::MockProjectorApiServices;
     use crate::core::projectors::entities::fixtures::projector;
-    use crate::core::projectors::services::MockFindProjectors;
+    use crate::core::projectors::MockFindProjectors;
 
     use super::*;
 

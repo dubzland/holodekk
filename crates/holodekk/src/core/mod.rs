@@ -5,6 +5,7 @@ pub mod subroutine_definitions;
 pub mod subroutines;
 
 pub mod services {
+    use async_trait::async_trait;
     use tonic::Status;
 
     use crate::core::repositories;
@@ -25,6 +26,8 @@ pub mod services {
         Repository(#[from] repositories::Error),
         #[error("Projector Error")]
         Projector(#[from] crate::core::projectors::worker::SpawnError),
+        #[error("General Network Error")]
+        Network,
     }
 
     impl From<Error> for Status {
@@ -37,9 +40,21 @@ pub mod services {
                 Error::ShutdownFailed => Self::internal("Unable to shutdown projector".to_string()),
                 Error::Repository(err) => Self::internal(err.to_string()),
                 Error::Projector(err) => Self::internal(err.to_string()),
+                Error::Network => Self::internal("General Network Error"),
             }
         }
     }
 
+    impl From<tonic::transport::Error> for Error {
+        fn from(_err: tonic::transport::Error) -> Error {
+            Error::Network
+        }
+    }
+
     pub type Result<T> = std::result::Result<T, Error>;
+
+    #[async_trait]
+    pub trait ServiceStop: Send + Sync {
+        async fn stop(&self) -> crate::core::services::Result<()>;
+    }
 }

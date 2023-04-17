@@ -1,7 +1,7 @@
 use std::{
     net::SocketAddr,
     pin::Pin,
-    sync::Arc,
+    sync::{Arc, RwLock},
     task::{Context, Poll},
 };
 
@@ -20,8 +20,8 @@ use tower::BoxError;
 use crate::utils::{fs::cleanup, ConnectionInfo};
 
 pub struct HttpServerHandle {
-    shutdown_tx: tokio::sync::oneshot::Sender<()>,
-    task_handle: tokio::task::JoinHandle<std::result::Result<(), hyper::Error>>,
+    shutdown_tx: RwLock<Option<tokio::sync::oneshot::Sender<()>>>,
+    task_handle: RwLock<Option<tokio::task::JoinHandle<std::result::Result<(), hyper::Error>>>>,
 }
 
 impl HttpServerHandle {
@@ -30,14 +30,21 @@ impl HttpServerHandle {
         task_handle: tokio::task::JoinHandle<std::result::Result<(), hyper::Error>>,
     ) -> Self {
         Self {
-            shutdown_tx,
-            task_handle,
+            shutdown_tx: RwLock::new(Some(shutdown_tx)),
+            task_handle: RwLock::new(Some(task_handle)),
         }
     }
 
-    pub async fn stop(self) -> std::result::Result<(), hyper::Error> {
-        self.shutdown_tx.send(()).unwrap();
-        self.task_handle.await.unwrap()
+    pub async fn stop(&mut self) -> std::result::Result<(), hyper::Error> {
+        let shutdown_tx = self.shutdown_tx.write().unwrap().take();
+        if let Some(shutdown_tx) = shutdown_tx {
+            shutdown_tx.send(()).unwrap();
+        }
+        let task_handle = self.task_handle.write().unwrap().take();
+        if let Some(task_handle) = task_handle {
+            task_handle.await.unwrap()?;
+        }
+        Ok(())
     }
 }
 

@@ -11,7 +11,7 @@ use holodekk::{
     },
     utils::{
         servers::{start_grpc_server, GrpcServerHandle},
-        TaskHandle, Worker,
+        Worker,
     },
 };
 

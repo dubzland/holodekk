@@ -5,7 +5,7 @@ use axum::{
     response::IntoResponse,
 };
 
-use crate::core::projectors::services::{DeleteProjector, ProjectorsDeleteInput};
+use crate::core::projectors::{DeleteProjector, ProjectorsDeleteInput};
 
 use super::ProjectorApiServices;
 

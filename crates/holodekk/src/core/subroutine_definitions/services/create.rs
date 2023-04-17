@@ -1,47 +1,11 @@
-use std::path::PathBuf;
-
 use async_trait::async_trait;
-#[cfg(test)]
-use mockall::{automock, predicate::*};
 
 use crate::core::services::{Error, Result};
-use crate::core::subroutine_definitions::entities::{SubroutineDefinition, SubroutineKind};
+use crate::core::subroutine_definitions::{
+    entities::SubroutineDefinition, CreateSubroutineDefinition, SubroutineDefinitionsCreateInput,
+};
 
 use super::SubroutineDefinitionsService;
-
-#[derive(Clone, Debug)]
-pub struct SubroutineDefinitionsCreateInput<'c> {
-    name: &'c str,
-    path: &'c PathBuf,
-    kind: SubroutineKind,
-}
-
-impl<'c> SubroutineDefinitionsCreateInput<'c> {
-    pub fn new(name: &'c str, path: &'c PathBuf, kind: SubroutineKind) -> Self {
-        Self { name, path, kind }
-    }
-
-    pub fn name(&self) -> &str {
-        self.name
-    }
-
-    pub fn path(&self) -> &PathBuf {
-        self.path
-    }
-
-    pub fn kind(&self) -> SubroutineKind {
-        self.kind
-    }
-}
-
-#[cfg_attr(test, automock)]
-#[async_trait]
-pub trait CreateSubroutineDefinition {
-    async fn create<'a>(
-        &self,
-        input: &'a SubroutineDefinitionsCreateInput<'a>,
-    ) -> Result<SubroutineDefinition>;
-}
 
 #[async_trait]
 impl CreateSubroutineDefinition for SubroutineDefinitionsService {
@@ -79,24 +43,24 @@ mod tests {
 
     use super::*;
 
-    // #[rstest]
-    // #[tokio::test]
-    // async fn creates_subroutine_definition(
-    //     subroutine_definition: SubroutineDefinition,
-    // ) -> Result<()> {
-    //     let input = SubroutineDefinitionsCreateInput::new(
-    //         subroutine_definition.name(),
-    //         subroutine_definition.path(),
-    //         subroutine_definition.kind(),
-    //     );
+    #[rstest]
+    #[tokio::test]
+    async fn creates_subroutine_definition(
+        subroutine_definition: SubroutineDefinition,
+    ) -> Result<()> {
+        let input = SubroutineDefinitionsCreateInput::new(
+            subroutine_definition.name(),
+            subroutine_definition.path(),
+            subroutine_definition.kind(),
+        );
 
-    //     let definitions = RwLock::new(HashMap::new());
-    //     let service = SubroutineDefinitionsService { definitions };
-    //     service.create(&input).await?;
+        let definitions = RwLock::new(HashMap::new());
+        let service = SubroutineDefinitionsService { definitions };
+        let definition = service.create(&input).await?;
 
-    //     assert!(definitions.read().unwrap().contains_key(input.name()));
-    //     Ok(())
-    // }
+        assert_eq!(definition, subroutine_definition);
+        Ok(())
+    }
 
     #[rstest]
     #[tokio::test]

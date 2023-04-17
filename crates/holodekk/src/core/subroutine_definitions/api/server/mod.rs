@@ -6,10 +6,13 @@ use axum::{routing::post, Router};
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
-use crate::core::subroutine_definitions::services::CreateSubroutineDefinition;
+use crate::core::subroutine_definitions::CreateSubroutineDefinition;
 
 #[cfg_attr(test, automock)]
-pub trait SubroutineDefinitionsApiServices<D> {
+pub trait SubroutineDefinitionsApiServices<D>
+where
+    D: CreateSubroutineDefinition,
+{
     fn definitions(&self) -> Arc<D>;
 }
 

@@ -1,7 +1,5 @@
 use async_trait::async_trait;
 use log::{debug, info, trace, warn};
-#[cfg(test)]
-use mockall::{automock, predicate::*};
 use tokio::sync::mpsc::Sender;
 
 use crate::core::services::{Error, Result};
@@ -11,25 +9,13 @@ use crate::core::subroutine_definitions::{
 use crate::core::subroutines::{
     entities::Subroutine,
     repositories::{subroutine_repo_id, SubroutinesRepository},
+    CreateSubroutine, SubroutinesCreateInput,
 };
 
 use super::{SubroutineCommand, SubroutinesService};
 
-#[derive(Clone, Debug)]
-pub struct SubroutinesCreateInput {
-    pub fleet: String,
-    pub namespace: String,
-    pub subroutine_definition_id: String,
-}
-
-#[cfg_attr(test, automock)]
 #[async_trait]
-pub trait Create {
-    async fn create(&self, input: SubroutinesCreateInput) -> Result<Subroutine>;
-}
-
-#[async_trait]
-impl<T> Create for SubroutinesService<T>
+impl<T> CreateSubroutine for SubroutinesService<T>
 where
     T: SubroutinesRepository + SubroutineDefinitionsRepository,
 {

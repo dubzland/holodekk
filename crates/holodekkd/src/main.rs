@@ -19,6 +19,7 @@ use holodekk::{
 };
 
 use holodekkd::config::HolodekkdConfig;
+use holodekkd::errors::HolodekkError;
 use holodekkd::server::start_holodekk_server;
 
 #[derive(Parser, Debug)]
@@ -65,7 +66,7 @@ fn ensure_directory<P: AsRef<Path>>(path: P) -> std::io::Result<()> {
 }
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> std::result::Result<(), HolodekkError> {
     let options = Options::parse();
 
     let api_config = ConnectionInfo::from_options(
@@ -102,7 +103,7 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
-    let holodekk = start_holodekk_server(Arc::new(holodekkd_config), repo).await;
+    let mut holodekk = start_holodekk_server(Arc::new(holodekkd_config), repo).await?;
 
     let signal = Signals::new().await;
     match signal {
