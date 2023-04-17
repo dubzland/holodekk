@@ -16,7 +16,7 @@ use crate::config::HolodekkConfig;
 
 use super::{repositories::ProjectorsRepository, worker::ProjectorCommand};
 
-/// Service object for managing [Projector](crate::core::entities::Projector) instances.
+/// Service object for managing [Projector](super::entities::Projector) instances.
 #[derive(Debug)]
 pub struct ProjectorsService<R>
 where

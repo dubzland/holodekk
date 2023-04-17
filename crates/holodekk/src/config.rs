@@ -71,16 +71,22 @@ pub trait UhuraApiConfig: Clone + Sync + Send + 'static {
 pub mod fixtures {
     use rstest::*;
 
+    use crate::utils::ConnectionInfo;
+
     use super::*;
 
     #[derive(Clone, Debug)]
     pub struct MockConfig {
         paths: HolodekkPaths,
         projector_path: PathBuf,
+        holodekk_api_config: ConnectionInfo,
     }
 
     impl MockConfig {
         pub fn new<P: AsRef<Path>>(root: P) -> Self {
+            let mut holodekk_api_socket = root.as_ref().to_owned();
+            holodekk_api_socket.push("holodekkd.sock");
+
             let mut projector_path = root.as_ref().to_owned();
             projector_path.push("projectors");
             projector_path.push("test");
@@ -88,6 +94,7 @@ pub mod fixtures {
             Self {
                 paths: HolodekkPaths::new(root.as_ref().to_owned(), PathBuf::from("/tmp/bin")),
                 projector_path,
+                holodekk_api_config: ConnectionInfo::unix(holodekk_api_socket),
             }
         }
     }
@@ -96,20 +103,6 @@ pub mod fixtures {
         fn default() -> Self {
             let holodekk_root_path: PathBuf = "/tmp".into();
             Self::new(holodekk_root_path)
-
-            //             let mut projectors_root_path = holodekk_root_path.clone();
-            //             projectors_root_path.push("projectors");
-
-            //             let mut subroutines_root_path = holodekk_root_path.clone();
-            //             subroutines_root_path.push("subroutines");
-
-            //             let mut projector_path = projectors_root_path.clone();
-            //             projector_path.push("test");
-
-            //             Self {
-            //                 paths: HolodekkPaths::new("/tmp", "/tmp/bin"),
-            //                 projector_path,
-            //             }
         }
     }
 
@@ -134,6 +127,12 @@ pub mod fixtures {
 
         fn namespace(&self) -> &str {
             "test"
+        }
+    }
+
+    impl HolodekkApiConfig for MockConfig {
+        fn holodekk_api_config(&self) -> &ConnectionInfo {
+            &self.holodekk_api_config
         }
     }
 
