@@ -17,19 +17,16 @@ use crate::core::projectors::services::{
     CreateProjector, DeleteProjector, FindProjectors, GetProjector,
 };
 use crate::core::services::Error;
-use crate::core::subroutine_definitions::api::server::SubroutineDefinitionsApiServices;
-use crate::core::subroutine_definitions::services::CreateSubroutineDefinition;
 
 #[cfg_attr(test, automock)]
 pub trait ProjectorApiServices<P> {
     fn projectors(&self) -> Arc<P>;
 }
 
-pub fn router<S, P, D>(services: Arc<S>) -> axum::Router
+pub fn router<S, P>(services: Arc<S>) -> axum::Router
 where
-    S: ProjectorApiServices<P> + SubroutineDefinitionsApiServices<D> + Send + Sync + 'static,
+    S: ProjectorApiServices<P> + Send + Sync + 'static,
     P: CreateProjector + DeleteProjector + FindProjectors + GetProjector + Send + Sync + 'static,
-    D: CreateSubroutineDefinition + Send + Sync + 'static,
 {
     Router::new()
         .route("/", get(list::handler))
@@ -49,11 +46,4 @@ impl IntoResponse for Error {
         };
         response.into_response()
     }
-}
-
-fn internal_error<E>(err: E) -> (StatusCode, String)
-where
-    E: std::error::Error,
-{
-    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
 }

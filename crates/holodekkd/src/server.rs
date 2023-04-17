@@ -10,7 +10,7 @@ use holodekk::{
         repositories::ProjectorsRepository, services::ProjectorsService, worker::ProjectorsWorker,
     },
     core::subroutine_definitions::{
-        api::server::SubroutineDefinitionsApiServices, services::SubroutineDefinitionsService,
+        self, api::server::SubroutineDefinitionsApiServices, services::SubroutineDefinitionsService,
     },
     utils::{
         servers::{start_http_server, HttpServerHandle},
@@ -87,7 +87,14 @@ where
 {
     Router::new()
         .nest("/", crate::api::router())
-        .nest("/projectors", projectors::api::server::router(api_services))
+        .nest(
+            "/projectors",
+            projectors::api::server::router(api_services.clone()),
+        )
+        .nest(
+            "/subroutine_definitions",
+            subroutine_definitions::api::server::router(api_services),
+        )
 }
 
 pub async fn start_holodekk_server<C, R>(config: Arc<C>, repo: Arc<R>) -> HolodekkServerHandle

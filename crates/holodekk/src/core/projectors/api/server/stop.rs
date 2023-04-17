@@ -2,17 +2,17 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
+    response::IntoResponse,
 };
 
 use crate::core::projectors::services::{DeleteProjector, ProjectorsDeleteInput};
 
-use super::{internal_error, ProjectorApiServices};
+use super::ProjectorApiServices;
 
 pub async fn handler<S, P>(
     State(state): State<Arc<S>>,
     Path(id): Path<String>,
-) -> Result<(), (StatusCode, String)>
+) -> Result<impl IntoResponse, crate::core::services::Error>
 where
     S: ProjectorApiServices<P>,
     P: DeleteProjector,
@@ -20,7 +20,6 @@ where
     state
         .projectors()
         .delete(&ProjectorsDeleteInput::new(&id))
-        .await
-        .map_err(internal_error)?;
+        .await?;
     Ok(())
 }
