@@ -31,7 +31,7 @@ where
 
         let definition = SubroutineDefinition::new(name, path, kind);
         debug!("Loading SubroutineDefinition: {:?}", definition);
-        definitions.insert(definition.name().to_owned(), definition);
+        definitions.insert(definition.id().to_owned(), definition);
     }
 
     Ok(definitions)
