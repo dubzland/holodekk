@@ -15,15 +15,16 @@ use mockall::{automock, predicate::*};
 
 use crate::core::projectors::{CreateProjector, DeleteProjector, FindProjectors, GetProjector};
 use crate::core::services::Error;
+use crate::core::ApiCoreState;
 
 #[cfg_attr(test, automock)]
 pub trait ProjectorApiServices<P> {
     fn projectors(&self) -> Arc<P>;
 }
 
-pub fn router<S, P>(services: Arc<S>) -> axum::Router
+pub fn router<S, P, C>(services: Arc<S>) -> axum::Router
 where
-    S: ProjectorApiServices<P> + Send + Sync + 'static,
+    S: ProjectorApiServices<P> + ApiCoreState<C> + Send + Sync + 'static,
     P: CreateProjector + DeleteProjector + FindProjectors + GetProjector + Send + Sync + 'static,
 {
     Router::new()

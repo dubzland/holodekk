@@ -29,24 +29,30 @@ impl From<entities::RpcSubroutine> for Subroutine {
             SubroutineStatus::Unknown
         };
 
-        Self {
-            fleet: subroutine.fleet,
-            namespace: subroutine.namespace,
-            path: subroutine.path.into(),
-            status,
-            subroutine_definition_id: subroutine.subroutine_definition_id,
-        }
+        let mut sub = Self::new(
+            subroutine.fleet,
+            subroutine.namespace,
+            subroutine.path,
+            subroutine.subroutine_definition_id,
+        );
+        sub.set_status(status);
+        sub
     }
 }
 
 impl From<Subroutine> for entities::RpcSubroutine {
     fn from(subroutine: Subroutine) -> Self {
         Self {
-            fleet: subroutine.fleet,
-            namespace: subroutine.namespace,
-            path: subroutine.path.into_os_string().into_string().unwrap(),
-            status: Some(subroutine.status.into()),
-            subroutine_definition_id: subroutine.subroutine_definition_id,
+            fleet: subroutine.fleet().into(),
+            namespace: subroutine.namespace().into(),
+            path: subroutine
+                .path()
+                .clone()
+                .into_os_string()
+                .into_string()
+                .unwrap(),
+            status: Some(subroutine.status().into()),
+            subroutine_definition_id: subroutine.subroutine_definition_id().into(),
         }
     }
 }
@@ -76,22 +82,17 @@ mod tests {
 
         let subroutine: Subroutine = rpc_subroutine.into();
 
-        assert_eq!(subroutine.fleet, "test");
-        assert_eq!(subroutine.namespace, "test");
-        assert_eq!(subroutine.path, PathBuf::from("/tmp"));
-        assert!(matches!(subroutine.status, SubroutineStatus::Stopped));
-        assert_eq!(subroutine.subroutine_definition_id, "abc123");
+        assert_eq!(subroutine.fleet(), "test");
+        assert_eq!(subroutine.namespace(), "test");
+        assert_eq!(subroutine.path(), &PathBuf::from("/tmp"));
+        assert!(matches!(subroutine.status(), SubroutineStatus::Stopped));
+        assert_eq!(subroutine.subroutine_definition_id(), "abc123");
     }
 
     #[test]
     fn converts_to_rpc_subroutine_from_subroutine() {
-        let subroutine = Subroutine {
-            fleet: "test".into(),
-            namespace: "test".into(),
-            path: "/tmp".into(),
-            status: SubroutineStatus::Stopped,
-            subroutine_definition_id: "abc123".into(),
-        };
+        let mut subroutine = Subroutine::new("test", "test", "/tmp", "abc123");
+        subroutine.set_status(SubroutineStatus::Stopped);
 
         let rpc_subroutine: RpcSubroutine = subroutine.into();
 

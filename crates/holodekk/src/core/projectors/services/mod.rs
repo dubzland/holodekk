@@ -21,7 +21,7 @@ use crate::utils::Worker;
 use super::{repositories::ProjectorsRepository, worker::ProjectorCommand};
 
 /// Service object for managing [Projector](super::entities::Projector) instances.
-// #[derive(Debug)]
+#[derive(Debug)]
 pub struct ProjectorsService<R, W>
 where
     R: ProjectorsRepository,

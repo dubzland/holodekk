@@ -11,7 +11,7 @@ impl SubroutinesRepository for MemoryRepository {
         if self
             .db
             .subroutine_definitions()
-            .exists(&subroutine.subroutine_definition_id)?
+            .exists(subroutine.subroutine_definition_id())?
         {
             self.db.subroutines().add(subroutine.clone())?;
             Ok(subroutine)
@@ -221,8 +221,8 @@ mod tests {
         let instances = repo
             .subroutines_find(
                 SubroutinesQuery::builder()
-                    .fleet_eq(&subroutine.fleet)
-                    .namespace_eq(&subroutine.namespace)
+                    .fleet_eq(subroutine.fleet())
+                    .namespace_eq(subroutine.namespace())
                     .build(),
             )
             .await?;

@@ -4,6 +4,8 @@ pub mod repositories;
 pub mod subroutine_definitions;
 pub mod subroutines;
 
+use std::sync::Arc;
+
 pub mod services {
     use async_trait::async_trait;
     use tonic::Status;
@@ -57,4 +59,8 @@ pub mod services {
     pub trait ServiceStop: Send + Sync {
         async fn stop(&self) -> crate::core::services::Result<()>;
     }
+}
+
+pub trait ApiCoreState<C> {
+    fn config(&self) -> Arc<C>;
 }

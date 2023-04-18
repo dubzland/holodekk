@@ -1,6 +1,9 @@
 mod create;
 pub use create::*;
 
+mod get;
+pub use get::*;
+
 use std::collections::HashMap;
 use std::sync::RwLock;
 

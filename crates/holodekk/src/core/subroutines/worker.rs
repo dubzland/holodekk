@@ -7,6 +7,8 @@ use std::sync::{Arc, RwLock};
 
 use async_trait::async_trait;
 use log::{debug, error, info, warn};
+#[cfg(test)]
+use mockall::*;
 use nix::{
     fcntl::OFlag,
     sys::signal::{kill, SIGINT},
@@ -71,6 +73,7 @@ impl SubroutinesWorker {
     }
 }
 
+#[cfg_attr(test, automock)]
 #[async_trait]
 impl Worker for SubroutinesWorker {
     type Command = SubroutineCommand;
@@ -88,9 +91,9 @@ impl Worker for SubroutinesWorker {
     }
 }
 
-pub fn start_worker<C>(config: Arc<C>) -> SubroutinesWorker
+pub fn start_worker<C>(config: Arc<C>) -> impl Worker<Command = SubroutineCommand>
 where
-    C: HolodekkConfig + ProjectorConfig,
+    C: HolodekkConfig,
 {
     let (cmd_tx, mut cmd_rx) = tokio::sync::mpsc::channel(32);
     let task_handle = tokio::spawn(async move {
@@ -153,14 +156,17 @@ pub async fn subroutine_manager<C>(
 
 fn build_command<C>(
     config: Arc<C>,
+    namespace: &str,
     definition: SubroutineDefinition,
     child_fd: i32,
 ) -> (PathBuf, PathBuf, Command)
 where
-    C: HolodekkConfig + ProjectorConfig,
+    C: HolodekkConfig,
 {
-    let mut root_path = config.projector_path().clone();
-    root_path.push(definition.name());
+    let mut root_path = config.paths().projectors().clone();
+    root_path.push(namespace);
+    root_path.push("subroutines");
+    root_path.push(definition.id());
 
     // Ensure the root directory exists
     if !root_path.exists() {
@@ -219,14 +225,14 @@ pub fn spawn_subroutine<C>(
     definition: SubroutineDefinition,
 ) -> std::result::Result<Subroutine, SpawnError>
 where
-    C: HolodekkConfig + ProjectorConfig,
+    C: HolodekkConfig,
 {
     // Setup a pipe so we can be notified when the projector is fully up
     let (parent_fd, child_fd) = pipe2(OFlag::empty()).unwrap();
     let mut sync_pipe = unsafe { File::from_raw_fd(parent_fd) };
 
     let (pidfile, subroutine_root, mut command) =
-        build_command(config.clone(), definition.clone(), child_fd);
+        build_command(config.clone(), namespace, definition.clone(), child_fd);
 
     info!("Launching subroutine with: {:?}", command);
     let status = command
@@ -257,7 +263,7 @@ where
             }
         };
         let mut i = Subroutine::new(config.fleet(), namespace, subroutine_root, definition.id());
-        i.status = SubroutineStatus::Running(pid.as_raw() as u32);
+        i.set_status(SubroutineStatus::Running(pid.as_raw() as u32));
         debug!("Subroutine spawned with pid: {}", pid);
         drop(sync_pipe);
         Ok(i)
@@ -272,13 +278,13 @@ pub fn shutdown_subroutine(
     definition: SubroutineDefinition,
 ) -> std::result::Result<(), ShutdownError> {
     // TODO: check to see if the subroutine is still running before blindly killing it
-    match subroutine.status {
+    match subroutine.status() {
         SubroutineStatus::Running(pid) => match kill(Pid::from_raw(pid as i32), SIGINT) {
             Ok(_) => {
                 debug!(
                     "stopped subroutine {} running in namespace {} with pid {}",
                     definition.name(),
-                    subroutine.namespace,
+                    subroutine.namespace(),
                     pid
                 );
                 Ok(())
@@ -287,7 +293,7 @@ pub fn shutdown_subroutine(
                 warn!(
                     "failed stop subroutine {} running in namespace {} with pid {}: {}",
                     definition.name(),
-                    subroutine.namespace,
+                    subroutine.namespace(),
                     pid,
                     err
                 );
@@ -301,5 +307,17 @@ pub fn shutdown_subroutine(
             );
             Ok(())
         }
+    }
+}
+
+#[cfg(test)]
+pub mod fixtures {
+    use rstest::*;
+
+    use super::*;
+
+    #[fixture]
+    pub fn mock_subroutines_worker() -> MockSubroutinesWorker {
+        MockSubroutinesWorker::default()
     }
 }

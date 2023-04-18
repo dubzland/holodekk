@@ -23,10 +23,7 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 
 use holodekk::{
     config::HolodekkConfig,
-    core::repositories::{
-        memory::{MemoryDatabase, MemoryRepository},
-        RepositoryKind,
-    },
+    core::repositories::RepositoryKind,
     utils::{
         libsee,
         signals::{SignalKind, Signals},
@@ -253,14 +250,7 @@ async fn main_loop(
     options: &Options,
     config: Arc<UhuraConfig>,
 ) -> std::result::Result<(), std::io::Error> {
-    let repo = match config.repo_kind() {
-        RepositoryKind::Memory => {
-            let db = MemoryDatabase::new();
-            Arc::new(MemoryRepository::new(Arc::new(db)))
-        }
-    };
-
-    let uhura_server = start_uhura_server(config.clone(), repo);
+    let uhura_server = start_uhura_server(config.clone());
 
     // Notify the holodekk of our state
     debug!("Sending status update to parent");

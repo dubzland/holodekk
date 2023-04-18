@@ -17,7 +17,11 @@ pub fn subroutine_repo_id(fleet: &str, namespace: &str, subroutine_definition_id
 
 impl RepositoryId for Subroutine {
     fn id(&self) -> String {
-        subroutine_repo_id(&self.fleet, &self.namespace, &self.subroutine_definition_id)
+        subroutine_repo_id(
+            self.fleet(),
+            self.namespace(),
+            self.subroutine_definition_id(),
+        )
     }
 }
 
@@ -68,17 +72,17 @@ impl RepositoryQuery for SubroutinesQuery {
             true
         } else {
             if let Some(fleet) = self.fleet.as_ref() {
-                if fleet != &record.fleet {
+                if fleet != record.fleet() {
                     return false;
                 }
             }
             if let Some(namespace) = self.namespace.as_ref() {
-                if namespace != &record.namespace {
+                if namespace != record.namespace() {
                     return false;
                 }
             }
             if let Some(subroutine_definition_id) = self.subroutine_definition_id.as_ref() {
-                if subroutine_definition_id != &record.subroutine_definition_id {
+                if subroutine_definition_id != record.subroutine_definition_id() {
                     return false;
                 }
             }

@@ -2,30 +2,57 @@ mod create;
 
 use std::sync::Arc;
 
+use axum::{routing::post, Router};
+#[cfg(test)]
+use mockall::{automock, predicate::*};
+
+use crate::config::HolodekkConfig;
+use crate::core::projectors::{api::server::ProjectorApiServices, GetProjector};
 use crate::core::subroutines::CreateSubroutine;
+use crate::core::ApiCoreState;
 
-use super::proto::RpcSubroutinesServer;
-
-#[derive(Clone, Debug)]
-pub struct SubroutinesApiServer<S>
-where
-    S: CreateSubroutine + Send + 'static,
-{
-    service: Arc<S>,
+#[cfg_attr(test, automock)]
+pub trait SubroutinesApiServices<S> {
+    fn subroutines(&self) -> Arc<S>;
 }
 
-impl<S> SubroutinesApiServer<S>
+pub fn router<S, A, C, P>(services: Arc<A>) -> axum::Router
 where
-    S: CreateSubroutine + Send + 'static,
-{
-    pub fn new(service: Arc<S>) -> Self {
-        Self { service }
-    }
-}
-
-pub fn subroutines_api_server<S>(service: Arc<S>) -> RpcSubroutinesServer<SubroutinesApiServer<S>>
-where
+    A: SubroutinesApiServices<S>
+        + ProjectorApiServices<P>
+        + ApiCoreState<C>
+        + Send
+        + Sync
+        + 'static,
     S: CreateSubroutine + Send + Sync + 'static,
+    P: GetProjector + Send + Sync + 'static,
+    C: HolodekkConfig,
 {
-    RpcSubroutinesServer::new(SubroutinesApiServer::new(service))
+    Router::new()
+        .route("/", post(create::handler))
+        .with_state(services)
 }
+
+// #[derive(Clone, Debug)]
+// pub struct SubroutinesApiServer<S>
+// where
+//     S: CreateSubroutine + Send + 'static,
+// {
+//     service: Arc<S>,
+// }
+
+// impl<S> SubroutinesApiServer<S>
+// where
+//     S: CreateSubroutine + Send + 'static,
+// {
+//     pub fn new(service: Arc<S>) -> Self {
+//         Self { service }
+//     }
+// }
+
+// pub fn subroutines_api_server<S>(service: Arc<S>) -> RpcSubroutinesServer<SubroutinesApiServer<S>>
+// where
+//     S: CreateSubroutine + Send + Sync + 'static,
+// {
+//     RpcSubroutinesServer::new(SubroutinesApiServer::new(service))
+// }

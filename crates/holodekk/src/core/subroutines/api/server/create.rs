@@ -1,80 +1,46 @@
-use tonic::{Request, Response};
+use std::sync::Arc;
 
-use crate::core::subroutines::{CreateSubroutine, SubroutinesCreateInput};
-
-use crate::core::subroutines::api::proto::{
-    entities::{RpcCreateSubroutineRequest, RpcSubroutine},
-    RpcSubroutines,
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    Json,
 };
 
-use super::SubroutinesApiServer;
+use crate::config::HolodekkConfig;
+use crate::core::projectors::{
+    api::server::ProjectorApiServices, GetProjector, ProjectorsGetInput,
+};
+use crate::core::subroutines::{
+    api::models::NewSubroutine, CreateSubroutine, SubroutinesCreateInput,
+};
+use crate::core::ApiCoreState;
 
-#[tonic::async_trait]
-impl<S> RpcSubroutines for SubroutinesApiServer<S>
+use super::SubroutinesApiServices;
+
+pub async fn handler<A, S, P, C>(
+    State(state): State<Arc<A>>,
+    Path(projector_id): Path<String>,
+    Json(new_subroutine): Json<NewSubroutine>,
+) -> Result<impl IntoResponse, crate::core::services::Error>
 where
-    S: CreateSubroutine + Send + Sync + 'static,
+    A: SubroutinesApiServices<S> + ProjectorApiServices<P> + ApiCoreState<C>,
+    S: CreateSubroutine,
+    P: GetProjector,
+    C: HolodekkConfig,
 {
-    async fn create(
-        &self,
-        request: Request<RpcCreateSubroutineRequest>,
-    ) -> std::result::Result<Response<RpcSubroutine>, tonic::Status> {
-        let request = request.into_inner();
-        let input = SubroutinesCreateInput {
-            fleet: request.fleet,
-            namespace: request.namespace,
-            subroutine_definition_id: request.subroutine_definition_id,
-        };
-        let subroutine = self.service.create(input).await?;
+    let projector = state
+        .projectors()
+        .get(&ProjectorsGetInput::new(&projector_id))
+        .await?;
 
-        Ok(Response::new(subroutine.into()))
-    }
+    let subroutine = state
+        .subroutines()
+        .create(&SubroutinesCreateInput::new(
+            projector.fleet(),
+            projector.namespace(),
+            &new_subroutine.subroutine_definition_id,
+        ))
+        .await?;
+    Ok((StatusCode::CREATED, Json(subroutine)))
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use std::sync::Arc;
-
-//     use mockall::predicate::*;
-//     use rstest::*;
-
-//     use crate::core::services::Error;
-//     use crate::core::subroutines::{entities::SubroutineStatus, services::subroutines::MockStatus};
-
-//     use super::*;
-
-//     #[rstest]
-//     #[tokio::test]
-//     async fn returns_subroutine_status() -> std::result::Result<(), tonic::Status> {
-//         let mut service = MockStatus::default();
-//         service
-//             .expect_status()
-//             .with(eq("test"))
-//             .return_const(Ok(SubroutineStatus::Stopped));
-//         let api_server = SubroutinesApiServer::new(Arc::new(service));
-//         let request = tonic::Request::new(RpcStatusRequest {
-//             name: "test".into(),
-//         });
-//         let status = api_server.status(request).await?.into_inner();
-//         assert_eq!(status, RpcSubroutineStatus::from(SubroutineStatus::Stopped));
-//         Ok(())
-//     }
-
-//     #[rstest]
-//     #[tokio::test]
-//     async fn returns_error_when_service_fails() -> std::result::Result<(), tonic::Status> {
-//         let mut service = MockStatus::default();
-//         service
-//             .expect_status()
-//             .with(eq("test"))
-//             .return_const(Err(Error::NotFound));
-//         let api_server = SubroutinesApiServer::new(Arc::new(service));
-//         let request = tonic::Request::new(RpcStatusRequest {
-//             name: "test".into(),
-//         });
-//         let res = api_server.status(request).await;
-//         assert!(res.is_err());
-//         let err = res.unwrap_err();
-//         assert_eq!(err.code(), tonic::Code::NotFound);
-//         Ok(())
-//     }
-// }

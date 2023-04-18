@@ -12,11 +12,11 @@ pub enum SubroutineStatus {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Subroutine {
-    pub fleet: String,
-    pub namespace: String,
-    pub path: PathBuf,
-    pub status: SubroutineStatus,
-    pub subroutine_definition_id: String,
+    fleet: String,
+    namespace: String,
+    path: PathBuf,
+    status: SubroutineStatus,
+    subroutine_definition_id: String,
 }
 
 impl Subroutine {
@@ -32,5 +32,29 @@ impl Subroutine {
             status: SubroutineStatus::Unknown,
             subroutine_definition_id: subroutine_definition_id.into(),
         }
+    }
+
+    pub fn fleet(&self) -> &str {
+        &self.fleet
+    }
+
+    pub fn namespace(&self) -> &str {
+        &self.namespace
+    }
+
+    pub fn path(&self) -> &PathBuf {
+        &self.path
+    }
+
+    pub fn status(&self) -> SubroutineStatus {
+        self.status
+    }
+
+    pub fn subroutine_definition_id(&self) -> &str {
+        &self.subroutine_definition_id
+    }
+
+    pub fn set_status(&mut self, status: SubroutineStatus) {
+        self.status = status;
     }
 }

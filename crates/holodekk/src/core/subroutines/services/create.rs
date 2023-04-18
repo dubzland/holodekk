@@ -4,37 +4,39 @@ use tokio::sync::mpsc::Sender;
 
 use crate::core::services::{Error, Result};
 use crate::core::subroutine_definitions::{
-    entities::SubroutineDefinition, repositories::SubroutineDefinitionsRepository,
+    entities::SubroutineDefinition, SubroutineDefinitionsGetInput,
+    SubroutineDefinitionsServiceMethods,
 };
 use crate::core::subroutines::{
     entities::Subroutine,
     repositories::{subroutine_repo_id, SubroutinesRepository},
     CreateSubroutine, SubroutinesCreateInput,
 };
+use crate::utils::Worker;
 
 use super::{SubroutineCommand, SubroutinesService};
 
 #[async_trait]
-impl<T> CreateSubroutine for SubroutinesService<T>
+impl<R, W, D> CreateSubroutine for SubroutinesService<R, W, D>
 where
-    T: SubroutinesRepository + SubroutineDefinitionsRepository,
+    R: SubroutinesRepository,
+    W: Worker<Command = SubroutineCommand>,
+    D: SubroutineDefinitionsServiceMethods,
 {
-    async fn create(&self, input: SubroutinesCreateInput) -> Result<Subroutine> {
+    async fn create<'c>(&self, input: &'c SubroutinesCreateInput<'c>) -> Result<Subroutine> {
         trace!("SubroutinesService.create({:?})", input);
 
         // ensure this subroutine isn't already running in the selected namespace
-        let id = subroutine_repo_id(
-            &input.fleet,
-            &input.namespace,
-            &input.subroutine_definition_id,
-        );
+        let id = subroutine_repo_id(input.fleet, input.namespace, input.subroutine_definition_id);
         if self.repo.subroutines_exists(&id).await? {
             Err(Error::AlreadyRunning)
         } else {
             // retrieve the subroutine definition
             let subroutine_definition = self
-                .repo
-                .subroutine_definitions_get(&input.subroutine_definition_id)
+                .definitions
+                .get(&SubroutineDefinitionsGetInput::new(
+                    input.subroutine_definition_id(),
+                ))
                 .await?;
 
             // send spawn request to manager
@@ -45,7 +47,7 @@ where
             );
             let subroutine: Subroutine = send_start_command(
                 self.worker(),
-                &input.namespace,
+                input.namespace,
                 subroutine_definition.clone(),
             )
             .await?;
