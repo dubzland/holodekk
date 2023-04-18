@@ -132,3 +132,15 @@ where
 
     Ok(services::ProjectorsService::new(config, repo, worker))
 }
+
+#[cfg(test)]
+pub mod fixtures {
+    use rstest::*;
+
+    use super::*;
+
+    #[fixture]
+    pub fn mock_get_projector() -> MockGetProjector {
+        MockGetProjector::default()
+    }
+}

@@ -34,10 +34,16 @@ impl IntoResponse for ApiError {
                     format!("Unexpected projector error occurred: {}", err),
                 ),
             },
-            ApiError::Subroutine(err) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Unexpected subroutine error occurred: {}", err),
-            ),
+            ApiError::Subroutine(err) => match err {
+                SubroutinesError::AlreadyRunning(id) => (
+                    StatusCode::CONFLICT,
+                    format!("Subroutine already running with id {}", id),
+                ),
+                err => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Unexpected subroutine error occurred: {}", err),
+                ),
+            },
             ApiError::SubroutineDefinition(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Unexpected subroutine definition error occurred: {}", err),

@@ -185,3 +185,20 @@ where
 
     Ok(services::SubroutinesService::new(repo, definitions, worker))
 }
+
+#[cfg(test)]
+pub mod fixtures {
+    use rstest::*;
+
+    use super::*;
+
+    #[fixture]
+    pub fn mock_create_subroutine() -> MockCreateSubroutine {
+        MockCreateSubroutine::default()
+    }
+
+    #[fixture]
+    pub fn mock_find_subroutines() -> MockFindSubroutines {
+        MockFindSubroutines::default()
+    }
+}
