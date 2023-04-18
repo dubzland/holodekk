@@ -7,8 +7,8 @@ use holodekk::{
     config::{HolodekkApiConfig, HolodekkConfig},
     core::{
         projectors::{
-            self, api::server::ProjectorApiServices, repositories::ProjectorsRepository,
-            CreateProjector, DeleteProjector, FindProjectors, GetProjector,
+            self, api::server::ProjectorsApiServices, repositories::ProjectorsRepository,
+            ProjectorsServiceMethods,
         },
         services::ServiceStop,
         subroutine_definitions::{
@@ -17,7 +17,7 @@ use holodekk::{
         },
         subroutines::{
             self, api::server::SubroutinesApiServices, repositories::SubroutinesRepository,
-            CreateSubroutine, FindSubroutines,
+            SubroutinesServiceMethods,
         },
         ApiCoreState,
     },
@@ -65,8 +65,8 @@ where
 
 pub struct ApiState<P, S, C>
 where
-    P: CreateProjector + DeleteProjector + FindProjectors + GetProjector,
-    S: CreateSubroutine + FindSubroutines,
+    P: ProjectorsServiceMethods,
+    S: SubroutinesServiceMethods,
     C: HolodekkConfig,
 {
     projectors_service: Arc<P>,
@@ -77,8 +77,8 @@ where
 
 impl<P, S, C> ApiState<P, S, C>
 where
-    P: CreateProjector + DeleteProjector + FindProjectors + GetProjector,
-    S: CreateSubroutine + FindSubroutines,
+    P: ProjectorsServiceMethods,
+    S: SubroutinesServiceMethods,
     C: HolodekkConfig,
 {
     pub fn new(
@@ -98,8 +98,8 @@ where
 
 impl<P, S, C> ApiCoreState<C> for ApiState<P, S, C>
 where
-    P: CreateProjector + DeleteProjector + FindProjectors + GetProjector,
-    S: CreateSubroutine + FindSubroutines,
+    P: ProjectorsServiceMethods,
+    S: SubroutinesServiceMethods,
     C: HolodekkConfig,
 {
     fn config(&self) -> Arc<C> {
@@ -107,10 +107,10 @@ where
     }
 }
 
-impl<P, S, C> ProjectorApiServices<P> for ApiState<P, S, C>
+impl<P, S, C> ProjectorsApiServices<P> for ApiState<P, S, C>
 where
-    P: CreateProjector + DeleteProjector + FindProjectors + GetProjector,
-    S: CreateSubroutine + FindSubroutines,
+    P: ProjectorsServiceMethods,
+    S: SubroutinesServiceMethods,
     C: HolodekkConfig,
 {
     fn projectors(&self) -> Arc<P> {
@@ -120,8 +120,8 @@ where
 
 impl<P, S, C> SubroutineDefinitionsApiServices<SubroutineDefinitionsService> for ApiState<P, S, C>
 where
-    P: CreateProjector + DeleteProjector + FindProjectors + GetProjector,
-    S: CreateSubroutine + FindSubroutines,
+    P: ProjectorsServiceMethods,
+    S: SubroutinesServiceMethods,
     C: HolodekkConfig,
 {
     fn definitions(&self) -> Arc<SubroutineDefinitionsService> {
@@ -131,8 +131,8 @@ where
 
 impl<P, S, C> SubroutinesApiServices<S> for ApiState<P, S, C>
 where
-    P: CreateProjector + DeleteProjector + FindProjectors + GetProjector,
-    S: CreateSubroutine + FindSubroutines,
+    P: ProjectorsServiceMethods,
+    S: SubroutinesServiceMethods,
     C: HolodekkConfig,
 {
     fn subroutines(&self) -> Arc<S> {
@@ -142,8 +142,8 @@ where
 
 pub fn router<P, S, C>(api_services: Arc<ApiState<P, S, C>>) -> axum::Router
 where
-    P: CreateProjector + DeleteProjector + FindProjectors + GetProjector + Send + Sync + 'static,
-    S: CreateSubroutine + FindSubroutines + Send + Sync + 'static,
+    P: ProjectorsServiceMethods,
+    S: SubroutinesServiceMethods,
     C: HolodekkConfig,
 {
     Router::new()

@@ -5,14 +5,14 @@ use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use crate::core::api::ApiError;
 use crate::core::projectors::{api::models::NewProjector, CreateProjector, ProjectorsCreateInput};
 
-use super::ProjectorApiServices;
+use super::ProjectorsApiServices;
 
 pub async fn handler<S, P>(
     State(state): State<Arc<S>>,
     Json(new_projector): Json<NewProjector>,
 ) -> Result<impl IntoResponse, ApiError>
 where
-    S: ProjectorApiServices<P>,
+    S: ProjectorsApiServices<P>,
     P: CreateProjector,
 {
     let projector = state
@@ -28,15 +28,15 @@ mod tests {
     use rstest::*;
     use tower::ServiceExt;
 
-    use crate::core::projectors::api::server::MockProjectorApiServices;
+    use crate::core::projectors::api::server::MockProjectorsApiServices;
     use crate::core::projectors::entities::{fixtures::projector, Projector};
     use crate::core::projectors::{MockCreateProjector, ProjectorsError};
 
     use super::*;
 
     #[fixture]
-    fn mock_services() -> MockProjectorApiServices<MockCreateProjector> {
-        MockProjectorApiServices::default()
+    fn mock_services() -> MockProjectorsApiServices<MockCreateProjector> {
+        MockProjectorsApiServices::default()
     }
 
     #[fixture]
@@ -46,7 +46,7 @@ mod tests {
 
     #[fixture]
     fn mock_app(
-        mut mock_services: MockProjectorApiServices<MockCreateProjector>,
+        mut mock_services: MockProjectorsApiServices<MockCreateProjector>,
         mock_create: MockCreateProjector,
     ) -> Router {
         mock_services
@@ -61,7 +61,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn responds_with_conflict_when_projector_exists(
-        mock_services: MockProjectorApiServices<MockCreateProjector>,
+        mock_services: MockProjectorsApiServices<MockCreateProjector>,
 
         mut mock_create: MockCreateProjector,
     ) {
@@ -95,7 +95,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn responds_with_created(
-        mock_services: MockProjectorApiServices<MockCreateProjector>,
+        mock_services: MockProjectorsApiServices<MockCreateProjector>,
 
         mut mock_create: MockCreateProjector,
         projector: Projector,
@@ -130,7 +130,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_the_new_projector(
-        mock_services: MockProjectorApiServices<MockCreateProjector>,
+        mock_services: MockProjectorsApiServices<MockCreateProjector>,
 
         mut mock_create: MockCreateProjector,
         projector: Projector,

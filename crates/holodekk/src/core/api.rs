@@ -25,6 +25,10 @@ impl IntoResponse for ApiError {
                     StatusCode::CONFLICT,
                     format!("Projector already running with id {}", id),
                 ),
+                ProjectorsError::NotFound(id) => (
+                    StatusCode::NOT_FOUND,
+                    format!("Could not find a projector with id {}", id),
+                ),
                 err => (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     format!("Unexpected projector error occurred: {}", err),

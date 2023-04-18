@@ -107,6 +107,15 @@ impl<'g> ProjectorsGetInput<'g> {
     }
 }
 
+pub trait ProjectorsServiceMethods:
+    CreateProjector + DeleteProjector + FindProjectors + GetProjector + Send + Sync + 'static
+{
+}
+impl<T> ProjectorsServiceMethods for T where
+    T: CreateProjector + DeleteProjector + FindProjectors + GetProjector + Send + Sync + 'static
+{
+}
+
 pub async fn create_service<C, R>(
     config: Arc<C>,
     repo: Arc<R>,

@@ -107,7 +107,7 @@ impl<'c> SubroutinesDeleteInput<'c> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SubroutinesFindInput<'f> {
     fleet: Option<&'f str>,
     namespace: Option<&'f str>,
@@ -155,11 +155,26 @@ impl<'c> SubroutinesGetInput<'c> {
     }
 }
 
+pub trait SubroutinesServiceMethods:
+    CreateSubroutine + DeleteSubroutine + FindSubroutines + GetSubroutine + Send + Sync + 'static
+{
+}
+impl<T> SubroutinesServiceMethods for T where
+    T: CreateSubroutine
+        + DeleteSubroutine
+        + FindSubroutines
+        + GetSubroutine
+        + Send
+        + Sync
+        + 'static
+{
+}
+
 pub async fn create_service<C, R>(
     config: Arc<C>,
     definitions: Arc<SubroutineDefinitionsService>,
     repo: Arc<R>,
-) -> Result<impl CreateSubroutine + FindSubroutines + ServiceStop + Send + Sync>
+) -> Result<impl SubroutinesServiceMethods + ServiceStop>
 where
     C: HolodekkConfig,
     R: repositories::SubroutinesRepository + 'static,

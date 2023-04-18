@@ -8,14 +8,14 @@ use axum::{
 use crate::core::api::ApiError;
 use crate::core::projectors::{DeleteProjector, ProjectorsDeleteInput};
 
-use super::ProjectorApiServices;
+use super::ProjectorsApiServices;
 
 pub async fn handler<S, P>(
     State(state): State<Arc<S>>,
     Path(projector): Path<String>,
 ) -> Result<impl IntoResponse, ApiError>
 where
-    S: ProjectorApiServices<P>,
+    S: ProjectorsApiServices<P>,
     P: DeleteProjector,
 {
     state

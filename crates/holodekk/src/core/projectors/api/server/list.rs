@@ -4,13 +4,13 @@ use axum::{extract::State, http::StatusCode, Json};
 
 use crate::core::projectors::{entities::Projector, FindProjectors, ProjectorsFindInput};
 
-use super::ProjectorApiServices;
+use super::ProjectorsApiServices;
 
 pub async fn handler<S, P>(
     State(state): State<Arc<S>>,
 ) -> Result<Json<Vec<Projector>>, (StatusCode, String)>
 where
-    S: ProjectorApiServices<P>,
+    S: ProjectorsApiServices<P>,
     P: FindProjectors,
 {
     let projectors = state
@@ -26,7 +26,7 @@ mod tests {
     use rstest::*;
     use tower::ServiceExt;
 
-    use crate::core::projectors::api::server::MockProjectorApiServices;
+    use crate::core::projectors::api::server::MockProjectorsApiServices;
     use crate::core::projectors::entities::fixtures::projector;
     use crate::core::projectors::MockFindProjectors;
 
@@ -38,13 +38,13 @@ mod tests {
     }
 
     #[fixture]
-    fn mock_services() -> MockProjectorApiServices<MockFindProjectors> {
-        MockProjectorApiServices::default()
+    fn mock_services() -> MockProjectorsApiServices<MockFindProjectors> {
+        MockProjectorsApiServices::default()
     }
 
     #[fixture]
     fn mock_app(
-        mut mock_services: MockProjectorApiServices<MockFindProjectors>,
+        mut mock_services: MockProjectorsApiServices<MockFindProjectors>,
         mock_find: MockFindProjectors,
     ) -> Router {
         mock_services
@@ -59,7 +59,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn gets_projectors(
-        mock_services: MockProjectorApiServices<MockFindProjectors>,
+        mock_services: MockProjectorsApiServices<MockFindProjectors>,
         mut mock_find: MockFindProjectors,
     ) {
         let input = ProjectorsFindInput::default();
@@ -77,7 +77,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn responds_with_ok(
-        mock_services: MockProjectorApiServices<MockFindProjectors>,
+        mock_services: MockProjectorsApiServices<MockFindProjectors>,
         mut mock_find: MockFindProjectors,
     ) {
         let input = ProjectorsFindInput::default();
@@ -98,7 +98,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_projectors(
-        mock_services: MockProjectorApiServices<MockFindProjectors>,
+        mock_services: MockProjectorsApiServices<MockFindProjectors>,
         projector: Projector,
         mut mock_find: MockFindProjectors,
     ) {

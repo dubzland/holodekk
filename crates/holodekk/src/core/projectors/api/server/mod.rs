@@ -12,27 +12,27 @@ use axum::{
 use mockall::{automock, predicate::*};
 
 use crate::config::HolodekkConfig;
-use crate::core::projectors::{CreateProjector, DeleteProjector, FindProjectors, GetProjector};
+use crate::core::projectors::ProjectorsServiceMethods;
 use crate::core::subroutines::{
-    self, api::server::SubroutinesApiServices, CreateSubroutine, FindSubroutines,
+    self, api::server::SubroutinesApiServices, SubroutinesServiceMethods,
 };
 use crate::core::ApiCoreState;
 
 #[cfg_attr(test, automock)]
-pub trait ProjectorApiServices<P> {
+pub trait ProjectorsApiServices<P> {
     fn projectors(&self) -> Arc<P>;
 }
 
 pub fn router<A, S, P, C>(services: Arc<A>) -> axum::Router
 where
-    A: ProjectorApiServices<P>
+    A: ProjectorsApiServices<P>
         + SubroutinesApiServices<S>
         + ApiCoreState<C>
         + Send
         + Sync
         + 'static,
-    P: CreateProjector + DeleteProjector + FindProjectors + GetProjector + Send + Sync + 'static,
-    S: CreateSubroutine + FindSubroutines + Send + Sync + 'static,
+    P: ProjectorsServiceMethods,
+    S: SubroutinesServiceMethods,
     C: HolodekkConfig,
 {
     Router::new()

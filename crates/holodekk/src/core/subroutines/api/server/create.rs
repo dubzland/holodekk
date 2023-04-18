@@ -9,7 +9,7 @@ use axum::{
 
 use crate::config::HolodekkConfig;
 use crate::core::projectors::{
-    api::server::ProjectorApiServices, GetProjector, ProjectorsGetInput,
+    api::server::ProjectorsApiServices, GetProjector, ProjectorsGetInput,
 };
 use crate::core::subroutines::{
     api::models::NewSubroutine, CreateSubroutine, SubroutinesCreateInput,
@@ -24,7 +24,7 @@ pub async fn handler<A, S, P, C>(
     Json(new_subroutine): Json<NewSubroutine>,
 ) -> Result<impl IntoResponse, crate::core::api::ApiError>
 where
-    A: SubroutinesApiServices<S> + ProjectorApiServices<P> + ApiCoreState<C>,
+    A: SubroutinesApiServices<S> + ProjectorsApiServices<P> + ApiCoreState<C>,
     S: CreateSubroutine,
     P: GetProjector,
     C: HolodekkConfig,
