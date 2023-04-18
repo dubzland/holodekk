@@ -22,76 +22,58 @@ impl GetSubroutineDefinition for SubroutineDefinitionsService {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use std::sync::Arc;
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    use std::sync::RwLock;
 
-//     use rstest::*;
+    use rstest::*;
 
-//     use crate::config::fixtures::{mock_config, MockConfig};
-//     use crate::core::projectors::{
-//         entities::{fixtures::projector, Projector},
-//         repositories::{fixtures::projectors_repository, MockProjectorsRepository},
-//         worker::{fixtures::mock_projectors_worker, MockProjectorsWorker},
-//     };
-//     use crate::core::services::{Error, Result};
+    use crate::core::subroutine_definitions::{
+        entities::{fixtures::subroutine_definition, SubroutineDefinition},
+        SubroutineDefinitionsError,
+    };
 
-//     use super::*;
+    use super::*;
 
-//     #[rstest]
-//     #[tokio::test]
-//     async fn returns_projector_for_existing_projector(
-//         mock_config: MockConfig,
-//         mock_projectors_worker: MockProjectorsWorker,
-//         mut projectors_repository: MockProjectorsRepository,
-//         projector: Projector,
-//     ) -> Result<()> {
-//         let id = projector.id().to_string();
+    #[rstest]
+    #[tokio::test]
+    async fn returns_definition_for_existing_subroutine_definition(
+        subroutine_definition: SubroutineDefinition,
+    ) -> Result<()> {
+        let mut definitions = HashMap::new();
+        definitions.insert(
+            subroutine_definition.id().to_string(),
+            subroutine_definition.clone(),
+        );
 
-//         projectors_repository
-//             .expect_projectors_get()
-//             .withf(move |i| i == id)
-//             .return_const(Ok(projector.clone()));
+        let service = SubroutineDefinitionsService::new(RwLock::new(definitions));
 
-//         let service = ProjectorsService::new(
-//             Arc::new(mock_config),
-//             Arc::new(projectors_repository),
-//             mock_projectors_worker,
-//         );
+        assert_eq!(
+            service
+                .get(&SubroutineDefinitionsGetInput::new(
+                    subroutine_definition.id()
+                ))
+                .await?,
+            subroutine_definition
+        );
+        Ok(())
+    }
 
-//         assert_eq!(
-//             service
-//                 .get(&ProjectorsGetInput::new(projector.id()))
-//                 .await?,
-//             projector
-//         );
-//         Ok(())
-//     }
+    #[rstest]
+    #[tokio::test]
+    async fn returns_error_for_nonexisting_subroutine_definition() -> Result<()> {
+        let definitions = HashMap::new();
 
-//     #[rstest]
-//     #[tokio::test]
-//     async fn returns_error_for_nonexisting_projector(
-//         mock_config: MockConfig,
-//         mock_projectors_worker: MockProjectorsWorker,
-//         mut projectors_repository: MockProjectorsRepository,
-//     ) -> Result<()> {
-//         projectors_repository
-//             .expect_projectors_get()
-//             .return_const(Err(crate::core::repositories::Error::NotFound));
+        let service = SubroutineDefinitionsService::new(RwLock::new(definitions));
 
-//         let service = ProjectorsService::new(
-//             Arc::new(mock_config),
-//             Arc::new(projectors_repository),
-//             mock_projectors_worker,
-//         );
-
-//         assert!(matches!(
-//             service
-//                 .get(&ProjectorsGetInput::new("nonexistent"))
-//                 .await
-//                 .unwrap_err(),
-//             Error::NotFound
-//         ));
-//         Ok(())
-//     }
-// }
+        assert!(matches!(
+            service
+                .get(&SubroutineDefinitionsGetInput::new("nonexistent"))
+                .await
+                .unwrap_err(),
+            SubroutineDefinitionsError::NotFound(..)
+        ));
+        Ok(())
+    }
+}
