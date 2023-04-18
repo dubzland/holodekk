@@ -198,6 +198,11 @@ pub mod fixtures {
     }
 
     #[fixture]
+    pub fn mock_delete_subroutine() -> MockDeleteSubroutine {
+        MockDeleteSubroutine::default()
+    }
+
+    #[fixture]
     pub fn mock_find_subroutines() -> MockFindSubroutines {
         MockFindSubroutines::default()
     }

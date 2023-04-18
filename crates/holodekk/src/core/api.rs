@@ -39,6 +39,10 @@ impl IntoResponse for ApiError {
                     StatusCode::CONFLICT,
                     format!("Subroutine already running with id {}", id),
                 ),
+                SubroutinesError::NotFound(id) => (
+                    StatusCode::NOT_FOUND,
+                    format!("Could not find a subroutine with id {}", id),
+                ),
                 err => (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     format!("Unexpected subroutine error occurred: {}", err),

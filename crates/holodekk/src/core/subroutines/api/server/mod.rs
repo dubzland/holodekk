@@ -1,9 +1,13 @@
 mod create;
+mod delete;
 mod list;
 
 use std::sync::Arc;
 
-use axum::{routing::get, Router};
+use axum::{
+    routing::{delete, get},
+    Router,
+};
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
@@ -31,5 +35,6 @@ where
 {
     Router::new()
         .route("/", get(list::handler).post(create::handler))
+        .route("/:subroutine", delete(delete::handler))
         .with_state(services)
 }
