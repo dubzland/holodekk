@@ -1,11 +1,8 @@
 use std::path::PathBuf;
 
-use async_trait::async_trait;
-#[cfg(test)]
-use mockall::{automock, predicate::*};
 use sha2::{Digest, Sha256};
 
-use crate::core::repositories::{RepositoryId, RepositoryQuery, Result};
+use crate::core::repositories::{RepositoryId, RepositoryQuery};
 
 use super::entities::{SubroutineDefinition, SubroutineKind};
 
@@ -86,32 +83,5 @@ impl RepositoryQuery for SubroutineDefinitionsQuery {
             }
             true
         }
-    }
-}
-
-#[cfg_attr(test, automock)]
-#[async_trait]
-pub trait SubroutineDefinitionsRepository: Send + Sync + 'static {
-    async fn subroutine_definitions_create(
-        &self,
-        subroutine: SubroutineDefinition,
-    ) -> Result<SubroutineDefinition>;
-    async fn subroutine_definitions_delete(&self, id: &str) -> Result<()>;
-    async fn subroutine_definitions_exists(&self, id: &str) -> Result<bool>;
-    async fn subroutine_definitions_find<T>(&self, query: T) -> Result<Vec<SubroutineDefinition>>
-    where
-        T: RepositoryQuery<Entity = SubroutineDefinition> + 'static;
-    async fn subroutine_definitions_get(&self, id: &str) -> Result<SubroutineDefinition>;
-}
-
-#[cfg(test)]
-pub(crate) mod fixtures {
-    use rstest::*;
-
-    use super::MockSubroutineDefinitionsRepository;
-
-    #[fixture]
-    pub(crate) fn subroutine_definitions_repository() -> MockSubroutineDefinitionsRepository {
-        MockSubroutineDefinitionsRepository::default()
     }
 }

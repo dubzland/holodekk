@@ -154,7 +154,7 @@ where
         )
         .nest(
             "/subroutine_definitions",
-            subroutine_definitions::api::server::router(api_services.clone()),
+            subroutine_definitions::api::server::router(api_services),
         )
 }
 

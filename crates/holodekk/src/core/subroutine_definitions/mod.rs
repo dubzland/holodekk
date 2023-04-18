@@ -4,7 +4,7 @@ mod init;
 pub mod repositories;
 pub mod services;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -31,6 +31,15 @@ pub trait CreateSubroutineDefinition {
         &self,
         input: &'a SubroutineDefinitionsCreateInput<'a>,
     ) -> Result<SubroutineDefinition>;
+}
+
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub trait FindSubroutineDefinitions {
+    async fn find<'a>(
+        &self,
+        input: &'a SubroutineDefinitionsFindInput<'a>,
+    ) -> Result<Vec<SubroutineDefinition>>;
 }
 
 #[cfg_attr(test, automock)]
@@ -72,6 +81,35 @@ impl<'c> SubroutineDefinitionsCreateInput<'c> {
     }
 
     pub fn kind(&self) -> SubroutineKind {
+        self.kind
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct SubroutineDefinitionsFindInput<'f> {
+    name: Option<&'f str>,
+    path: Option<&'f Path>,
+    kind: Option<SubroutineKind>,
+}
+
+impl<'f> SubroutineDefinitionsFindInput<'f> {
+    pub fn new(
+        name: Option<&'f str>,
+        path: Option<&'f Path>,
+        kind: Option<SubroutineKind>,
+    ) -> Self {
+        Self { name, path, kind }
+    }
+
+    pub fn name(&self) -> Option<&str> {
+        self.name
+    }
+
+    pub fn path(&self) -> Option<&Path> {
+        self.path
+    }
+
+    pub fn kind(&self) -> Option<SubroutineKind> {
         self.kind
     }
 }
