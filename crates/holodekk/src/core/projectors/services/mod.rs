@@ -15,7 +15,7 @@ use std::sync::{Arc, RwLock};
 use async_trait::async_trait;
 
 use crate::config::HolodekkConfig;
-use crate::core::services::{Result, ServiceStop};
+use crate::core::services::ServiceStop;
 use crate::utils::Worker;
 
 use super::{repositories::ProjectorsRepository, worker::ProjectorCommand};
@@ -65,9 +65,8 @@ where
     R: ProjectorsRepository,
     W: Worker<Command = ProjectorCommand>,
 {
-    async fn stop(&self) -> Result<()> {
+    async fn stop(&self) {
         let mut worker = self.worker.write().unwrap().take().unwrap();
         worker.stop().await;
-        Ok(())
     }
 }

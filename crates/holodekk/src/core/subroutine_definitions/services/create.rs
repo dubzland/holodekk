@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
-use crate::core::services::{Error, Result};
 use crate::core::subroutine_definitions::{
-    entities::SubroutineDefinition, CreateSubroutineDefinition, SubroutineDefinitionsCreateInput,
+    entities::SubroutineDefinition, CreateSubroutineDefinition, Result,
+    SubroutineDefinitionsCreateInput, SubroutineDefinitionsError,
 };
 
 use super::SubroutineDefinitionsService;
@@ -17,15 +17,15 @@ impl CreateSubroutineDefinition for SubroutineDefinitionsService {
         // make sure this subroutine does not already exist
         println!("Checking for subroutine with name: {}", input.name,);
         if self.definitions.read().unwrap().contains_key(input.name()) {
-            return Err(Error::Duplicate);
+            Err(SubroutineDefinitionsError::Duplicate(input.name().into()))
+        } else {
+            let definition = SubroutineDefinition::new(input.name(), input.path(), input.kind);
+            self.definitions
+                .write()
+                .unwrap()
+                .insert(definition.name().to_string(), definition.clone());
+            Ok(definition)
         }
-
-        let definition = SubroutineDefinition::new(input.name(), input.path(), input.kind);
-        self.definitions
-            .write()
-            .unwrap()
-            .insert(definition.name().to_string(), definition.clone());
-        Ok(definition)
     }
 }
 
@@ -36,7 +36,6 @@ mod tests {
 
     use rstest::*;
 
-    use crate::core::services::Error;
     use crate::core::subroutine_definitions::entities::{
         fixtures::subroutine_definition, SubroutineDefinition,
     };
@@ -100,7 +99,10 @@ mod tests {
             definitions: RwLock::new(definitions.clone()),
         };
         let res = service.create(&input).await;
-        assert!(matches!(res.unwrap_err(), Error::Duplicate));
+        assert!(matches!(
+            res.unwrap_err(),
+            SubroutineDefinitionsError::Duplicate(..)
+        ));
         Ok(())
     }
 }

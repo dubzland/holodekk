@@ -7,7 +7,6 @@ use crate::core::projectors::{
     worker::ProjectorCommand,
     FindProjectors, ProjectorsFindInput,
 };
-use crate::core::services::Result;
 use crate::utils::Worker;
 
 use super::ProjectorsService;
@@ -42,11 +41,10 @@ where
     R: ProjectorsRepository,
     W: Worker<Command = ProjectorCommand>,
 {
-    async fn find<'a>(&self, input: &'a ProjectorsFindInput<'a>) -> Result<Vec<Projector>> {
+    async fn find<'a>(&self, input: &'a ProjectorsFindInput<'a>) -> Vec<Projector> {
         trace!("ProjectorsService.find()");
         let query = ProjectorsQuery::from(input);
-        let projectors = self.repo.projectors_find(query).await?;
-        Ok(projectors)
+        self.repo.projectors_find(query).await
     }
 }
 
@@ -61,8 +59,8 @@ mod tests {
         entities::{fixtures::projector, Projector},
         repositories::{fixtures::projectors_repository, MockProjectorsRepository},
         worker::{fixtures::mock_projectors_worker, MockProjectorsWorker},
+        Result,
     };
-    use crate::core::services::Result;
 
     use super::*;
 
@@ -76,7 +74,7 @@ mod tests {
         projectors_repository
             .expect_projectors_find()
             .withf(|query: &ProjectorsQuery| query.fleet().is_none())
-            .return_const(Ok(vec![]));
+            .return_const(vec![]);
 
         let service = ProjectorsService::new(
             Arc::new(mock_config),
@@ -84,7 +82,7 @@ mod tests {
             mock_projectors_worker,
         );
 
-        service.find(&ProjectorsFindInput::default()).await?;
+        service.find(&ProjectorsFindInput::default()).await;
         Ok(())
     }
 
@@ -98,7 +96,7 @@ mod tests {
     ) -> Result<()> {
         projectors_repository
             .expect_projectors_find()
-            .return_const(Ok(vec![projector.clone()]));
+            .return_const(vec![projector.clone()]);
 
         let service = ProjectorsService::new(
             Arc::new(mock_config),
@@ -106,7 +104,7 @@ mod tests {
             mock_projectors_worker,
         );
 
-        let projectors = service.find(&ProjectorsFindInput::default()).await?;
+        let projectors = service.find(&ProjectorsFindInput::default()).await;
         assert_eq!(projectors, vec![projector]);
         Ok(())
     }

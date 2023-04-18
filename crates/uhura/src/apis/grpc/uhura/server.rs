@@ -18,7 +18,7 @@ impl RpcUhura for UhuraApiServer {
         &self,
         _request: Request<RpcUhuraStatusRequest>,
     ) -> std::result::Result<Response<RpcUhuraStatus>, Status> {
-        let status = self.uhura_service.status().unwrap();
+        let status = self.uhura_service.status();
         let reply: RpcUhuraStatus = status.into();
         Ok(Response::new(reply))
     }

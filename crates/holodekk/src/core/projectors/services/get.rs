@@ -2,9 +2,9 @@ use async_trait::async_trait;
 
 use crate::core::projectors::{
     entities::Projector, repositories::ProjectorsRepository, worker::ProjectorCommand,
-    GetProjector, ProjectorsGetInput,
+    GetProjector, ProjectorsError, ProjectorsGetInput, Result,
 };
-use crate::core::services::{Error, Result};
+use crate::core::repositories::RepositoryError;
 use crate::utils::Worker;
 
 use super::ProjectorsService;
@@ -17,10 +17,10 @@ where
 {
     async fn get<'a>(&self, input: &'a ProjectorsGetInput) -> Result<Projector> {
         let projector = self.repo.projectors_get(input.id()).await.map_err(|err| {
-            if matches!(err, crate::core::repositories::Error::NotFound) {
-                Error::NotFound
+            if matches!(err, RepositoryError::NotFound(..)) {
+                ProjectorsError::NotFound(input.id().into())
             } else {
-                Error::from(err)
+                ProjectorsError::from(err)
             }
         })?;
         Ok(projector)
@@ -38,8 +38,9 @@ mod tests {
         entities::{fixtures::projector, Projector},
         repositories::{fixtures::projectors_repository, MockProjectorsRepository},
         worker::{fixtures::mock_projectors_worker, MockProjectorsWorker},
+        ProjectorsError, Result,
     };
-    use crate::core::services::{Error, Result};
+    use crate::core::repositories::RepositoryError;
 
     use super::*;
 
@@ -82,7 +83,7 @@ mod tests {
     ) -> Result<()> {
         projectors_repository
             .expect_projectors_get()
-            .return_const(Err(crate::core::repositories::Error::NotFound));
+            .return_const(Err(RepositoryError::NotFound("".into())));
 
         let service = ProjectorsService::new(
             Arc::new(mock_config),
@@ -95,7 +96,7 @@ mod tests {
                 .get(&ProjectorsGetInput::new("nonexistent"))
                 .await
                 .unwrap_err(),
-            Error::NotFound
+            ProjectorsError::NotFound(..)
         ));
         Ok(())
     }

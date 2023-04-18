@@ -4,7 +4,7 @@ use crate::core::projectors::{
     entities::Projector,
     repositories::{ProjectorsQuery, ProjectorsRepository},
 };
-use crate::core::repositories::{Error, RepositoryQuery, Result};
+use crate::core::repositories::{RepositoryError, RepositoryQuery, Result};
 
 use super::MemoryRepository;
 
@@ -13,7 +13,10 @@ impl ProjectorsRepository for MemoryRepository {
     async fn projectors_create(&self, projector: Projector) -> Result<Projector> {
         // Ensure the projector doesn't exist
         if self.db.projectors().exists(projector.id())? {
-            Err(Error::AlreadyExists)
+            Err(RepositoryError::Duplicate(format!(
+                "Projector {} already exists",
+                projector.id()
+            )))
         } else {
             self.db.projectors().add(projector.clone())?;
             Ok(projector)
@@ -28,13 +31,12 @@ impl ProjectorsRepository for MemoryRepository {
         self.db.projectors().exists(id)
     }
 
-    async fn projectors_find(&self, query: ProjectorsQuery) -> Result<Vec<Projector>> {
-        let projectors = self.db.projectors().all()?;
-        let projectors = projectors
+    async fn projectors_find(&self, query: ProjectorsQuery) -> Vec<Projector> {
+        let projectors = self.db.projectors().all();
+        projectors
             .into_iter()
             .filter(|p| query.matches(p))
-            .collect();
-        Ok(projectors)
+            .collect()
     }
 
     async fn projectors_get(&self, id: &str) -> Result<Projector> {
@@ -72,7 +74,7 @@ mod tests {
         let result = repo.projectors_create(projector.clone()).await;
         assert!(matches!(
             result.unwrap_err(),
-            repositories::Error::AlreadyExists
+            repositories::RepositoryError::Duplicate(..)
         ));
         Ok(())
     }
@@ -112,7 +114,7 @@ mod tests {
     async fn delete_fails_for_nonexistent_projector(db: Arc<MemoryDatabase>) -> Result<()> {
         let repo = MemoryRepository::new(db.clone());
         let res = repo.projectors_delete("nonexistent").await;
-        assert!(matches!(res.unwrap_err(), Error::NotFound));
+        assert!(matches!(res.unwrap_err(), RepositoryError::NotFound(..)));
         Ok(())
     }
 
@@ -156,7 +158,7 @@ mod tests {
         let repo = MemoryRepository::new(db.clone());
         assert!(repo
             .projectors_find(ProjectorsQuery::default())
-            .await?
+            .await
             .is_empty());
         Ok(())
     }
@@ -175,7 +177,7 @@ mod tests {
                     .fleet_eq(&format!("{}nonexistent", projector.fleet()))
                     .build()
             )
-            .await?
+            .await
             .is_empty());
         Ok(())
     }
@@ -191,7 +193,7 @@ mod tests {
                     .fleet_eq(&projector.fleet())
                     .build(),
             )
-            .await?;
+            .await;
         assert_eq!(res.len(), 1);
         assert_eq!(res[0], projector);
         Ok(())
@@ -206,7 +208,7 @@ mod tests {
         let repo = MemoryRepository::new(db.clone());
         let res = repo.projectors_get(&projector.id()).await;
         assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), Error::NotFound));
+        assert!(matches!(res.unwrap_err(), RepositoryError::NotFound(..)));
         Ok(())
     }
 

@@ -16,8 +16,7 @@ where
     let projectors = state
         .projectors()
         .find(&ProjectorsFindInput::default())
-        .await
-        .unwrap();
+        .await;
     Ok(Json(projectors))
 }
 
@@ -67,7 +66,7 @@ mod tests {
         mock_find
             .expect_find()
             .withf(move |i| i == &input)
-            .return_const(Ok(vec![]));
+            .return_const(vec![]);
 
         mock_app(mock_services, mock_find)
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
@@ -86,7 +85,7 @@ mod tests {
         mock_find
             .expect_find()
             .withf(move |i| i == &input)
-            .return_const(Ok(vec![]));
+            .return_const(vec![]);
 
         let response = mock_app(mock_services, mock_find)
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
@@ -108,7 +107,7 @@ mod tests {
         mock_find
             .expect_find()
             .withf(move |i| i == &input)
-            .return_const(Ok(vec![projector.clone()]));
+            .return_const(vec![projector.clone()]);
 
         let response = mock_app(mock_services, mock_find)
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())

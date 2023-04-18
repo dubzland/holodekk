@@ -76,7 +76,7 @@ pub trait ProjectorsRepository: Send + Sync {
     async fn projectors_create(&self, projector: Projector) -> Result<Projector>;
     async fn projectors_delete(&self, id: &str) -> Result<()>;
     async fn projectors_exists(&self, id: &str) -> Result<bool>;
-    async fn projectors_find(&self, query: ProjectorsQuery) -> Result<Vec<Projector>>;
+    async fn projectors_find(&self, query: ProjectorsQuery) -> Vec<Projector>;
     async fn projectors_get(&self, id: &str) -> Result<Projector>;
 }
 

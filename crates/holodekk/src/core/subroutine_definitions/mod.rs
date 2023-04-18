@@ -12,8 +12,17 @@ use async_trait::async_trait;
 use mockall::{automock, predicate::*};
 
 use crate::config::HolodekkConfig;
-use crate::core::services::Result;
 use crate::core::subroutine_definitions::entities::{SubroutineDefinition, SubroutineKind};
+
+#[derive(thiserror::Error, Clone, Debug, PartialEq)]
+pub enum SubroutineDefinitionsError {
+    #[error("Subroutine definition does not exist {0}")]
+    NotFound(String),
+    #[error("Subroutine definition already exists: {0}")]
+    Duplicate(String),
+}
+
+pub type Result<T> = std::result::Result<T, SubroutineDefinitionsError>;
 
 #[cfg_attr(test, automock)]
 #[async_trait]

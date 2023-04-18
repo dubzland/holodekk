@@ -20,9 +20,9 @@ use super::SubroutinesApiServices;
 
 pub async fn handler<A, S, P, C>(
     State(state): State<Arc<A>>,
-    Path(projector_id): Path<String>,
+    Path(projector): Path<String>,
     Json(new_subroutine): Json<NewSubroutine>,
-) -> Result<impl IntoResponse, crate::core::services::Error>
+) -> Result<impl IntoResponse, crate::core::api::ApiError>
 where
     A: SubroutinesApiServices<S> + ProjectorApiServices<P> + ApiCoreState<C>,
     S: CreateSubroutine,
@@ -31,7 +31,7 @@ where
 {
     let projector = state
         .projectors()
-        .get(&ProjectorsGetInput::new(&projector_id))
+        .get(&ProjectorsGetInput::new(&projector))
         .await?;
 
     let subroutine = state

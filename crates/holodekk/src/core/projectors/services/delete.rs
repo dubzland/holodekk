@@ -3,12 +3,10 @@ use log::{debug, info, trace, warn};
 use tokio::sync::mpsc::Sender;
 
 use crate::core::projectors::{
-    entities::Projector, repositories::ProjectorsRepository, DeleteProjector, ProjectorsDeleteInput,
+    entities::Projector, repositories::ProjectorsRepository, DeleteProjector,
+    ProjectorsDeleteInput, ProjectorsError, Result,
 };
-use crate::core::{
-    repositories,
-    services::{Error, Result},
-};
+use crate::core::repositories::RepositoryError;
 use crate::utils::Worker;
 
 use super::{ProjectorCommand, ProjectorsService};
@@ -28,8 +26,8 @@ where
             .projectors_get(input.id())
             .await
             .map_err(|err| match err {
-                repositories::Error::NotFound => Error::NotFound,
-                err => Error::from(err),
+                RepositoryError::NotFound(id) => ProjectorsError::NotFound(id),
+                err => ProjectorsError::from(err),
             })?;
 
         // send the shutdown command to the manager
@@ -62,31 +60,34 @@ async fn send_shutdown_command(
     };
     debug!("command: {:?}", cmd);
     sender.send(cmd).await.map_err(|err| {
-        warn!(
+        let msg = format!(
             "Failed to send projector shutdown command to manager: {}",
             err
         );
-        Error::ShutdownFailed
+        warn!("{}", msg);
+        ProjectorsError::Shutdown(msg)
     })?;
 
     trace!("Command sent to manager.  awaiting response...");
     let res = resp_rx.await.map_err(|err| {
-        warn!(
+        let msg = format!(
             "Failed to receive response from manager to shutdown request: {}",
             err
         );
-        Error::ShutdownFailed
+        warn!("{}", msg);
+        ProjectorsError::Shutdown(msg)
     })?;
 
     trace!("Response received from manager: {:?}", res);
     match res {
         Ok(_) => Ok(()),
         Err(err) => {
-            warn!(
+            let msg = format!(
                 "Manager return error in response to shutdown request: {}",
                 err
             );
-            Err(Error::ShutdownFailed)
+            warn!("{}", msg);
+            Err(ProjectorsError::Shutdown(msg))
         }
     }
 }
@@ -103,8 +104,9 @@ mod tests {
         entities::{fixtures::projector, Projector},
         repositories::{fixtures::projectors_repository, MockProjectorsRepository},
         worker::{fixtures::mock_projectors_worker, MockProjectorsWorker},
+        ProjectorsError,
     };
-    use crate::core::services::Error;
+    use crate::core::repositories::RepositoryError;
 
     use super::*;
 
@@ -117,7 +119,7 @@ mod tests {
     ) {
         projectors_repository
             .expect_projectors_get()
-            .return_const(Err(repositories::Error::NotFound));
+            .return_const(Err(RepositoryError::NotFound("".into())));
 
         let service = ProjectorsService::new(
             Arc::new(mock_config),
@@ -129,7 +131,7 @@ mod tests {
             .await;
 
         assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), Error::NotFound));
+        assert!(matches!(res.unwrap_err(), ProjectorsError::NotFound(..)));
     }
 
     #[rstest]

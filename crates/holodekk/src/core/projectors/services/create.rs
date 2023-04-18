@@ -5,9 +5,8 @@ use tokio::sync::mpsc::Sender;
 use crate::core::projectors::{
     entities::Projector,
     repositories::{projector_repo_id, ProjectorsRepository},
-    CreateProjector, ProjectorsCreateInput,
+    CreateProjector, ProjectorsCreateInput, ProjectorsError, Result,
 };
-use crate::core::services::{Error, Result};
 use crate::utils::Worker;
 
 use super::{ProjectorCommand, ProjectorsService};
@@ -28,7 +27,7 @@ where
                 "projector already running for namespace: {}",
                 input.namespace
             );
-            Err(Error::Duplicate)
+            Err(ProjectorsError::AlreadyRunning(id))
         } else {
             // send spawn request to manager
             info!("Spawning projector for namespace: {}", input.namespace);
@@ -56,26 +55,29 @@ async fn send_start_command(
     debug!("command: {:?}", cmd);
 
     manager.send(cmd).await.map_err(|err| {
-        warn!("Failed to send projector spawn command to manager: {}", err);
-        Error::SpawnFailed
+        let msg = format!("Failed to send projector spawn command to manager: {}", err);
+        warn!("{}", msg);
+        ProjectorsError::Spawn(msg)
     })?;
 
     trace!("Command sent to manager.  awaiting response...");
     let res = resp_rx.await.map_err(|err| {
-        warn!(
+        let msg = format!(
             "Failed to receive response from manager to spawn request: {}",
             err
         );
-        Error::SpawnFailed
+        warn!("{}", msg);
+        ProjectorsError::Spawn(msg)
     })?;
 
     trace!("Spawn response received from manager: {:?}", res);
     res.map_err(|err| {
-        warn!(
+        let msg = format!(
             "Manager returned error in response to spawn request: {}",
             err
         );
-        Error::SpawnFailed
+        warn!("{}", msg);
+        ProjectorsError::Spawn(msg)
     })
 }
 
@@ -92,7 +94,6 @@ mod tests {
         repositories::{fixtures::projectors_repository, MockProjectorsRepository},
         worker::{fixtures::mock_projectors_worker, MockProjectorsWorker},
     };
-    use crate::core::services::Error;
 
     use super::*;
 
@@ -120,7 +121,10 @@ mod tests {
             .await;
 
         assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), Error::Duplicate));
+        assert!(matches!(
+            res.unwrap_err(),
+            ProjectorsError::AlreadyRunning(..)
+        ));
     }
 
     #[rstest]

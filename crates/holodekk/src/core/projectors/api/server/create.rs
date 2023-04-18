@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 
+use crate::core::api::ApiError;
 use crate::core::projectors::{api::models::NewProjector, CreateProjector, ProjectorsCreateInput};
 
 use super::ProjectorApiServices;
@@ -9,7 +10,7 @@ use super::ProjectorApiServices;
 pub async fn handler<S, P>(
     State(state): State<Arc<S>>,
     Json(new_projector): Json<NewProjector>,
-) -> Result<impl IntoResponse, crate::core::services::Error>
+) -> Result<impl IntoResponse, ApiError>
 where
     S: ProjectorApiServices<P>,
     P: CreateProjector,
@@ -29,8 +30,7 @@ mod tests {
 
     use crate::core::projectors::api::server::MockProjectorApiServices;
     use crate::core::projectors::entities::{fixtures::projector, Projector};
-    use crate::core::projectors::MockCreateProjector;
-    use crate::core::services::Error;
+    use crate::core::projectors::{MockCreateProjector, ProjectorsError};
 
     use super::*;
 
@@ -68,7 +68,7 @@ mod tests {
         mock_create
             .expect_create()
             .withf(|input| input.namespace() == "test")
-            .return_const(Err(Error::Duplicate));
+            .return_const(Err(ProjectorsError::AlreadyRunning("test".into())));
 
         let body = Body::from(
             serde_json::to_string(&NewProjector {

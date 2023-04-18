@@ -97,7 +97,7 @@ pub trait SubroutinesRepository: Send + Sync {
     async fn subroutines_create(&self, instance: Subroutine) -> Result<Subroutine>;
     async fn subroutines_delete(&self, id: &str) -> Result<()>;
     async fn subroutines_exists(&self, id: &str) -> Result<bool>;
-    async fn subroutines_find<T>(&self, query: T) -> Result<Vec<Subroutine>>
+    async fn subroutines_find<T>(&self, query: T) -> Vec<Subroutine>
     where
         T: RepositoryQuery<Entity = Subroutine> + 'static;
     async fn subroutines_get(&self, id: &str) -> Result<Subroutine>;

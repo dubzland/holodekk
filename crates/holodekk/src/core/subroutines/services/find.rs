@@ -2,13 +2,12 @@ use async_trait::async_trait;
 
 use log::trace;
 
-use crate::core::services::Result;
 use crate::core::subroutine_definitions::SubroutineDefinitionsServiceMethods;
 use crate::core::subroutines::{
     entities::Subroutine,
     repositories::{SubroutinesQuery, SubroutinesRepository},
     worker::SubroutineCommand,
-    FindSubroutines, SubroutinesFindInput,
+    FindSubroutines, Result, SubroutinesFindInput,
 };
 use crate::utils::Worker;
 
@@ -40,8 +39,7 @@ where
     async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> Result<Vec<Subroutine>> {
         trace!("SubroutinesService.find({:?})", input);
         let query = SubroutinesQuery::from(input);
-        let subroutines = self.repo.subroutines_find(query).await?;
-        Ok(subroutines)
+        Ok(self.repo.subroutines_find(query).await)
     }
 }
 
@@ -51,7 +49,6 @@ mod tests {
 
     use rstest::*;
 
-    use crate::core::services::Result;
     use crate::core::subroutine_definitions::fixtures::{
         mock_subroutine_definitions_service, MockSubroutineDefinitionsService,
     };
@@ -59,6 +56,7 @@ mod tests {
         entities::{fixtures::subroutine, Subroutine},
         repositories::{fixtures::subroutines_repository, MockSubroutinesRepository},
         worker::{fixtures::mock_subroutines_worker, MockSubroutinesWorker},
+        Result,
     };
 
     use super::*;
@@ -76,7 +74,7 @@ mod tests {
         subroutines_repository
             .expect_subroutines_find()
             .withf(move |query: &SubroutinesQuery| query.fleet == fleet)
-            .return_const(Ok(vec![]));
+            .return_const(vec![]);
 
         let service = SubroutinesService::new(
             Arc::new(subroutines_repository),

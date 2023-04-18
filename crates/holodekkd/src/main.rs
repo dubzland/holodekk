@@ -109,7 +109,7 @@ async fn main() -> std::result::Result<(), HolodekkError> {
     match signal {
         SignalKind::Int => {
             debug!("SIGINT received.  Processing shutdown.");
-            holodekk.stop().await.unwrap();
+            holodekk.stop().await;
         }
         SignalKind::Quit | SignalKind::Term => {
             debug!("Unexpected {} received.  Terminating immediately", signal);

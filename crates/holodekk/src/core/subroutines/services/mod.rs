@@ -9,7 +9,7 @@ use std::sync::{Arc, RwLock};
 use async_trait::async_trait;
 use tokio::sync::mpsc::Sender;
 
-use crate::core::services::{Result, ServiceStop};
+use crate::core::services::ServiceStop;
 use crate::core::subroutine_definitions::SubroutineDefinitionsServiceMethods;
 use crate::core::subroutines::{repositories::SubroutinesRepository, worker::SubroutineCommand};
 use crate::utils::Worker;
@@ -58,9 +58,8 @@ where
     W: Worker<Command = SubroutineCommand>,
     D: SubroutineDefinitionsServiceMethods,
 {
-    async fn stop(&self) -> Result<()> {
+    async fn stop(&self) {
         let mut worker = self.worker.write().unwrap().take().unwrap();
         worker.stop().await;
-        Ok(())
     }
 }

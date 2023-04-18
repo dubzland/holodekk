@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
-use crate::core::services::{Error, Result};
 use crate::core::subroutine_definitions::{
-    entities::SubroutineDefinition, GetSubroutineDefinition, SubroutineDefinitionsGetInput,
+    entities::SubroutineDefinition, GetSubroutineDefinition, Result, SubroutineDefinitionsError,
+    SubroutineDefinitionsGetInput,
 };
 
 use super::SubroutineDefinitionsService;
@@ -17,7 +17,7 @@ impl GetSubroutineDefinition for SubroutineDefinitionsService {
         if let Some(definition) = definitions.get(input.id()) {
             Ok(definition.to_owned())
         } else {
-            Err(Error::NotFound)
+            Err(SubroutineDefinitionsError::NotFound(input.id().into()))
         }
     }
 }

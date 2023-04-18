@@ -2,19 +2,17 @@ pub mod memory;
 
 use clap::ValueEnum;
 
-#[derive(thiserror::Error, Clone, Copy, Debug, PartialEq)]
-pub enum Error {
-    #[error("General Error")]
-    General,
-    #[error("Entity not found")]
-    NotFound,
-    #[error("Record already exists")]
-    AlreadyExists,
-    #[error("Relation not found")]
-    RelationNotFound,
+#[derive(thiserror::Error, Clone, Debug, PartialEq)]
+pub enum RepositoryError {
+    #[error("General repository error: {0}")]
+    General(String),
+    #[error("Record not found: {0}")]
+    NotFound(String),
+    #[error("Record already exists with id {0}")]
+    Duplicate(String),
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, RepositoryError>;
 
 #[derive(Clone, Copy, Debug, PartialEq, ValueEnum)]
 pub enum RepositoryKind {

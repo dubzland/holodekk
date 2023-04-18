@@ -12,10 +12,28 @@ use async_trait::async_trait;
 use mockall::{automock, predicate::*};
 
 use crate::config::HolodekkConfig;
-use crate::core::services::{Result, ServiceStop};
-use crate::core::subroutine_definitions::services::SubroutineDefinitionsService;
+use crate::core::services::ServiceStop;
+use crate::core::subroutine_definitions::{
+    services::SubroutineDefinitionsService, SubroutineDefinitionsError,
+};
 
 use entities::Subroutine;
+
+pub type Result<T> = std::result::Result<T, SubroutinesError>;
+
+#[derive(thiserror::Error, Clone, Debug, PartialEq)]
+pub enum SubroutinesError {
+    #[error("Subroutine with id {0} is already running")]
+    AlreadyRunning(String),
+    #[error("Repository error occurred")]
+    Repository(#[from] crate::core::repositories::RepositoryError),
+    #[error("Invalid subroutine defintion id: {0}")]
+    InvalidSubroutineDefinition(String),
+    #[error("Failed to spawn subroutine")]
+    SpawnError(String),
+    #[error("Unknown subroutine definition error")]
+    UnexpectedSubroutineDefinitionError(#[from] SubroutineDefinitionsError),
+}
 
 #[derive(Clone, Debug)]
 pub struct SubroutinesCreateInput<'c> {

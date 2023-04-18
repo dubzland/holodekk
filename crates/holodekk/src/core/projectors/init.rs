@@ -5,20 +5,20 @@ use nix::{sys::signal::kill, unistd::Pid};
 
 use crate::config::HolodekkConfig;
 
-use super::entities::Projector;
-use super::repositories::{ProjectorsQuery, ProjectorsRepository};
+use super::{
+    entities::Projector,
+    repositories::{ProjectorsQuery, ProjectorsRepository},
+    Result,
+};
 use crate::utils::ConnectionInfo;
 
-pub async fn initialize_projectors<C, R>(
-    config: Arc<C>,
-    repo: Arc<R>,
-) -> crate::core::services::Result<()>
+pub async fn initialize_projectors<C, R>(config: Arc<C>, repo: Arc<R>) -> Result<()>
 where
     C: HolodekkConfig,
     R: ProjectorsRepository + 'static,
 {
     // get the list of running projectors from repository
-    let mut repo_projectors = repo.projectors_find(ProjectorsQuery::default()).await?;
+    let mut repo_projectors = repo.projectors_find(ProjectorsQuery::default()).await;
 
     // get the list of actually running projectors
     let mut running_projectors: Vec<Projector> = std::fs::read_dir(config.paths().projectors())
@@ -125,7 +125,7 @@ mod tests {
 
         initialize_projectors(config, repo.clone()).await.unwrap();
 
-        let records = db.projectors().all().unwrap();
+        let records = db.projectors().all();
 
         assert!(!records.is_empty());
 

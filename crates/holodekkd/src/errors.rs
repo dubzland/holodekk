@@ -2,6 +2,10 @@ use std::fmt;
 
 use uuid::Uuid;
 
+use holodekk::core::{
+    projectors::ProjectorsError, subroutine_definitions::SubroutineDefinitionsError,
+    subroutines::SubroutinesError,
+};
 use holodekk::errors::{error_chain_fmt, grpc::GrpcClientError};
 
 #[derive(thiserror::Error)]
@@ -26,8 +30,12 @@ pub enum HolodekkError {
     Io(#[from] std::io::Error),
     #[error("RPC Client error")]
     RpcClient(#[from] GrpcClientError),
-    #[error("Internal Service Error")]
-    ServiceError(#[from] holodekk::core::services::Error),
+    #[error("Projector error")]
+    ProjectorsError(#[from] ProjectorsError),
+    #[error("Subroutine error")]
+    SubroutineError(#[from] SubroutinesError),
+    #[error("Subroutine definitions error")]
+    SubroutineDefinitionsError(#[from] SubroutineDefinitionsError),
     // #[error("Invalid input.")]
     // ParseInt(#[from] ParseIntError),
 }

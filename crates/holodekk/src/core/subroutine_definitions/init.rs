@@ -4,8 +4,8 @@ use std::sync::Arc;
 use log::debug;
 use walkdir::WalkDir;
 
+use super::Result;
 use crate::config::HolodekkConfig;
-use crate::core::services::Result;
 use crate::core::subroutine_definitions::entities::{SubroutineDefinition, SubroutineKind};
 
 pub fn initialize_subroutine_definitions<C>(

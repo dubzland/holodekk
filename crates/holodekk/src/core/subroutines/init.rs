@@ -10,16 +10,13 @@ use crate::core::repositories::RepositoryId;
 use super::entities::{Subroutine, SubroutineStatus};
 use super::repositories::{SubroutinesQuery, SubroutinesRepository};
 
-pub async fn initialize_subroutines<C, R>(
-    config: Arc<C>,
-    repo: Arc<R>,
-) -> crate::core::services::Result<()>
+pub async fn initialize_subroutines<C, R>(config: Arc<C>, repo: Arc<R>) -> super::Result<()>
 where
     C: HolodekkConfig,
     R: SubroutinesRepository + 'static,
 {
     // get the list of running subroutines from repository
-    let mut repo_subroutines = repo.subroutines_find(SubroutinesQuery::default()).await?;
+    let mut repo_subroutines = repo.subroutines_find(SubroutinesQuery::default()).await;
 
     // get the list of actually running subroutines
     let mut running_subroutines: Vec<Subroutine> = std::fs::read_dir(config.paths().projectors())
@@ -68,7 +65,10 @@ where
 fn subroutines_for_projector<P: AsRef<Path>>(
     namespace: &str,
     path: P,
-) -> crate::core::services::Result<Vec<Subroutine>> {
+) -> super::Result<Vec<Subroutine>> {
+    if !path.as_ref().exists() {
+        return Ok(vec![]);
+    }
     let subroutines = std::fs::read_dir(path)
         .unwrap()
         .filter_map(|e| {

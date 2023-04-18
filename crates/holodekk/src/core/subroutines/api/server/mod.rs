@@ -16,7 +16,7 @@ pub trait SubroutinesApiServices<S> {
     fn subroutines(&self) -> Arc<S>;
 }
 
-pub fn router<S, A, C, P>(services: Arc<A>) -> axum::Router
+pub fn router<S, A, C, P>(services: Arc<A>) -> axum::Router<Arc<A>>
 where
     A: SubroutinesApiServices<S>
         + ProjectorApiServices<P>
@@ -32,27 +32,3 @@ where
         .route("/", post(create::handler))
         .with_state(services)
 }
-
-// #[derive(Clone, Debug)]
-// pub struct SubroutinesApiServer<S>
-// where
-//     S: CreateSubroutine + Send + 'static,
-// {
-//     service: Arc<S>,
-// }
-
-// impl<S> SubroutinesApiServer<S>
-// where
-//     S: CreateSubroutine + Send + 'static,
-// {
-//     pub fn new(service: Arc<S>) -> Self {
-//         Self { service }
-//     }
-// }
-
-// pub fn subroutines_api_server<S>(service: Arc<S>) -> RpcSubroutinesServer<SubroutinesApiServer<S>>
-// where
-//     S: CreateSubroutine + Send + Sync + 'static,
-// {
-//     RpcSubroutinesServer::new(SubroutinesApiServer::new(service))
-// }

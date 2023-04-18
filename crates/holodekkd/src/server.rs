@@ -10,7 +10,7 @@ use holodekk::{
             self, api::server::ProjectorApiServices, repositories::ProjectorsRepository,
             CreateProjector, DeleteProjector, FindProjectors, GetProjector,
         },
-        services::{self, ServiceStop},
+        services::ServiceStop,
         subroutine_definitions::{
             self, api::server::SubroutineDefinitionsApiServices,
             services::SubroutineDefinitionsService,
@@ -23,6 +23,8 @@ use holodekk::{
     },
     utils::servers::{start_http_server, HttpServerHandle},
 };
+
+use super::errors::HolodekkError;
 
 pub struct HolodekkServerHandle<P, S>
 where
@@ -51,14 +53,13 @@ where
         }
     }
 
-    pub async fn stop(&mut self) -> Result<(), holodekk::core::services::Error> {
+    pub async fn stop(&mut self) {
         info!("stopping Holodekk API server ...");
         self.api_server.stop().await.unwrap();
         info!("stopping Projector worker service ...");
-        self.projectors_service.stop().await?;
+        self.projectors_service.stop().await;
         info!("stopping Subroutines worker service ...");
-        self.subroutines_service.stop().await?;
-        Ok(())
+        self.subroutines_service.stop().await;
     }
 }
 
@@ -155,16 +156,12 @@ where
             "/subroutine_definitions",
             subroutine_definitions::api::server::router(api_services.clone()),
         )
-        .nest(
-            "/projectors/:projector_id/subroutines",
-            subroutines::api::server::router(api_services),
-        )
 }
 
 pub async fn start_holodekk_server<C, R>(
     config: Arc<C>,
     repo: Arc<R>,
-) -> services::Result<HolodekkServerHandle<impl ServiceStop, impl ServiceStop>>
+) -> std::result::Result<HolodekkServerHandle<impl ServiceStop, impl ServiceStop>, HolodekkError>
 where
     C: HolodekkConfig + HolodekkApiConfig,
     R: ProjectorsRepository + SubroutinesRepository + 'static,

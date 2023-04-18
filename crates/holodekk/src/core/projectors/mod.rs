@@ -12,9 +12,34 @@ use async_trait::async_trait;
 use mockall::*;
 
 use crate::config::HolodekkConfig;
-use crate::core::services::{Result, ServiceStop};
+// use crate::core::repositories::Error as RepositoryError;
+use crate::core::services::ServiceStop;
 
 use entities::Projector;
+
+pub type Result<T> = std::result::Result<T, ProjectorsError>;
+
+#[derive(thiserror::Error, Clone, Debug, PartialEq)]
+pub enum ProjectorsError {
+    #[error("Projector {0} not found")]
+    NotFound(String),
+    #[error("Projector with id {0} is already running")]
+    AlreadyRunning(String),
+    #[error("Repository error occurred")]
+    Repository(#[from] crate::core::repositories::RepositoryError),
+    #[error("Error occurred during projector spawn")]
+    Spawn(String),
+    #[error("Error occurred during projector shutdown")]
+    Shutdown(String),
+}
+
+// impl From<RepositoryError> for ProjectorsError {
+//     fn from(err: RepositoryError) -> ProjectorsError {
+//         match err {
+//             RepositoryError::Duplicate(id) => Self::AlreadyRunning(id)
+//         }
+//     }
+// }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
@@ -31,7 +56,7 @@ pub trait DeleteProjector {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait FindProjectors {
-    async fn find<'a>(&self, input: &'a ProjectorsFindInput<'a>) -> Result<Vec<Projector>>;
+    async fn find<'a>(&self, input: &'a ProjectorsFindInput<'a>) -> Vec<Projector>;
 }
 
 #[cfg_attr(test, automock)]

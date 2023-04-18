@@ -1,5 +1,3 @@
-use holodekk::core::services::Result;
-
 use crate::entities::UhuraStatus;
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -10,9 +8,9 @@ impl UhuraService {
         Default::default()
     }
 
-    pub fn status(&self) -> Result<UhuraStatus> {
-        Ok(UhuraStatus {
+    pub fn status(&self) -> UhuraStatus {
+        UhuraStatus {
             pid: std::process::id(),
-        })
+        }
     }
 }
