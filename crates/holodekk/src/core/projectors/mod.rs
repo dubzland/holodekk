@@ -12,7 +12,6 @@ use async_trait::async_trait;
 use mockall::*;
 
 use crate::config::HolodekkConfig;
-// use crate::core::repositories::Error as RepositoryError;
 use crate::core::services::ServiceStop;
 
 use entities::Projector;

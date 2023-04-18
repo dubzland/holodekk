@@ -57,6 +57,12 @@ pub trait FindSubroutines {
     async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> Result<Vec<Subroutine>>;
 }
 
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub trait GetSubroutine {
+    async fn get<'c>(&self, input: &'c SubroutinesGetInput<'c>) -> Result<Subroutine>;
+}
+
 #[derive(Clone, Debug)]
 pub struct SubroutinesCreateInput<'c> {
     fleet: &'c str,
@@ -131,6 +137,21 @@ impl<'f> SubroutinesFindInput<'f> {
 
     pub fn subroutine_definition_id(&self) -> Option<&str> {
         self.subroutine_definition_id
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct SubroutinesGetInput<'c> {
+    id: &'c str,
+}
+
+impl<'c> SubroutinesGetInput<'c> {
+    pub fn new(id: &'c str) -> Self {
+        Self { id }
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
     }
 }
 

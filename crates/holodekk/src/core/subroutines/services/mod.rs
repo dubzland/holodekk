@@ -7,6 +7,9 @@ pub use delete::*;
 mod find;
 pub use find::*;
 
+mod get;
+pub use get::*;
+
 use std::sync::{Arc, RwLock};
 
 use async_trait::async_trait;
