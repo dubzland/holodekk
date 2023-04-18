@@ -33,14 +33,6 @@ pub enum ProjectorsError {
     Shutdown(String),
 }
 
-// impl From<RepositoryError> for ProjectorsError {
-//     fn from(err: RepositoryError) -> ProjectorsError {
-//         match err {
-//             RepositoryError::Duplicate(id) => Self::AlreadyRunning(id)
-//         }
-//     }
-// }
-
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait CreateProjector {

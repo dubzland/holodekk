@@ -23,6 +23,8 @@ pub type Result<T> = std::result::Result<T, SubroutinesError>;
 
 #[derive(thiserror::Error, Clone, Debug, PartialEq)]
 pub enum SubroutinesError {
+    #[error("Subroutine {0} not found")]
+    NotFound(String),
     #[error("Subroutine with id {0} is already running")]
     AlreadyRunning(String),
     #[error("Repository error occurred")]
@@ -33,6 +35,26 @@ pub enum SubroutinesError {
     SpawnError(String),
     #[error("Unknown subroutine definition error")]
     UnexpectedSubroutineDefinitionError(#[from] SubroutineDefinitionsError),
+    #[error("Error occurred during subroutine shutdown")]
+    Shutdown(String),
+}
+
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub trait CreateSubroutine {
+    async fn create<'c>(&self, input: &'c SubroutinesCreateInput<'c>) -> Result<Subroutine>;
+}
+
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub trait DeleteSubroutine {
+    async fn delete<'c>(&self, input: &'c SubroutinesDeleteInput<'c>) -> Result<()>;
+}
+
+#[cfg_attr(test, automock)]
+#[async_trait]
+pub trait FindSubroutines {
+    async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> Result<Vec<Subroutine>>;
 }
 
 #[derive(Clone, Debug)]
@@ -61,6 +83,21 @@ impl<'c> SubroutinesCreateInput<'c> {
 
     pub fn subroutine_definition_id(&self) -> &str {
         self.subroutine_definition_id
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct SubroutinesDeleteInput<'c> {
+    id: &'c str,
+}
+
+impl<'c> SubroutinesDeleteInput<'c> {
+    pub fn new(id: &'c str) -> Self {
+        Self { id }
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
     }
 }
 
@@ -95,18 +132,6 @@ impl<'f> SubroutinesFindInput<'f> {
     pub fn subroutine_definition_id(&self) -> Option<&str> {
         self.subroutine_definition_id
     }
-}
-
-#[cfg_attr(test, automock)]
-#[async_trait]
-pub trait CreateSubroutine {
-    async fn create<'c>(&self, input: &'c SubroutinesCreateInput<'c>) -> Result<Subroutine>;
-}
-
-#[cfg_attr(test, automock)]
-#[async_trait]
-pub trait FindSubroutines {
-    async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> Result<Vec<Subroutine>>;
 }
 
 pub async fn create_service<C, R>(
