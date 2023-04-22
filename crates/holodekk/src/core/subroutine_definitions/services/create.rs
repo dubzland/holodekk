@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::core::subroutine_definitions::{
-    entities::SubroutineDefinition, CreateSubroutineDefinition, Result,
+    entities::SubroutineDefinitionEntity, CreateSubroutineDefinition, Result,
     SubroutineDefinitionsCreateInput, SubroutineDefinitionsError,
 };
 
@@ -13,13 +13,14 @@ impl CreateSubroutineDefinition for SubroutineDefinitionsService {
     async fn create<'a>(
         &self,
         input: &'a SubroutineDefinitionsCreateInput<'a>,
-    ) -> Result<SubroutineDefinition> {
+    ) -> Result<SubroutineDefinitionEntity> {
         // make sure this subroutine does not already exist
         println!("Checking for subroutine with name: {}", input.name,);
         if self.definitions.read().unwrap().contains_key(input.name()) {
             Err(SubroutineDefinitionsError::Duplicate(input.name().into()))
         } else {
-            let definition = SubroutineDefinition::new(input.name(), input.path(), input.kind);
+            let definition =
+                SubroutineDefinitionEntity::new(input.name(), input.path(), input.kind);
             self.definitions
                 .write()
                 .unwrap()
@@ -37,7 +38,7 @@ mod tests {
     use rstest::*;
 
     use crate::core::subroutine_definitions::entities::{
-        fixtures::subroutine_definition, SubroutineDefinition,
+        fixtures::subroutine_definition, SubroutineDefinitionEntity,
     };
 
     use super::*;
@@ -45,7 +46,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn creates_subroutine_definition(
-        subroutine_definition: SubroutineDefinition,
+        subroutine_definition: SubroutineDefinitionEntity,
     ) -> Result<()> {
         let input = SubroutineDefinitionsCreateInput::new(
             subroutine_definition.name(),
@@ -64,7 +65,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_subroutine_definition(
-        subroutine_definition: SubroutineDefinition,
+        subroutine_definition: SubroutineDefinitionEntity,
     ) -> Result<()> {
         let input = SubroutineDefinitionsCreateInput::new(
             subroutine_definition.name(),
@@ -85,7 +86,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn rejects_duplicate_subroutine_name(
-        subroutine_definition: SubroutineDefinition,
+        subroutine_definition: SubroutineDefinitionEntity,
     ) -> Result<()> {
         let input = SubroutineDefinitionsCreateInput::new(
             subroutine_definition.name(),

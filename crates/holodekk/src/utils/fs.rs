@@ -8,6 +8,13 @@ pub fn cleanup<P: AsRef<Path>>(path: P) -> std::io::Result<()> {
     Ok(())
 }
 
+pub fn ensure_directory<P: AsRef<Path>>(path: P) -> std::io::Result<()> {
+    if !path.as_ref().exists() {
+        fs::create_dir_all(path)?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

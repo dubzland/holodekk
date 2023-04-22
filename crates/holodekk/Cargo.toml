@@ -37,10 +37,14 @@ bollard = { version = "0.14.0", features = ["ssl"] }
 regex = "1.7.1"
 libc = "0.2.139"
 sha2 = "0.10.6"
+hex = "0.4.3"
+rand = "0.8.5"
+anyhow = "1.0.70"
 
 [build-dependencies]
 tonic-build.workspace = true
 
 [dev-dependencies]
+env_logger.workspace = true
 mockall.workspace = true
 rstest.workspace = true

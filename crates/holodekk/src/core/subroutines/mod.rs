@@ -1,48 +1,40 @@
-pub mod api;
 pub mod entities;
-mod init;
 pub mod repositories;
 pub mod services;
 pub mod worker;
 
-use std::sync::Arc;
-
 use async_trait::async_trait;
 #[cfg(test)]
-use mockall::{automock, predicate::*};
+use mockall::automock;
 
-use crate::config::HolodekkConfig;
-use crate::core::services::ServiceStop;
-use crate::core::subroutine_definitions::{
-    services::SubroutineDefinitionsService, SubroutineDefinitionsError,
-};
-
-use entities::Subroutine;
+use entities::SubroutineEntity;
 
 pub type Result<T> = std::result::Result<T, SubroutinesError>;
 
-#[derive(thiserror::Error, Clone, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug)]
 pub enum SubroutinesError {
     #[error("Subroutine {0} not found")]
     NotFound(String),
-    #[error("Subroutine with id {0} is already running")]
-    AlreadyRunning(String),
+    #[error("Subroutine already running")]
+    AlreadyRunning,
     #[error("Repository error occurred")]
-    Repository(#[from] crate::core::repositories::RepositoryError),
+    Repository(#[from] crate::repositories::RepositoryError),
     #[error("Invalid subroutine defintion id: {0}")]
     InvalidSubroutineDefinition(String),
+    #[error("Invalid projector id: {0}")]
+    InvalidProjector(String),
     #[error("Failed to spawn subroutine")]
-    SpawnError(String),
-    #[error("Unknown subroutine definition error")]
-    UnexpectedSubroutineDefinitionError(#[from] SubroutineDefinitionsError),
+    Spawn(#[from] worker::SpawnError),
     #[error("Error occurred during subroutine shutdown")]
-    Shutdown(String),
+    Termination(#[from] worker::TerminationError),
+    #[error(transparent)]
+    Unexpected(#[from] anyhow::Error),
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait CreateSubroutine {
-    async fn create<'c>(&self, input: &'c SubroutinesCreateInput<'c>) -> Result<Subroutine>;
+    async fn create<'c>(&self, input: &'c SubroutinesCreateInput<'c>) -> Result<SubroutineEntity>;
 }
 
 #[cfg_attr(test, automock)]
@@ -54,37 +46,31 @@ pub trait DeleteSubroutine {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait FindSubroutines {
-    async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> Result<Vec<Subroutine>>;
+    async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> Result<Vec<SubroutineEntity>>;
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait GetSubroutine {
-    async fn get<'c>(&self, input: &'c SubroutinesGetInput<'c>) -> Result<Subroutine>;
+    async fn get<'c>(&self, input: &'c SubroutinesGetInput<'c>) -> Result<SubroutineEntity>;
 }
 
 #[derive(Clone, Debug)]
 pub struct SubroutinesCreateInput<'c> {
-    fleet: &'c str,
-    namespace: &'c str,
+    projector_id: &'c str,
     subroutine_definition_id: &'c str,
 }
 
 impl<'c> SubroutinesCreateInput<'c> {
-    pub fn new(fleet: &'c str, namespace: &'c str, subroutine_definition_id: &'c str) -> Self {
+    pub fn new(projector_id: &'c str, subroutine_definition_id: &'c str) -> Self {
         Self {
-            fleet,
-            namespace,
+            projector_id,
             subroutine_definition_id,
         }
     }
 
-    pub fn fleet(&self) -> &str {
-        self.fleet
-    }
-
-    pub fn namespace(&self) -> &str {
-        self.namespace
+    pub fn projector_id(&self) -> &str {
+        self.projector_id
     }
 
     pub fn subroutine_definition_id(&self) -> &str {
@@ -103,36 +89,26 @@ impl<'c> SubroutinesDeleteInput<'c> {
     }
 
     pub fn id(&self) -> &str {
-        &self.id
+        self.id
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SubroutinesFindInput<'f> {
-    fleet: Option<&'f str>,
-    namespace: Option<&'f str>,
+    projector_id: Option<&'f str>,
     subroutine_definition_id: Option<&'f str>,
 }
 
 impl<'f> SubroutinesFindInput<'f> {
-    pub fn new(
-        fleet: Option<&'f str>,
-        namespace: Option<&'f str>,
-        subroutine_definition_id: Option<&'f str>,
-    ) -> Self {
+    pub fn new(projector_id: Option<&'f str>, subroutine_definition_id: Option<&'f str>) -> Self {
         Self {
-            fleet,
-            namespace,
+            projector_id,
             subroutine_definition_id,
         }
     }
 
-    pub fn fleet(&self) -> Option<&str> {
-        self.fleet
-    }
-
-    pub fn namespace(&self) -> Option<&str> {
-        self.namespace
+    pub fn projector_id(&self) -> Option<&str> {
+        self.projector_id
     }
 
     pub fn subroutine_definition_id(&self) -> Option<&str> {
@@ -151,7 +127,7 @@ impl<'c> SubroutinesGetInput<'c> {
     }
 
     pub fn id(&self) -> &str {
-        &self.id
+        self.id
     }
 }
 
@@ -168,22 +144,6 @@ impl<T> SubroutinesServiceMethods for T where
         + Sync
         + 'static
 {
-}
-
-pub async fn create_service<C, R>(
-    config: Arc<C>,
-    definitions: Arc<SubroutineDefinitionsService>,
-    repo: Arc<R>,
-) -> Result<impl SubroutinesServiceMethods + ServiceStop>
-where
-    C: HolodekkConfig,
-    R: repositories::SubroutinesRepository + 'static,
-{
-    init::initialize_subroutines(config.clone(), repo.clone()).await?;
-
-    let worker = worker::start_worker(config.clone());
-
-    Ok(services::SubroutinesService::new(repo, definitions, worker))
 }
 
 #[cfg(test)]

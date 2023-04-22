@@ -8,7 +8,6 @@ use tokio::net::UnixStream;
 use tonic::transport::{Channel, Endpoint, Uri};
 use tower::service_fn;
 
-use holodekk::core::subroutines::api::client::SubroutinesApiClient;
 use holodekk::errors::grpc::GrpcClientResult;
 
 use crate::apis::grpc::uhura::UhuraApiClient;
@@ -45,9 +44,5 @@ impl UhuraClient {
 
     pub fn uhura(&self) -> UhuraApiClient {
         UhuraApiClient::new(self.channel.clone())
-    }
-
-    pub fn subroutines(&self) -> SubroutinesApiClient {
-        SubroutinesApiClient::new(self.channel.clone())
     }
 }

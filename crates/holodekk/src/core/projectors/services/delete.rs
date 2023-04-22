@@ -1,21 +1,20 @@
+use anyhow::Context;
 use async_trait::async_trait;
-use log::{debug, info, trace, warn};
-use tokio::sync::mpsc::Sender;
+use log::{debug, info, trace};
 
 use crate::core::projectors::{
-    entities::Projector, repositories::ProjectorsRepository, DeleteProjector,
+    entities::ProjectorEntity, repositories::ProjectorsRepository, DeleteProjector,
     ProjectorsDeleteInput, ProjectorsError, Result,
 };
-use crate::core::repositories::RepositoryError;
-use crate::utils::Worker;
+use crate::repositories::RepositoryError;
+use crate::servers::director::{DirectorError, DirectorRequest};
 
-use super::{ProjectorCommand, ProjectorsService};
+use super::ProjectorsService;
 
 #[async_trait]
-impl<R, W> DeleteProjector for ProjectorsService<R, W>
+impl<R> DeleteProjector for ProjectorsService<R>
 where
     R: ProjectorsRepository,
-    W: Worker<Command = ProjectorCommand>,
 {
     async fn delete<'a>(&self, input: &'a ProjectorsDeleteInput<'a>) -> Result<()> {
         trace!("ProjectorsService.stop({:?})", input);
@@ -30,13 +29,13 @@ where
                 err => ProjectorsError::from(err),
             })?;
 
-        // send the shutdown command to the manager
+        // send the terminate command to the manager
         info!(
             "Shutting down projector: {}:({})",
             input.id(),
             projector.namespace(),
         );
-        send_shutdown_command(self.worker(), projector.clone()).await?;
+        self.send_terminate_command(projector.clone()).await?;
         info!(
             "Projector shutdown complete: {}:({})",
             input.id(),
@@ -49,46 +48,37 @@ where
     }
 }
 
-async fn send_shutdown_command(
-    sender: Sender<ProjectorCommand>,
-    projector: Projector,
-) -> Result<()> {
-    let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
-    let cmd = ProjectorCommand::Shutdown {
-        projector: projector.clone(),
-        resp: resp_tx,
-    };
-    debug!("command: {:?}", cmd);
-    sender.send(cmd).await.map_err(|err| {
-        let msg = format!(
-            "Failed to send projector shutdown command to manager: {}",
-            err
-        );
-        warn!("{}", msg);
-        ProjectorsError::Shutdown(msg)
-    })?;
+impl<R> ProjectorsService<R>
+where
+    R: ProjectorsRepository,
+{
+    async fn send_terminate_command(&self, projector: ProjectorEntity) -> Result<()> {
+        trace!("ProjectorsService::send_shutdown_command({:?})", projector);
 
-    trace!("Command sent to manager.  awaiting response...");
-    let res = resp_rx.await.map_err(|err| {
-        let msg = format!(
-            "Failed to receive response from manager to shutdown request: {}",
-            err
-        );
-        warn!("{}", msg);
-        ProjectorsError::Shutdown(msg)
-    })?;
+        let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
 
-    trace!("Response received from manager: {:?}", res);
-    match res {
-        Ok(_) => Ok(()),
-        Err(err) => {
-            let msg = format!(
-                "Manager return error in response to shutdown request: {}",
-                err
-            );
-            warn!("{}", msg);
-            Err(ProjectorsError::Shutdown(msg))
-        }
+        let request = DirectorRequest::TerminateProjector {
+            projector: projector.clone(),
+            resp: resp_tx,
+        };
+
+        debug!("request: {:?}", request);
+        self.director()
+            .send(request)
+            .await
+            .context("Failed to send Terminate request to Director")?;
+
+        trace!("Terminate request sent to Director.  Awaiting response...");
+        let response = resp_rx
+            .await
+            .context("Error receiving response to Terminate request from Director")?;
+
+        trace!("Terminate response received from Director: {:?}", response);
+        response.map_err(|err| match err {
+            DirectorError::ProjectorTermination(terminate) => ProjectorsError::from(terminate),
+            DirectorError::Unexpected(unexpected) => ProjectorsError::from(unexpected),
+            _ => ProjectorsError::from(anyhow::anyhow!(err.to_string())),
+        })
     }
 }
 
@@ -99,33 +89,26 @@ mod tests {
     use mockall::predicate::*;
     use rstest::*;
 
-    use crate::config::fixtures::{mock_config, MockConfig};
     use crate::core::projectors::{
-        entities::{fixtures::projector, Projector},
+        entities::{fixtures::projector, ProjectorEntity},
         repositories::{fixtures::projectors_repository, MockProjectorsRepository},
-        worker::{fixtures::mock_projectors_worker, MockProjectorsWorker},
         ProjectorsError,
     };
-    use crate::core::repositories::RepositoryError;
+    use crate::repositories::RepositoryError;
 
     use super::*;
 
     #[rstest]
     #[tokio::test]
     async fn returns_error_for_non_existent_projector(
-        mock_config: MockConfig,
-        mock_projectors_worker: MockProjectorsWorker,
         mut projectors_repository: MockProjectorsRepository,
     ) {
+        let (director_tx, _director_rx) = tokio::sync::mpsc::channel(1);
         projectors_repository
             .expect_projectors_get()
             .return_const(Err(RepositoryError::NotFound("".into())));
 
-        let service = ProjectorsService::new(
-            Arc::new(mock_config),
-            Arc::new(projectors_repository),
-            mock_projectors_worker,
-        );
+        let service = ProjectorsService::new(Arc::new(projectors_repository), director_tx);
         let res = service
             .delete(&ProjectorsDeleteInput::new("nonexistent"))
             .await;
@@ -137,14 +120,10 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn sends_stop_command_to_manager_and_removes_record(
-        mock_config: MockConfig,
-        mut mock_projectors_worker: MockProjectorsWorker,
         mut projectors_repository: MockProjectorsRepository,
-        projector: Projector,
+        projector: ProjectorEntity,
     ) {
-        let (cmd_tx, mut cmd_rx) = tokio::sync::mpsc::channel(1);
-        mock_projectors_worker.expect_sender().return_const(cmd_tx);
-
+        let (director_tx, mut director_rx) = tokio::sync::mpsc::channel(1);
         // projector exists
         projectors_repository
             .expect_projectors_get()
@@ -152,8 +131,8 @@ mod tests {
 
         // Setup fake manager
         tokio::spawn(async move {
-            match cmd_rx.recv().await.unwrap() {
-                ProjectorCommand::Shutdown { resp, .. } => {
+            match director_rx.recv().await.unwrap() {
+                DirectorRequest::TerminateProjector { resp, .. } => {
                     resp.send(Ok(())).unwrap();
                 }
                 cmd => panic!("Incorrect command received from service: {:?}", cmd),
@@ -167,11 +146,7 @@ mod tests {
             .with(eq(id))
             .return_const(Ok(()));
 
-        let service = ProjectorsService::new(
-            Arc::new(mock_config),
-            Arc::new(projectors_repository),
-            mock_projectors_worker,
-        );
+        let service = ProjectorsService::new(Arc::new(projectors_repository), director_tx);
 
         service
             .delete(&ProjectorsDeleteInput::new(projector.id()))

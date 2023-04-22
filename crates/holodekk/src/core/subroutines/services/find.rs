@@ -2,25 +2,21 @@ use async_trait::async_trait;
 
 use log::trace;
 
+use crate::core::projectors::ProjectorsServiceMethods;
 use crate::core::subroutine_definitions::SubroutineDefinitionsServiceMethods;
 use crate::core::subroutines::{
-    entities::Subroutine,
+    entities::SubroutineEntity,
     repositories::{SubroutinesQuery, SubroutinesRepository},
-    worker::SubroutineCommand,
     FindSubroutines, Result, SubroutinesFindInput,
 };
-use crate::utils::Worker;
 
 use super::SubroutinesService;
 
-impl From<&'_ SubroutinesFindInput<'_>> for SubroutinesQuery {
-    fn from(value: &SubroutinesFindInput) -> Self {
+impl<'a> From<&'a SubroutinesFindInput<'a>> for SubroutinesQuery<'a> {
+    fn from(value: &'a SubroutinesFindInput) -> Self {
         let mut query = SubroutinesQuery::builder();
-        if let Some(fleet) = value.fleet() {
-            query.fleet_eq(fleet);
-        }
-        if let Some(namespace) = value.namespace() {
-            query.namespace_eq(namespace);
+        if let Some(projector_id) = value.projector_id() {
+            query.for_projector(projector_id);
         }
         if let Some(subroutine_definition_id) = value.subroutine_definition_id() {
             query.for_subroutine_definition(subroutine_definition_id);
@@ -30,16 +26,17 @@ impl From<&'_ SubroutinesFindInput<'_>> for SubroutinesQuery {
 }
 
 #[async_trait]
-impl<R, W, D> FindSubroutines for SubroutinesService<R, W, D>
+impl<R, P, D> FindSubroutines for SubroutinesService<R, P, D>
 where
     R: SubroutinesRepository,
-    W: Worker<Command = SubroutineCommand>,
+    P: ProjectorsServiceMethods,
     D: SubroutineDefinitionsServiceMethods,
 {
-    async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> Result<Vec<Subroutine>> {
+    async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> Result<Vec<SubroutineEntity>> {
         trace!("SubroutinesService.find({:?})", input);
         let query = SubroutinesQuery::from(input);
-        Ok(self.repo.subroutines_find(query).await)
+        let subroutines = self.repo.subroutines_find(&query).await?;
+        Ok(subroutines)
     }
 }
 
@@ -49,13 +46,13 @@ mod tests {
 
     use rstest::*;
 
+    use crate::core::projectors::fixtures::{mock_projectors_service, MockProjectorsService};
     use crate::core::subroutine_definitions::fixtures::{
         mock_subroutine_definitions_service, MockSubroutineDefinitionsService,
     };
     use crate::core::subroutines::{
-        entities::{fixtures::subroutine, Subroutine},
+        entities::{fixtures::subroutine, SubroutineEntity},
         repositories::{fixtures::subroutines_repository, MockSubroutinesRepository},
-        worker::{fixtures::mock_subroutines_worker, MockSubroutinesWorker},
         Result,
     };
 
@@ -64,54 +61,69 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn executes_query(
+        mock_projectors_service: MockProjectorsService,
         mock_subroutine_definitions_service: MockSubroutineDefinitionsService,
         mut subroutines_repository: MockSubroutinesRepository,
-        mock_subroutines_worker: MockSubroutinesWorker,
-        subroutine: Subroutine,
+        subroutine: SubroutineEntity,
     ) -> Result<()> {
-        let fleet = Some(subroutine.fleet().to_owned());
+        let (director_tx, _director_rx) = tokio::sync::mpsc::channel(1);
 
+        let projector_id = subroutine.projector_id().to_owned();
+        let definition_id = subroutine.subroutine_definition_id().to_owned();
+        let subroutines_find_result = Ok(vec![]);
         subroutines_repository
             .expect_subroutines_find()
-            .withf(move |query: &SubroutinesQuery| query.fleet == fleet)
-            .return_const(vec![]);
+            .withf(move |query: &SubroutinesQuery| {
+                query.projector_id().unwrap() == &projector_id
+                    && query.subroutine_definition_id().unwrap() == &definition_id
+            })
+            .return_once(move |_| subroutines_find_result);
 
         let service = SubroutinesService::new(
             Arc::new(subroutines_repository),
+            director_tx,
+            Arc::new(mock_projectors_service),
             Arc::new(mock_subroutine_definitions_service),
-            mock_subroutines_worker,
         );
 
         service
             .find(&SubroutinesFindInput::new(
-                Some(subroutine.fleet()),
-                Some(subroutine.namespace()),
+                Some(subroutine.projector_id()),
                 Some(subroutine.subroutine_definition_id()),
             ))
             .await?;
         Ok(())
     }
 
-    //     #[rstest]
-    //     #[tokio::test]
-    //     async fn returns_results_of_query(
-    //         mock_config: MockConfig,
-    //         mut projectors_repository: MockProjectorsRepository,
-    //         projector: Projector,
-    //         mock_projectors_worker: MockProjectorsWorker,
-    //     ) -> Result<()> {
-    //         projectors_repository
-    //             .expect_projectors_find()
-    //             .return_const(Ok(vec![projector.clone()]));
+    #[rstest]
+    #[tokio::test]
+    async fn returns_results_of_query(
+        mock_subroutine_definitions_service: MockSubroutineDefinitionsService,
+        mock_projectors_service: MockProjectorsService,
+        mut subroutines_repository: MockSubroutinesRepository,
+        subroutine: SubroutineEntity,
+    ) -> Result<()> {
+        let (director_tx, _director_rx) = tokio::sync::mpsc::channel(1);
 
-    //         let service = ProjectorsService::new(
-    //             Arc::new(mock_config),
-    //             Arc::new(projectors_repository),
-    //             mock_projectors_worker,
-    //         );
+        let subroutines_find_result = Ok(vec![subroutine.clone()]);
+        subroutines_repository
+            .expect_subroutines_find()
+            .return_once(move |_| subroutines_find_result);
 
-    //         let projectors = service.find(&ProjectorsFindInput::default()).await?;
-    //         assert_eq!(projectors, vec![projector]);
-    //         Ok(())
-    //     }
+        let service = SubroutinesService::new(
+            Arc::new(subroutines_repository),
+            director_tx,
+            Arc::new(mock_projectors_service),
+            Arc::new(mock_subroutine_definitions_service),
+        );
+
+        let subroutines = service
+            .find(&SubroutinesFindInput::new(
+                Some(subroutine.projector_id()),
+                Some(subroutine.subroutine_definition_id()),
+            ))
+            .await?;
+        assert_eq!(subroutines, vec![subroutine]);
+        Ok(())
+    }
 }

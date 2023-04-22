@@ -23,14 +23,14 @@ impl SubroutineKind {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct SubroutineDefinition {
+pub struct SubroutineDefinitionEntity {
     id: String,
     name: String,
     path: PathBuf,
     kind: SubroutineKind,
 }
 
-impl SubroutineDefinition {
+impl SubroutineDefinitionEntity {
     pub fn new<S, P>(name: S, path: P, kind: SubroutineKind) -> Self
     where
         S: AsRef<str> + Into<String>,
@@ -68,8 +68,8 @@ pub mod fixtures {
     use super::*;
 
     #[fixture]
-    pub(crate) fn subroutine_definition() -> SubroutineDefinition {
-        SubroutineDefinition::new(
+    pub(crate) fn subroutine_definition() -> SubroutineDefinitionEntity {
+        SubroutineDefinitionEntity::new(
             "test/sub",
             "/tmp/holodekk/subroutines/test/sub",
             SubroutineKind::Ruby,

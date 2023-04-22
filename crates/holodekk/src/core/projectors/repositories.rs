@@ -1,28 +1,14 @@
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
-use sha2::{Digest, Sha256};
 
-use crate::core::repositories::{RepositoryId, RepositoryQuery, Result};
+use crate::repositories::{RepositoryQuery, Result};
 
-use super::entities::Projector;
-
-pub fn projector_repo_id(fleet: &str, namespace: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(fleet);
-    hasher.update(namespace);
-    format!("{:x}", hasher.finalize())
-}
-
-impl RepositoryId for Projector {
-    fn id(&self) -> String {
-        projector_repo_id(self.fleet(), self.namespace())
-    }
-}
+use super::entities::ProjectorEntity;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ProjectorsQuery {
-    fleet: Option<String>,
+    namespace: Option<String>,
 }
 
 impl ProjectorsQuery {
@@ -30,42 +16,42 @@ impl ProjectorsQuery {
         Self::default()
     }
 
-    pub fn fleet_eq(&mut self, fleet: &str) -> &mut Self {
-        self.fleet = Some(fleet.to_string());
+    pub fn namespace_eq(&mut self, namespace: &str) -> &mut Self {
+        self.namespace = Some(namespace.to_string());
         self
     }
 
     pub fn build(&self) -> Self {
         Self {
-            fleet: self.fleet.clone(),
+            namespace: self.namespace.clone(),
         }
     }
 
-    pub fn fleet(&self) -> Option<&str> {
-        self.fleet.as_deref()
+    pub fn namespace(&self) -> Option<&str> {
+        self.namespace.as_deref()
     }
 }
 
 impl RepositoryQuery for ProjectorsQuery {
-    type Entity = Projector;
+    type Entity = ProjectorEntity;
 
-    fn matches(&self, projector: &Projector) -> bool {
-        if let Some(fleet) = self.fleet.as_ref() {
-            projector.fleet() == fleet
+    fn matches(&self, projector: &ProjectorEntity) -> bool {
+        if let Some(namespace) = self.namespace.as_ref() {
+            projector.namespace() == namespace
         } else {
             true
         }
     }
 }
 
-impl PartialEq<ProjectorsQuery> for Projector {
+impl PartialEq<ProjectorsQuery> for ProjectorEntity {
     fn eq(&self, other: &ProjectorsQuery) -> bool {
         other.matches(self)
     }
 }
 
-impl PartialEq<Projector> for ProjectorsQuery {
-    fn eq(&self, other: &Projector) -> bool {
+impl PartialEq<ProjectorEntity> for ProjectorsQuery {
+    fn eq(&self, other: &ProjectorEntity) -> bool {
         self.matches(other)
     }
 }
@@ -73,11 +59,11 @@ impl PartialEq<Projector> for ProjectorsQuery {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait ProjectorsRepository: Send + Sync {
-    async fn projectors_create(&self, projector: Projector) -> Result<Projector>;
+    async fn projectors_create(&self, projector: ProjectorEntity) -> Result<ProjectorEntity>;
     async fn projectors_delete(&self, id: &str) -> Result<()>;
-    async fn projectors_exists(&self, id: &str) -> Result<bool>;
-    async fn projectors_find(&self, query: ProjectorsQuery) -> Vec<Projector>;
-    async fn projectors_get(&self, id: &str) -> Result<Projector>;
+    async fn projectors_exists(&self, query: ProjectorsQuery) -> Result<bool>;
+    async fn projectors_find(&self, query: ProjectorsQuery) -> Result<Vec<ProjectorEntity>>;
+    async fn projectors_get(&self, id: &str) -> Result<ProjectorEntity>;
 }
 
 #[cfg(test)]

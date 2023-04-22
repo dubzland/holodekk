@@ -1,21 +1,19 @@
 use async_trait::async_trait;
 
 use crate::core::projectors::{
-    entities::Projector, repositories::ProjectorsRepository, worker::ProjectorCommand,
-    GetProjector, ProjectorsError, ProjectorsGetInput, Result,
+    entities::ProjectorEntity, repositories::ProjectorsRepository, GetProjector, ProjectorsError,
+    ProjectorsGetInput, Result,
 };
-use crate::core::repositories::RepositoryError;
-use crate::utils::Worker;
+use crate::repositories::RepositoryError;
 
 use super::ProjectorsService;
 
 #[async_trait]
-impl<R, W> GetProjector for ProjectorsService<R, W>
+impl<R> GetProjector for ProjectorsService<R>
 where
     R: ProjectorsRepository,
-    W: Worker<Command = ProjectorCommand>,
 {
-    async fn get<'a>(&self, input: &'a ProjectorsGetInput) -> Result<Projector> {
+    async fn get<'a>(&self, input: &'a ProjectorsGetInput) -> Result<ProjectorEntity> {
         let projector = self.repo.projectors_get(input.id()).await.map_err(|err| {
             if matches!(err, RepositoryError::NotFound(..)) {
                 ProjectorsError::NotFound(input.id().into())
@@ -33,25 +31,22 @@ mod tests {
 
     use rstest::*;
 
-    use crate::config::fixtures::{mock_config, MockConfig};
     use crate::core::projectors::{
-        entities::{fixtures::projector, Projector},
+        entities::{fixtures::projector, ProjectorEntity},
         repositories::{fixtures::projectors_repository, MockProjectorsRepository},
-        worker::{fixtures::mock_projectors_worker, MockProjectorsWorker},
         ProjectorsError, Result,
     };
-    use crate::core::repositories::RepositoryError;
+    use crate::repositories::RepositoryError;
 
     use super::*;
 
     #[rstest]
     #[tokio::test]
     async fn returns_projector_for_existing_projector(
-        mock_config: MockConfig,
-        mock_projectors_worker: MockProjectorsWorker,
         mut projectors_repository: MockProjectorsRepository,
-        projector: Projector,
+        projector: ProjectorEntity,
     ) -> Result<()> {
+        let (director_tx, _director_rx) = tokio::sync::mpsc::channel(1);
         let id = projector.id().to_string();
 
         projectors_repository
@@ -59,11 +54,7 @@ mod tests {
             .withf(move |i| i == id)
             .return_const(Ok(projector.clone()));
 
-        let service = ProjectorsService::new(
-            Arc::new(mock_config),
-            Arc::new(projectors_repository),
-            mock_projectors_worker,
-        );
+        let service = ProjectorsService::new(Arc::new(projectors_repository), director_tx);
 
         assert_eq!(
             service
@@ -77,19 +68,14 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_error_for_nonexisting_projector(
-        mock_config: MockConfig,
-        mock_projectors_worker: MockProjectorsWorker,
         mut projectors_repository: MockProjectorsRepository,
     ) -> Result<()> {
+        let (director_tx, _director_rx) = tokio::sync::mpsc::channel(1);
         projectors_repository
             .expect_projectors_get()
             .return_const(Err(RepositoryError::NotFound("".into())));
 
-        let service = ProjectorsService::new(
-            Arc::new(mock_config),
-            Arc::new(projectors_repository),
-            mock_projectors_worker,
-        );
+        let service = ProjectorsService::new(Arc::new(projectors_repository), director_tx);
 
         assert!(matches!(
             service

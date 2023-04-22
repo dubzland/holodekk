@@ -19,7 +19,7 @@ where
     let mut repo_subroutines = repo.subroutines_find(SubroutinesQuery::default()).await;
 
     // get the list of actually running subroutines
-    let mut running_subroutines: Vec<Subroutine> = std::fs::read_dir(config.paths().projectors())
+    let mut running_subroutines: Vec<Subroutine> = std::fs::read_dir(config.subroutines_root())
         .unwrap()
         .filter_map(|e| {
             let entry = e.unwrap();

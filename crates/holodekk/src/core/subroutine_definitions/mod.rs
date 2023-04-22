@@ -1,18 +1,14 @@
-pub mod api;
 pub mod entities;
-mod init;
 pub mod repositories;
 pub mod services;
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
-use crate::config::HolodekkConfig;
-use crate::core::subroutine_definitions::entities::{SubroutineDefinition, SubroutineKind};
+use entities::{SubroutineDefinitionEntity, SubroutineKind};
 
 #[derive(thiserror::Error, Clone, Debug, PartialEq)]
 pub enum SubroutineDefinitionsError {
@@ -30,7 +26,7 @@ pub trait CreateSubroutineDefinition {
     async fn create<'a>(
         &self,
         input: &'a SubroutineDefinitionsCreateInput<'a>,
-    ) -> Result<SubroutineDefinition>;
+    ) -> Result<SubroutineDefinitionEntity>;
 }
 
 #[cfg_attr(test, automock)]
@@ -39,7 +35,7 @@ pub trait FindSubroutineDefinitions {
     async fn find<'a>(
         &self,
         input: &'a SubroutineDefinitionsFindInput<'a>,
-    ) -> Result<Vec<SubroutineDefinition>>;
+    ) -> Result<Vec<SubroutineDefinitionEntity>>;
 }
 
 #[cfg_attr(test, automock)]
@@ -48,16 +44,7 @@ pub trait GetSubroutineDefinition {
     async fn get<'a>(
         &self,
         input: &'a SubroutineDefinitionsGetInput<'a>,
-    ) -> Result<SubroutineDefinition>;
-}
-
-pub trait SubroutineDefinitionsServiceMethods:
-    CreateSubroutineDefinition + GetSubroutineDefinition + Send + Sync + 'static
-{
-}
-impl<T> SubroutineDefinitionsServiceMethods for T where
-    T: CreateSubroutineDefinition + GetSubroutineDefinition + Send + Sync + 'static
-{
+    ) -> Result<SubroutineDefinitionEntity>;
 }
 
 #[derive(Clone, Debug)]
@@ -129,16 +116,36 @@ impl<'g> SubroutineDefinitionsGetInput<'g> {
     }
 }
 
-pub async fn create_service<C>(config: Arc<C>) -> Result<services::SubroutineDefinitionsService>
-where
-    C: HolodekkConfig,
+pub trait SubroutineDefinitionsServiceMethods:
+    CreateSubroutineDefinition
+    + FindSubroutineDefinitions
+    + GetSubroutineDefinition
+    + Send
+    + Sync
+    + 'static
 {
-    let definitions = init::initialize_subroutine_definitions(config)?;
-
-    Ok(services::SubroutineDefinitionsService::new(
-        std::sync::RwLock::new(definitions),
-    ))
 }
+
+impl<T> SubroutineDefinitionsServiceMethods for T where
+    T: CreateSubroutineDefinition
+        + FindSubroutineDefinitions
+        + GetSubroutineDefinition
+        + Send
+        + Sync
+        + 'static
+{
+}
+
+// pub async fn create_service<C>(config: Arc<C>) -> Result<services::SubroutineDefinitionsService>
+// where
+//     C: HolodekkConfig,
+// {
+//     let definitions = init::initialize_subroutine_definitions(config)?;
+
+//     Ok(services::SubroutineDefinitionsService::new(
+//         std::sync::RwLock::new(definitions),
+//     ))
+// }
 
 #[cfg(test)]
 pub mod fixtures {
@@ -154,14 +161,21 @@ pub mod fixtures {
             async fn create<'a>(
                 &self,
                 input: &'a SubroutineDefinitionsCreateInput<'a>,
-            ) -> Result<SubroutineDefinition>;
+            ) -> Result<SubroutineDefinitionEntity>;
+        }
+        #[async_trait]
+        impl FindSubroutineDefinitions for SubroutineDefinitionsService {
+            async fn find<'a>(
+                &self,
+                input: &'a SubroutineDefinitionsFindInput<'a>,
+            ) -> Result<Vec<SubroutineDefinitionEntity>>;
         }
         #[async_trait]
         impl GetSubroutineDefinition for SubroutineDefinitionsService {
             async fn get<'a>(
                 &self,
                 input: &'a SubroutineDefinitionsGetInput<'a>,
-            ) -> Result<SubroutineDefinition>;
+            ) -> Result<SubroutineDefinitionEntity>;
         }
     }
 

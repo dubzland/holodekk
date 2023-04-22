@@ -10,15 +10,13 @@ use std::fmt;
 use std::net::Ipv4Addr;
 use std::path::{Path, PathBuf};
 
-use async_trait::async_trait;
+use rand::RngCore;
 use serde::{Deserialize, Serialize};
 
-#[async_trait]
-pub trait Worker: Send + Sync + Sized {
-    type Command;
-
-    fn sender(&self) -> Option<tokio::sync::mpsc::Sender<Self::Command>>;
-    async fn stop(&mut self);
+pub fn generate_id() -> String {
+    let mut bytes: [u8; 32] = [0; 32];
+    rand::thread_rng().fill_bytes(&mut bytes);
+    hex::encode(bytes)
 }
 
 #[derive(thiserror::Error, Debug)]

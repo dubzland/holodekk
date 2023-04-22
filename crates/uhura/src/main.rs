@@ -1,7 +1,6 @@
 use std::{
     fs::{self, File},
     io::Write,
-    net::Ipv4Addr,
     os::{fd::RawFd, unix::io::FromRawFd},
     panic,
     path::PathBuf,
@@ -22,8 +21,8 @@ use serde::Serialize;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
 use holodekk::{
-    config::HolodekkConfig,
-    core::repositories::RepositoryKind,
+    config::{ProjectorApiConfig, ProjectorConfig, UhuraApiConfig},
+    repositories::RepositoryKind,
     utils::{
         libsee,
         signals::{SignalKind, Signals},
@@ -47,134 +46,49 @@ enum Error {
 type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Serialize)]
-struct MessageProjectorPid<'a> {
+struct MessageProjectorPid {
     pid: u32,
-    projector_port: Option<u16>,
-    projector_address: Option<Ipv4Addr>,
-    projector_socket: Option<&'a PathBuf>,
-    uhura_port: Option<u16>,
-    uhura_address: Option<Ipv4Addr>,
-    uhura_socket: Option<&'a PathBuf>,
 }
 
-impl<'a> MessageProjectorPid<'a> {
+impl MessageProjectorPid {
     pub fn new(pid: u32) -> Self {
-        Self {
-            pid,
-            projector_port: None,
-            projector_address: None,
-            projector_socket: None,
-            uhura_port: None,
-            uhura_address: None,
-            uhura_socket: None,
-        }
-    }
-
-    pub fn with_projector_listener(
-        &mut self,
-        port: Option<u16>,
-        address: Option<Ipv4Addr>,
-        socket: Option<&'a PathBuf>,
-    ) -> &mut Self {
-        self.projector_port = port;
-        self.projector_address = address;
-        self.projector_socket = socket.to_owned();
-        self
-    }
-
-    /// Assigns the admin attributes for this status update.
-    ///
-    /// # Arguments
-    ///
-    /// `port` - Port number we are listening on
-    /// `address` - IPV4 address
-    /// `socket` - Unix socket path
-    pub fn with_uhura_listener(
-        &mut self,
-        port: Option<u16>,
-        address: Option<Ipv4Addr>,
-        socket: Option<&'a PathBuf>,
-    ) -> &mut Self {
-        self.uhura_port = port;
-        self.uhura_address = address;
-        self.uhura_socket = socket.to_owned();
-        self
+        Self { pid }
     }
 }
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Options {
-    /// Fleet this projector belongs to
-    #[arg(long)]
-    fleet: String,
-
     /// Namespace this projector is responsible for
     #[arg(long, short, required = true)]
     namespace: String,
 
-    /// Path to the projector's pid file
-    #[arg(long, value_name = "file", required = true)]
-    pidfile: PathBuf,
+    /// Data root path
+    #[arg(long, default_value = "/var/lib/holodekk")]
+    data_root: PathBuf,
 
-    /// Root directory
-    #[arg(long)]
-    projector_root: PathBuf,
+    /// Exec root path
+    #[arg(long, default_value = "/run/holodekk")]
+    exec_root: PathBuf,
 
-    /// Projector port
-    #[arg(short, long)]
-    projector_port: Option<u16>,
-
-    /// Projector listen address (IP)
-    #[arg(long)]
-    projector_address: Option<Ipv4Addr>,
-
-    /// Projector listen socket (UDS)
-    #[arg(long, conflicts_with_all = ["projector_port", "projector_address"])]
-    projector_socket: Option<PathBuf>,
-
-    /// Uhura API port
-    #[arg(long)]
-    uhura_port: Option<u16>,
-
-    /// Uhura API listen address (IP)
-    #[arg(long)]
-    uhura_address: Option<Ipv4Addr>,
-
-    /// Uhura API listen socket (UDS)
-    #[arg(long, conflicts_with_all = ["uhura_port", "uhura_address"])]
-    uhura_socket: Option<PathBuf>,
+    /// Holodekk bin directory
+    #[arg(long, default_value = "/usr/local/bin/")]
+    bin_path: PathBuf,
 
     /// Sync pipe FD
     #[arg(long = "sync-pipe")]
     syncpipe_fd: Option<i32>,
-
-    /// Holodekk bin directory
-    #[arg(long, default_value = "/usr/local/bin/")]
-    holodekk_bin: PathBuf,
 }
 
 fn main() -> Result<()> {
     let options = Options::parse();
 
     let config = Arc::new(UhuraConfig::new(
-        &options.fleet,
         &options.namespace,
-        options.projector_root.to_owned(),
-        options.holodekk_bin.to_owned(),
+        &options.data_root,
+        &options.exec_root,
+        &options.bin_path,
         RepositoryKind::Memory,
-        ConnectionInfo::from_options(
-            options.uhura_port.as_ref(),
-            options.uhura_address.as_ref(),
-            options.uhura_socket.as_ref(),
-        )
-        .unwrap(),
-        ConnectionInfo::from_options(
-            options.projector_port.as_ref(),
-            options.projector_address.as_ref(),
-            options.projector_socket.as_ref(),
-        )
-        .unwrap(),
     ));
 
     // Perform the initial fork
@@ -211,7 +125,7 @@ fn main() -> Result<()> {
     // fork again
     match unsafe { fork() } {
         Ok(ForkResult::Parent { child, .. }) => {
-            write_pidfile(&options.pidfile, child);
+            write_pidfile(config.pidfile(), child);
             libsee::_exit(1);
         }
         Ok(ForkResult::Child) => {}
@@ -227,20 +141,20 @@ fn main() -> Result<()> {
     // Ensure the root directory exists
     debug!(
         "Checking for existence of root directory: {}",
-        config.paths().root().display()
+        config.projector_path().display()
     );
-    if !config.paths().root().exists() {
+    if !config.projector_path().exists() {
         info!(
             "Creating uhura root directory: {}",
-            config.paths().root().display()
+            config.projector_path().display()
         );
-        fs::create_dir_all(config.paths().root())
+        fs::create_dir_all(config.projector_path())
             .expect("Failed to create root directory for uhura");
     }
 
-    main_loop(&options, config)?;
+    main_loop(&options, config.clone())?;
 
-    cleanup(&options);
+    cleanup(config);
     info!("Shutdown complete.");
     Ok(())
 }
@@ -262,23 +176,19 @@ async fn main_loop(
 
     let signal = Signals::new().await;
     match signal {
-        SignalKind::Int => {
-            debug!("SIGINT received.  Processing shutdown.");
+        SignalKind::Int | SignalKind::Term | SignalKind::Quit => {
+            debug!("Termination signal received.  Processing shutdown.");
 
             uhura_server.stop().await.unwrap();
-        }
-        SignalKind::Quit | SignalKind::Term => {
-            debug!("Unexpected {} received.  Terminating immediately", signal);
         }
     }
     Ok(())
 }
 
-fn cleanup(options: &Options) {
-    if options.uhura_socket.is_some() {
-        let admin_socket = options.uhura_socket.as_ref().unwrap();
-        if admin_socket.exists() {
-            match std::fs::remove_file(admin_socket) {
+fn cleanup(config: Arc<UhuraConfig>) {
+    if let ConnectionInfo::Unix { socket } = config.uhura_api_config() {
+        if socket.exists() {
+            match std::fs::remove_file(socket) {
                 Ok(_) => {}
                 Err(err) => {
                     warn!("Failed to remove admin socket: {}", err);
@@ -287,10 +197,9 @@ fn cleanup(options: &Options) {
         }
     }
 
-    if options.projector_socket.is_some() {
-        let projector_socket = options.projector_socket.as_ref().unwrap();
-        if projector_socket.exists() {
-            match std::fs::remove_file(projector_socket) {
+    if let ConnectionInfo::Unix { socket } = config.projector_api_config() {
+        if socket.exists() {
+            match std::fs::remove_file(socket) {
                 Ok(_) => {}
                 Err(err) => {
                     warn!("Failed to remove projector socket: {}", err);
@@ -301,17 +210,7 @@ fn cleanup(options: &Options) {
 }
 
 fn send_status_update(options: &Options) {
-    let mut status = MessageProjectorPid::new(std::process::id());
-    status.with_uhura_listener(
-        options.uhura_port,
-        options.uhura_address,
-        options.uhura_socket.as_ref(),
-    );
-    status.with_projector_listener(
-        options.projector_port,
-        options.projector_address,
-        options.projector_socket.as_ref(),
-    );
+    let status = MessageProjectorPid::new(std::process::id());
     match serde_json::to_vec(&status) {
         Ok(msg) => {
             let mut sync_pipe = unsafe { File::from_raw_fd(options.syncpipe_fd.unwrap()) };

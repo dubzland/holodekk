@@ -1,7 +1,5 @@
 use clap::{Parser, Subcommand};
 
-use holodekkd::HolodekkResult;
-
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Options {
@@ -23,7 +21,7 @@ pub enum Commands {
 }
 
 #[tokio::main]
-async fn main() -> HolodekkResult<()> {
+async fn main() -> std::io::Result<()> {
     // let options = Options::parse();
 
     // Start a Holodekk

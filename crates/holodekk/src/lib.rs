@@ -3,4 +3,7 @@ pub mod core;
 pub mod engines;
 pub mod errors;
 pub mod platform;
+pub mod process;
+pub mod repositories;
+pub mod servers;
 pub mod utils;

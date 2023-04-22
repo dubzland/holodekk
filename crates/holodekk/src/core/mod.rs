@@ -1,70 +1,37 @@
-pub mod api;
-pub mod containers;
+//! The Holodekk core
+//!
+//! Holodekk is built loosely following the principles describe in the [Onion
+//! Architecture](https://jeffreypalermo.com/2008/07/the-onion-architecture-part-1/).  This module
+//! represents the very center of that onion.
+//!
+//! # Layout
+//! Each type of resource being managed by the Holodekk is represented by its own module, which is
+//! then roughly divided into the following components:
+//!
+//! ## Entity
+//! Struct object containing the actual resource attributes.  Each module will contain at least one
+//! entity, though some contain more than one (when relationships are tightly coupled).  Entities
+//! are persited to a backing store by way of repositories, described below.
+//!
+//! ## Service
+//! These are the public-facing API meant be consumed by anything outside of the core.  This is
+//! where business rules are applied and data management occurs.  Analgous to controllers in the
+//! MVC architecture, they are intended to be the glue between the outer application and the
+//! entities residing in repositories.
+//!
+//! ## Worker
+//! Most entities definied within the system represent external items (processes, networks, etc)
+//! that must be managed (in addition to the actual data store).  Workers accomplish this by
+//! accepting requests from services and performing the necessary background tasks (creating a
+//! network, launching a container, etc).
+//!
+//! ## Repository
+//! This is an abstract representation of the data access requirements of the resources the module
+//! is responsible for (Traits in rust parlance).  Each repository is intended to be implemented by
+//! some sort of concrete backing store (etcd, Postgres, etc), allowing the actual storage system
+//! to be transparent to the rest of the core.
+//!
+// pub mod containers;
 pub mod projectors;
-pub mod repositories;
 pub mod subroutine_definitions;
 pub mod subroutines;
-
-use std::sync::Arc;
-
-pub mod services {
-    use async_trait::async_trait;
-    // use tonic::Status;
-
-    // use crate::core::repositories;
-
-    // #[derive(thiserror::Error, Clone, Debug, PartialEq)]
-    // pub enum Error {
-    //     #[error("Entity already exists")]
-    //     Duplicate,
-    //     #[error("Entity not found")]
-    //     NotFound,
-    //     #[error("Subroutine is already running")]
-    //     AlreadyRunning,
-    //     #[error("Failed to spawn projector")]
-    //     SpawnFailed,
-    //     #[error("Failed to shutdown projector")]
-    //     ShutdownFailed,
-    //     #[error("Invalid subroutine definition")]
-    //     InvalidSubroutineDefinition,
-    //     #[error("Repository Error")]
-    //     Repository(#[from] repositories::Error),
-    //     #[error("Projector Error")]
-    //     Projector(#[from] crate::core::projectors::worker::SpawnError),
-    //     #[error("General Network Error")]
-    //     Network,
-    // }
-
-    // impl From<Error> for Status {
-    //     fn from(err: Error) -> Status {
-    //         match err {
-    //             Error::NotFound => Self::not_found(err.to_string()),
-    //             Error::Duplicate => Self::already_exists(err.to_string()),
-    //             Error::AlreadyRunning => Self::already_exists(err.to_string()),
-    //             Error::SpawnFailed => Self::internal("Unable to spawn projector".to_string()),
-    //             Error::ShutdownFailed => Self::internal("Unable to shutdown projector".to_string()),
-    //             Error::InvalidSubroutineDefinition => Self::not_found(err.to_string()),
-    //             Error::Repository(err) => Self::internal(err.to_string()),
-    //             Error::Projector(err) => Self::internal(err.to_string()),
-    //             Error::Network => Self::internal("General Network Error"),
-    //         }
-    //     }
-    // }
-
-    // impl From<tonic::transport::Error> for Error {
-    //     fn from(_err: tonic::transport::Error) -> Error {
-    //         Error::Network
-    //     }
-    // }
-
-    // pub type Result<T> = std::result::Result<T, Error>;
-
-    #[async_trait]
-    pub trait ServiceStop: Send + Sync {
-        async fn stop(&self);
-    }
-}
-
-pub trait ApiCoreState<C> {
-    fn config(&self) -> Arc<C>;
-}

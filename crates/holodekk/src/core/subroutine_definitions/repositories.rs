@@ -2,9 +2,9 @@ use std::path::PathBuf;
 
 use sha2::{Digest, Sha256};
 
-use crate::core::repositories::{RepositoryId, RepositoryQuery};
+use crate::repositories::{RepositoryId, RepositoryQuery};
 
-use super::entities::{SubroutineDefinition, SubroutineKind};
+use super::entities::{SubroutineDefinitionEntity, SubroutineKind};
 
 pub fn subroutine_definition_repo_id(name: &str) -> String {
     let mut hasher = Sha256::new();
@@ -12,7 +12,7 @@ pub fn subroutine_definition_repo_id(name: &str) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-impl RepositoryId for SubroutineDefinition {
+impl RepositoryId for SubroutineDefinitionEntity {
     fn id(&self) -> String {
         subroutine_definition_repo_id(self.name())
     }
@@ -61,8 +61,8 @@ impl SubroutineDefinitionsQuery {
 }
 
 impl RepositoryQuery for SubroutineDefinitionsQuery {
-    type Entity = SubroutineDefinition;
-    fn matches(&self, record: &SubroutineDefinition) -> bool {
+    type Entity = SubroutineDefinitionEntity;
+    fn matches(&self, record: &SubroutineDefinitionEntity) -> bool {
         if self.name.is_none() && self.path.is_none() && self.kind.is_none() {
             true
         } else {

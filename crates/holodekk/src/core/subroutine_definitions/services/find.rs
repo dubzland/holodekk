@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 use log::trace;
 
-use crate::core::repositories::RepositoryQuery;
 use crate::core::subroutine_definitions::{
-    entities::SubroutineDefinition, repositories::SubroutineDefinitionsQuery,
+    entities::SubroutineDefinitionEntity, repositories::SubroutineDefinitionsQuery,
     FindSubroutineDefinitions, Result, SubroutineDefinitionsFindInput,
 };
+use crate::repositories::RepositoryQuery;
 
 use super::SubroutineDefinitionsService;
 
@@ -30,7 +30,7 @@ impl FindSubroutineDefinitions for SubroutineDefinitionsService {
     async fn find<'a>(
         &self,
         input: &'a SubroutineDefinitionsFindInput<'a>,
-    ) -> Result<Vec<SubroutineDefinition>> {
+    ) -> Result<Vec<SubroutineDefinitionEntity>> {
         trace!("SubroutineDefinitionsService.find({:?})", input);
         let query = SubroutineDefinitionsQuery::from(input);
         let definitions = self
@@ -59,22 +59,15 @@ mod tests {
     use rstest::*;
 
     use crate::core::subroutine_definitions::{
-        entities::{fixtures::subroutine_definition, SubroutineDefinition},
+        entities::{fixtures::subroutine_definition, SubroutineDefinitionEntity},
         Result,
     };
-    //     use crate::config::fixtures::{mock_config, MockConfig};
-    //     use crate::core::projectors::{
-    //         entities::{fixtures::projector, Projector},
-    //         repositories::{fixtures::projectors_repository, MockProjectorsRepository},
-    //         worker::{fixtures::mock_projectors_worker, MockProjectorsWorker},
-    //         Result,
-    //     };
 
     use super::*;
 
     #[rstest]
     #[tokio::test]
-    async fn returns_existing(subroutine_definition: SubroutineDefinition) -> Result<()> {
+    async fn returns_existing(subroutine_definition: SubroutineDefinitionEntity) -> Result<()> {
         let mut definitions = HashMap::new();
         definitions.insert(
             subroutine_definition.id().to_string(),
@@ -96,7 +89,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_nothing_when_no_matches(
-        subroutine_definition: SubroutineDefinition,
+        subroutine_definition: SubroutineDefinitionEntity,
     ) -> Result<()> {
         let mut definitions = HashMap::new();
         definitions.insert(

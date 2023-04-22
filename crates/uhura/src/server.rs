@@ -4,7 +4,10 @@ use log::debug;
 
 use holodekk::{
     config::{HolodekkConfig, ProjectorConfig, UhuraApiConfig},
-    utils::servers::{start_grpc_server, GrpcServerHandle},
+    utils::{
+        servers::{start_grpc_server, GrpcServerHandle},
+        ConnectionInfo,
+    },
 };
 
 use crate::{apis::grpc::uhura::uhura_api_server, services::UhuraService};
@@ -33,7 +36,11 @@ where
     let uhura_server =
         tonic::transport::Server::builder().add_service(uhura_api_server(uhura_service));
 
-    let api_server = start_grpc_server(config.uhura_api_config(), uhura_server);
+    let mut socket_path = config.projector_path().to_owned();
+    socket_path.push("uhura.sock");
+    let uhura_listener = ConnectionInfo::unix(socket_path);
+
+    let api_server = start_grpc_server(&uhura_listener, uhura_server);
 
     UhuraServerHandle::new(api_server)
 }

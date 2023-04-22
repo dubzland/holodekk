@@ -775,14 +775,17 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 name = "holodekk"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "axum",
  "bollard",
  "bytes",
  "clap",
+ "env_logger",
  "futures",
  "futures-core",
  "futures-util",
+ "hex",
  "hyper",
  "libc",
  "log",
@@ -790,6 +793,7 @@ dependencies = [
  "mockall",
  "nix",
  "prost",
+ "rand",
  "regex",
  "rstest",
  "serde",
@@ -820,7 +824,6 @@ dependencies = [
  "colored",
  "env_logger",
  "holodekk",
- "holodekkd",
  "log",
  "serde_json",
  "tar",
@@ -847,12 +850,16 @@ dependencies = [
 name = "holodekkd"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "axum",
  "clap",
  "env_logger",
  "holodekk",
+ "hyper",
  "log",
+ "mockall",
  "nix",
+ "prost",
  "rstest",
  "serde",
  "serde_json",
@@ -860,7 +867,8 @@ dependencies = [
  "thiserror",
  "tokio",
  "tonic",
- "uhura",
+ "tonic-build",
+ "tower",
  "uuid",
  "walkdir",
 ]

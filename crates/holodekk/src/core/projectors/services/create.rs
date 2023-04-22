@@ -1,37 +1,41 @@
+use anyhow::Context;
 use async_trait::async_trait;
-use log::{debug, info, trace, warn};
-use tokio::sync::mpsc::Sender;
+use log::{info, trace, warn};
 
 use crate::core::projectors::{
-    entities::Projector,
-    repositories::{projector_repo_id, ProjectorsRepository},
+    entities::ProjectorEntity,
+    repositories::{ProjectorsQuery, ProjectorsRepository},
     CreateProjector, ProjectorsCreateInput, ProjectorsError, Result,
 };
-use crate::utils::Worker;
+use crate::servers::director::{DirectorError, DirectorRequest};
 
-use super::{ProjectorCommand, ProjectorsService};
+use super::ProjectorsService;
 
 #[async_trait]
-impl<R, W> CreateProjector for ProjectorsService<R, W>
+impl<R> CreateProjector for ProjectorsService<R>
 where
     R: ProjectorsRepository,
-    W: Worker<Command = ProjectorCommand>,
 {
-    async fn create<'a>(&self, input: &'a ProjectorsCreateInput<'a>) -> Result<Projector> {
+    async fn create<'a>(&self, input: &'a ProjectorsCreateInput<'a>) -> Result<ProjectorEntity> {
         trace!("ProjectorsService.create({:?})", input);
 
         // ensure a projector is not already running for this namespace
-        let id = projector_repo_id(&self.fleet, input.namespace());
-        if self.repo.projectors_exists(&id).await? {
+        let query = ProjectorsQuery::builder()
+            .namespace_eq(input.namespace())
+            .build();
+        let projectors = self.repo.projectors_find(query).await?;
+        if !projectors.is_empty() {
             warn!(
                 "projector already running for namespace: {}",
                 input.namespace
             );
-            Err(ProjectorsError::AlreadyRunning(id))
+            Err(ProjectorsError::AlreadyRunning(
+                projectors.first().unwrap().id().to_string(),
+            ))
         } else {
             // send spawn request to manager
             info!("Spawning projector for namespace: {}", input.namespace);
-            let projector: Projector = send_start_command(self.worker(), input.namespace()).await?;
+            let projector = self.send_spawn_request(input.namespace).await?;
             info!("Projector spawned: {:?}", projector);
 
             // store the projector and return it
@@ -41,44 +45,38 @@ where
     }
 }
 
-async fn send_start_command(
-    manager: Sender<ProjectorCommand>,
-    namespace: &str,
-) -> Result<Projector> {
-    let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
+impl<R> ProjectorsService<R>
+where
+    R: ProjectorsRepository,
+{
+    async fn send_spawn_request(&self, namespace: &str) -> Result<ProjectorEntity> {
+        trace!("ProjectorsService::send_spawn_request({:?})", namespace);
 
-    let cmd = ProjectorCommand::Spawn {
-        namespace: namespace.to_string(),
-        resp: resp_tx,
-    };
+        let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
 
-    debug!("command: {:?}", cmd);
+        let request = DirectorRequest::SpawnProjector {
+            namespace: namespace.to_string(),
+            resp: resp_tx,
+        };
 
-    manager.send(cmd).await.map_err(|err| {
-        let msg = format!("Failed to send projector spawn command to manager: {}", err);
-        warn!("{}", msg);
-        ProjectorsError::Spawn(msg)
-    })?;
+        trace!("request: {:?}", request);
+        self.director()
+            .send(request)
+            .await
+            .context("Failed to send Spawn request to Director")?;
 
-    trace!("Command sent to manager.  awaiting response...");
-    let res = resp_rx.await.map_err(|err| {
-        let msg = format!(
-            "Failed to receive response from manager to spawn request: {}",
-            err
-        );
-        warn!("{}", msg);
-        ProjectorsError::Spawn(msg)
-    })?;
+        trace!("Spawn request sent to director.  Awaiting response ...");
+        let response = resp_rx
+            .await
+            .context("Error receiving response to Spawn request from Director")?;
 
-    trace!("Spawn response received from manager: {:?}", res);
-    res.map_err(|err| {
-        let msg = format!(
-            "Manager returned error in response to spawn request: {}",
-            err
-        );
-        warn!("{}", msg);
-        ProjectorsError::Spawn(msg)
-    })
+        trace!("Spawn response received from Director: {:?}", response);
+        response.map_err(|err| match err {
+            DirectorError::ProjectorSpawn(spawn) => ProjectorsError::from(spawn),
+            DirectorError::Unexpected(unexpected) => ProjectorsError::from(unexpected),
+            _ => ProjectorsError::from(anyhow::anyhow!(err.to_string())),
+        })
+    }
 }
 
 #[cfg(test)]
@@ -88,31 +86,26 @@ mod tests {
     use mockall::predicate::*;
     use rstest::*;
 
-    use crate::config::fixtures::{mock_config, MockConfig};
     use crate::core::projectors::{
-        entities::{fixtures::projector, Projector},
+        entities::{fixtures::projector, ProjectorEntity},
         repositories::{fixtures::projectors_repository, MockProjectorsRepository},
-        worker::{fixtures::mock_projectors_worker, MockProjectorsWorker},
     };
+    use crate::servers::director::DirectorRequest;
 
     use super::*;
 
     #[rstest]
     #[tokio::test]
     async fn returns_error_when_projector_already_running(
-        mock_config: MockConfig,
         mut projectors_repository: MockProjectorsRepository,
-        mock_projectors_worker: MockProjectorsWorker,
+        projector: ProjectorEntity,
     ) {
+        let (director_tx, _director_rx) = tokio::sync::mpsc::channel(1);
         projectors_repository
-            .expect_projectors_exists()
-            .return_const(Ok(true));
+            .expect_projectors_find()
+            .return_const(Ok(vec![projector]));
 
-        let service = ProjectorsService::new(
-            Arc::new(mock_config),
-            Arc::new(projectors_repository),
-            mock_projectors_worker,
-        );
+        let service = ProjectorsService::new(Arc::new(projectors_repository), director_tx);
 
         let res = service
             .create(&ProjectorsCreateInput {
@@ -130,24 +123,21 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn sends_start_command_to_manager_and_adds_record(
-        mock_config: MockConfig,
         mut projectors_repository: MockProjectorsRepository,
-        mut mock_projectors_worker: MockProjectorsWorker,
-        projector: Projector,
+        projector: ProjectorEntity,
     ) {
-        let (cmd_tx, mut cmd_rx) = tokio::sync::mpsc::channel(1);
-        mock_projectors_worker.expect_sender().return_const(cmd_tx);
+        let (director_tx, mut director_rx) = tokio::sync::mpsc::channel(1);
 
         // projector does not exist
         projectors_repository
-            .expect_projectors_exists()
-            .return_const(Ok(false));
+            .expect_projectors_find()
+            .return_const(Ok(vec![]));
 
-        // Setup fake manager
+        // Setup fake director
         let new_projector = projector.clone();
         tokio::spawn(async move {
-            match cmd_rx.recv().await.unwrap() {
-                ProjectorCommand::Spawn { resp, .. } => {
+            match director_rx.recv().await.unwrap() {
+                DirectorRequest::SpawnProjector { resp, .. } => {
                     resp.send(Ok(new_projector)).unwrap();
                 }
                 cmd => panic!("Incorrect command received from service: {:?}", cmd),
@@ -160,11 +150,7 @@ mod tests {
             .with(eq(projector.clone()))
             .return_const(Ok(projector.clone()));
 
-        let service = ProjectorsService::new(
-            Arc::new(mock_config),
-            Arc::new(projectors_repository),
-            mock_projectors_worker,
-        );
+        let service = ProjectorsService::new(Arc::new(projectors_repository), director_tx);
 
         service
             .create(&ProjectorsCreateInput {

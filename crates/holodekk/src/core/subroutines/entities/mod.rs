@@ -1,33 +1,25 @@
 mod subroutine;
 pub use subroutine::*;
 
-pub mod manifest;
-pub use manifest::SubroutineManifest;
+// pub mod manifest;
+// pub use manifest::SubroutineManifest;
 
 #[cfg(test)]
 pub mod fixtures {
     use rstest::*;
 
-    use crate::config::{
-        fixtures::{mock_config, MockConfig},
-        HolodekkConfig, ProjectorConfig,
-    };
+    use crate::core::projectors::entities::{fixtures::projector, ProjectorEntity};
     use crate::core::subroutine_definitions::entities::{
-        fixtures::subroutine_definition, SubroutineDefinition,
+        fixtures::subroutine_definition, SubroutineDefinitionEntity,
     };
 
     use super::*;
 
     #[fixture]
     pub(crate) fn subroutine(
-        mock_config: MockConfig,
-        subroutine_definition: SubroutineDefinition,
-    ) -> Subroutine {
-        Subroutine::new(
-            mock_config.fleet(),
-            mock_config.namespace(),
-            "/tmp/holodekk/projector/local/subroutines/test/sub",
-            &subroutine_definition.id(),
-        )
+        projector: ProjectorEntity,
+        subroutine_definition: SubroutineDefinitionEntity,
+    ) -> SubroutineEntity {
+        SubroutineEntity::build(&projector, &subroutine_definition)
     }
 }

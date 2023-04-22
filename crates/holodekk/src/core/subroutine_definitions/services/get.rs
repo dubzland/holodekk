@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
 use crate::core::subroutine_definitions::{
-    entities::SubroutineDefinition, GetSubroutineDefinition, Result, SubroutineDefinitionsError,
-    SubroutineDefinitionsGetInput,
+    entities::SubroutineDefinitionEntity, GetSubroutineDefinition, Result,
+    SubroutineDefinitionsError, SubroutineDefinitionsGetInput,
 };
 
 use super::SubroutineDefinitionsService;
@@ -12,7 +12,7 @@ impl GetSubroutineDefinition for SubroutineDefinitionsService {
     async fn get<'a>(
         &self,
         input: &'a SubroutineDefinitionsGetInput,
-    ) -> Result<SubroutineDefinition> {
+    ) -> Result<SubroutineDefinitionEntity> {
         let definitions = self.definitions.read().unwrap();
         if let Some(definition) = definitions.get(input.id()) {
             Ok(definition.to_owned())
@@ -30,7 +30,7 @@ mod tests {
     use rstest::*;
 
     use crate::core::subroutine_definitions::{
-        entities::{fixtures::subroutine_definition, SubroutineDefinition},
+        entities::{fixtures::subroutine_definition, SubroutineDefinitionEntity},
         SubroutineDefinitionsError,
     };
 
@@ -39,7 +39,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_definition_for_existing_subroutine_definition(
-        subroutine_definition: SubroutineDefinition,
+        subroutine_definition: SubroutineDefinitionEntity,
     ) -> Result<()> {
         let mut definitions = HashMap::new();
         definitions.insert(

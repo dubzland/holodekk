@@ -1,41 +1,40 @@
-pub mod api;
+//! Projector instances running on the Holodekk.
+//!
+//! A projector is a background process, acting as a mediator between
+//! [Subroutines](holodekk::core::subroutines) and the container engine.
 pub mod entities;
-mod init;
 pub mod repositories;
 pub mod services;
 pub mod worker;
-
-use std::sync::Arc;
 
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall::*;
 
-use crate::config::HolodekkConfig;
-use crate::core::services::ServiceStop;
+use entities::ProjectorEntity;
 
-use entities::Projector;
-
-pub type Result<T> = std::result::Result<T, ProjectorsError>;
-
-#[derive(thiserror::Error, Clone, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug)]
 pub enum ProjectorsError {
     #[error("Projector {0} not found")]
     NotFound(String),
     #[error("Projector with id {0} is already running")]
     AlreadyRunning(String),
     #[error("Repository error occurred")]
-    Repository(#[from] crate::core::repositories::RepositoryError),
+    Repository(#[from] crate::repositories::RepositoryError),
     #[error("Error occurred during projector spawn")]
-    Spawn(String),
-    #[error("Error occurred during projector shutdown")]
-    Shutdown(String),
+    Spawn(#[from] worker::SpawnError),
+    #[error("Error occurred during projector termination")]
+    Termination(#[from] worker::TerminationError),
+    #[error(transparent)]
+    Unexpected(#[from] anyhow::Error),
 }
+
+pub type Result<T> = std::result::Result<T, ProjectorsError>;
 
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait CreateProjector {
-    async fn create<'a>(&self, input: &'a ProjectorsCreateInput<'a>) -> Result<Projector>;
+    async fn create<'a>(&self, input: &'a ProjectorsCreateInput<'a>) -> Result<ProjectorEntity>;
 }
 
 #[cfg_attr(test, automock)]
@@ -47,13 +46,13 @@ pub trait DeleteProjector {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait FindProjectors {
-    async fn find<'a>(&self, input: &'a ProjectorsFindInput<'a>) -> Vec<Projector>;
+    async fn find<'a>(&self, input: &'a ProjectorsFindInput<'a>) -> Result<Vec<ProjectorEntity>>;
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait GetProjector {
-    async fn get<'a>(&self, input: &'a ProjectorsGetInput<'a>) -> Result<Projector>;
+    async fn get<'a>(&self, input: &'a ProjectorsGetInput<'a>) -> Result<ProjectorEntity>;
 }
 
 #[derive(Clone, Debug)]
@@ -88,8 +87,17 @@ impl<'d> ProjectorsDeleteInput<'d> {
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct ProjectorsFindInput<'f> {
-    fleet: Option<&'f str>,
     namespace: Option<&'f str>,
+}
+
+impl<'f> ProjectorsFindInput<'f> {
+    pub fn new(namespace: Option<&'f str>) -> Self {
+        Self { namespace }
+    }
+
+    pub fn namespace(&self) -> Option<&str> {
+        self.namespace
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -116,31 +124,38 @@ impl<T> ProjectorsServiceMethods for T where
 {
 }
 
-pub async fn create_service<C, R>(
-    config: Arc<C>,
-    repo: Arc<R>,
-) -> Result<
-    impl CreateProjector + DeleteProjector + FindProjectors + GetProjector + ServiceStop + Send + Sync,
->
-where
-    C: HolodekkConfig,
-    R: repositories::ProjectorsRepository + 'static,
-{
-    init::initialize_projectors(config.clone(), repo.clone()).await?;
-
-    let worker = worker::start_worker(config.clone());
-
-    Ok(services::ProjectorsService::new(config, repo, worker))
-}
-
 #[cfg(test)]
 pub mod fixtures {
+    use mockall::mock;
     use rstest::*;
 
     use super::*;
 
+    mock! {
+        pub ProjectorsService {}
+        #[async_trait]
+        impl CreateProjector for ProjectorsService {
+            async fn create<'a>(&self, input: &'a ProjectorsCreateInput<'a>) -> Result<ProjectorEntity>;
+        }
+
+        #[async_trait]
+        impl DeleteProjector for ProjectorsService {
+            async fn delete<'a>(&self, input: &'a ProjectorsDeleteInput<'a>) -> Result<()>;
+        }
+
+        #[async_trait]
+        impl FindProjectors for ProjectorsService {
+            async fn find<'a>(&self, input: &'a ProjectorsFindInput<'a>) -> Result<Vec<ProjectorEntity>>;
+        }
+
+        #[async_trait]
+        impl GetProjector for ProjectorsService {
+            async fn get<'a>(&self, input: &'a ProjectorsGetInput<'a>) -> Result<ProjectorEntity>;
+        }
+    }
+
     #[fixture]
-    pub fn mock_get_projector() -> MockGetProjector {
-        MockGetProjector::default()
+    pub fn mock_projectors_service() -> MockProjectorsService {
+        MockProjectorsService::default()
     }
 }
