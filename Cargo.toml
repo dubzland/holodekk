@@ -16,11 +16,17 @@ license-file = "LICENSE"
 
 [workspace.dependencies]
 holodekk = { path = "./crates/holodekk" }
+# holodekkd = { path = "./crates/holodekkd" }
+# uhura = { path = "./crates/uhura" }
+axum = { version = "0.6.12", features = ["multipart"] }
 async-trait = "0.1.67"
+bytes = "1.4.0"
 clap = { version = "4.1.6", features = ["derive"] }
 env_logger = "0.10.0"
+futures = "0.3.28"
 futures-core = "0.3.28"
 futures-util = "0.3.27"
+hyper = "0.14.25"
 log = "0.4.17"
 mio = "0.8.6"
 mockall = "0.11.4"
@@ -35,9 +41,11 @@ tempfile = "3.5.0"
 thiserror = "1.0.40"
 tokio = { version = "1.26.0", features = ["full"] }
 tokio-stream = { version = "0.1.12", features = ["net"] }
+tokio-util = { version = "0.7.7", features = ["io"] }
 tonic = "0.8.3"
 tonic-build = "0.8.4"
 tower = "0.4.13"
 tracing = "0.1.37"
 url = "2.3.1"
 uuid = { version = "1.3.0", features = ["serde", "v4"] }
+walkdir = "2.3.3"

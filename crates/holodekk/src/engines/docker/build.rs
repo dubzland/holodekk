@@ -55,7 +55,7 @@ impl<'a> Build for ImageBuilder<'a> {
 impl Build for Docker {
     /// # Examples
     ///
-    /// ```rust
+    /// ```rust,no_run
     /// # use tar::{Builder, Header};
     /// # use holodekk::engines::{docker::Docker, Build, ImageKind};
     /// # async fn create_archive() -> Vec<u8> {

@@ -10,7 +10,10 @@ license-file.workspace = true
 [dependencies]
 async-trait.workspace = true
 clap.workspace = true
+env_logger.workspace = true
 holodekk.workspace = true
+# holodekkd.workspace = true
+log.workspace = true
 serde_json.workspace = true
 tar.workspace = true
 thiserror.workspace = true

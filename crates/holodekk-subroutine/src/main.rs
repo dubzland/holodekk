@@ -1,3 +1,4 @@
+mod config;
 mod logger;
 mod server;
 mod signals;
@@ -5,15 +6,15 @@ mod streams;
 
 use std::ffi::CString;
 use std::fs::{self, File};
-use std::io::{self, Read, Write};
+use std::io::Write;
 use std::os::unix::io::FromRawFd;
-use std::os::unix::net::UnixStream;
 use std::panic;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use clap::Parser;
 
-use log::{debug, error, warn, LevelFilter};
+use log::{debug, error, info, warn, LevelFilter};
 
 use nix::{
     fcntl::OFlag,
@@ -28,10 +29,11 @@ use nix::{
 
 use syslog::{BasicLogger, Facility, Formatter3164};
 
-use serde::{Deserialize, Serialize};
-
+use holodekk::process::PidSyncMessage;
+use holodekk::repositories::RepositoryKind;
 use holodekk::utils::libsee;
 
+use config::SubroutineConfig;
 use server::Server;
 use signals::signal_mask;
 use streams::open_dev_null;
@@ -39,112 +41,56 @@ use streams::open_dev_null;
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Options {
-    /// Name of the subroutine to execute
-    #[arg(long, short, required = true)]
-    name: String,
+    /// Data root path
+    #[arg(long, default_value = "/var/lib/holodekk")]
+    data_root: PathBuf,
 
-    /// Path to the shim's pid file
-    #[arg(long = "shim-pidfile", value_name = "file", required = true)]
-    pidfile: PathBuf,
+    /// Exec root path
+    #[arg(long, default_value = "/run/holodekk")]
+    exec_root: PathBuf,
 
-    /// Working directory for the subroutine
-    #[arg(long = "subroutine-directory", value_name = "dir", required = true)]
-    subroutine_directory: PathBuf,
+    /// Holodekk bin directory
+    #[arg(long, default_value = "/usr/local/bin/")]
+    bin_path: PathBuf,
 
-    /// Path to the container's pid file
-    #[arg(long = "subroutine-pidfile", value_name = "file", required = true)]
-    subroutine_pidfile: PathBuf,
+    /// Sync pipe FD
+    #[arg(long = "sync-pipe")]
+    syncpipe_fd: Option<i32>,
 
-    /// Path to the subroutine log file
-    #[arg(long = "log-file", value_name = "file", required = true)]
-    log_file: PathBuf,
+    /// Subroutine ID
+    #[arg(long = "id", value_name = "subroutine id", required = true)]
+    subroutine_id: String,
+
+    /// Path to the subroutine to be executed
+    #[arg(long, required = true)]
+    path: PathBuf,
 
     /// Variant to execute
     #[arg(long = "subroutine", value_name = "name", required = true)]
     subroutine: String,
 
-    /// Projector port
-    #[arg(short, long, required = true)]
-    projector_port: String,
-
-    /// Log socket
+    /// Projector socket
     #[arg(long, required = true)]
-    log_socket: PathBuf,
-
-    /// Sync pipe
-    #[arg(long)]
-    sync_pipe: i32,
-
-    #[arg(long)]
-    reconnect_log: bool,
-}
-
-#[derive(Debug, Serialize)]
-struct MessageSubroutinePid {
-    kind: &'static str,
-    pid: i32,
-}
-
-#[derive(Debug, Deserialize)]
-struct MessageSubroutinePidParent {
-    kind: String,
-    pid: i32,
-}
-
-impl MessageSubroutinePid {
-    fn new(pid: Pid) -> Self {
-        MessageSubroutinePid {
-            kind: "subroutine_pid",
-            pid: pid.as_raw(),
-        }
-    }
-}
-
-fn connect_log_stream(log_socket: &PathBuf) {
-    let mut stream = UnixStream::connect(log_socket).unwrap();
-
-    loop {
-        let mut buf = [0; 1024];
-        let bytes_read = stream.read(&mut buf).unwrap();
-        if buf[0] == 1 {
-            io::stdout().write_all(&buf[1..bytes_read]).unwrap();
-        } else if buf[0] == 2 {
-            io::stderr().write_all(&buf[1..bytes_read]).unwrap();
-        }
-    }
-}
-
-fn pretend_to_be_container_manager(sync_fd: i32, log_socket: &PathBuf) {
-    let mut sync_pipe = unsafe { File::from_raw_fd(sync_fd) };
-    let mut buf = [0; 1024];
-    let bytes_read = sync_pipe
-        .read(&mut buf)
-        .expect("failed to read from the sync pipe");
-    let msg: MessageSubroutinePidParent =
-        serde_json::from_slice(&buf[0..bytes_read]).expect("failed to deserialize JSON");
-
-    println!("Got update from shim:");
-    println!("kind: {}", msg.kind);
-    println!("pid:  {}", msg.pid);
-
-    connect_log_stream(log_socket);
+    projector_socket: PathBuf,
 }
 
 fn main() {
     let options = Options::parse();
 
-    if options.reconnect_log {
-        connect_log_stream(&options.log_socket);
-        return;
-    }
-    // TEMP: Fake the holodekk sync pipe
-    let (parent_fd, child_fd) = pipe2(OFlag::O_CLOEXEC).unwrap();
+    let config = Arc::new(SubroutineConfig::new(
+        &options.path,
+        &options.data_root,
+        &options.exec_root,
+        &options.bin_path,
+        RepositoryKind::Memory,
+        &options.subroutine_id,
+        // &options.projector_socket,
+    ));
 
     // Perform the initial fork
     match unsafe { fork() } {
         Ok(ForkResult::Parent { child, .. }) => {
-            write_master_pidfile(&options.pidfile, child);
-            pretend_to_be_container_manager(parent_fd, &options.log_socket);
+            write_master_pidfile(config.shim_pidfile(), child);
 
             libsee::_exit(0);
         }
@@ -157,8 +103,7 @@ fn main() {
 
     init_logger(LevelFilter::Debug);
 
-    // TEMP
-    close(parent_fd).unwrap();
+    info!("Initial subroutine fork with pid {}", std::process::id());
 
     // Redirect all streams to /dev/null
     let (dev_null_rd, dev_null_wr) = open_dev_null();
@@ -187,7 +132,10 @@ fn main() {
 
     // fork again
     let child_pid = match unsafe { fork() } {
-        Ok(ForkResult::Parent { child, .. }) => child,
+        Ok(ForkResult::Parent { child, .. }) => {
+            write_child_pidfile(config.pidfile(), child);
+            child
+        }
         Ok(ForkResult::Child) => {
             // ensure we die if our parent disappears
             libsee::prctl(
@@ -202,11 +150,11 @@ fn main() {
             // restore signals
             sigprocmask(SigmaskHow::SIG_SETMASK, Some(&oldmask), None)
                 .expect("failed to restore signals");
+            info!("signals restored");
 
             // close the master pipes
             close(main_stdout).expect("Failed to close main stdout in worker process");
             close(main_stderr).expect("Failed to close main stderr in worker process");
-            close(child_fd).unwrap();
 
             // capture io (ignoring stdin)
             dup2(dev_null_rd, libsee::STDIN_FILENO)
@@ -245,21 +193,23 @@ fn main() {
     let result = Server::build()
         .with_child(child_pid)
         .with_stdio(main_stdout, main_stderr)
-        .with_log_file(&options.log_file)
-        .listen_uds(&options.log_socket);
+        .with_log_file(config.logfile())
+        .listen_uds(config.log_socket());
 
     match result {
         Ok(mut server) => {
             // Notify the parent of our state
-            match serde_json::to_vec(&MessageSubroutinePid::new(child_pid)) {
-                Ok(msg) => {
-                    let mut sync_pipe = unsafe { File::from_raw_fd(child_fd) };
-                    if sync_pipe.write_all(&msg).is_err() {
-                        warn!("Failed to write status to sync pipe");
+            if let Some(fd) = options.syncpipe_fd {
+                match serde_json::to_vec(&PidSyncMessage::new(child_pid.as_raw())) {
+                    Ok(msg) => {
+                        let mut sync_pipe = unsafe { File::from_raw_fd(fd) };
+                        if sync_pipe.write_all(&msg).is_err() {
+                            warn!("Failed to write status to sync pipe");
+                        }
                     }
-                }
-                Err(err) => {
-                    warn!("Failed to serialize JSON for sync update: {}", err);
+                    Err(err) => {
+                        warn!("Failed to serialize JSON for sync update: {}", err);
+                    }
                 }
             }
 
@@ -290,13 +240,23 @@ fn write_master_pidfile(pidfile: &PathBuf, pid: Pid) {
     }
 }
 
+fn write_child_pidfile(pidfile: &PathBuf, pid: Pid) {
+    debug!("forked child with pid: {}", pid);
+    if let Err(err) = fs::write(pidfile, format!("{}", pid)) {
+        panic!("write() to pidfile {} failed: {}", pidfile.display(), err);
+    }
+}
+
 fn ensure_child_reaped(pid: Pid) {
     match kill(pid, None) {
         Ok(_) => {
             warn!("child still running.  terminating.");
-            match kill(pid, SIGTERM) {
+            warn!("sending SIGKILL to {}", pid);
+            match kill(pid, SIGKILL) {
                 Ok(_) => {
+                    info!("signal sent successfully.  waiting");
                     waitpid(pid, None).unwrap();
+                    info!("wait complete");
                 }
                 Err(err) => {
                     warn!("failure trying to terminate child: {}", err);

@@ -12,9 +12,9 @@ use tokio_stream::wrappers::UnixListenerStream;
 
 use holodekk::errors::grpc::GrpcClientResult;
 
-use holodekk::{
-    apis::grpc::uhura::uhura_api_server, clients::uhura::UhuraClient, services::UhuraService,
-};
+use uhura::apis::grpc::uhura::uhura_api_server;
+use uhura::client::UhuraClient;
+use uhura::services::UhuraService;
 
 #[cfg(test)]
 mod test {

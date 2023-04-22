@@ -1,9 +1,4 @@
-use std::sync::Arc;
-
 use clap::{Parser, Subcommand};
-
-use holodekk::{Holodekk, HolodekkOptions, HolodekkResult};
-use holodekk_cli::{runtime, CliRuntimeError};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -25,36 +20,36 @@ pub enum Commands {
     },
 }
 
-const TEMPORARY_BIN: &str = "/home/jdubz/code/gitlab/holodekk/holodekk/target/debug";
-
 #[tokio::main]
-async fn main() -> HolodekkResult<()> {
-    let options = Options::parse();
+async fn main() -> std::io::Result<()> {
+    // let options = Options::parse();
 
     // Start a Holodekk
-    let holodekk_options = HolodekkOptions {
-        fleet: "local".to_string(),
-        root_path: "~/.holodekk".into(),
-        bin_path: TEMPORARY_BIN.into(),
-    };
-    let holodekk = Arc::new(Holodekk::new(&holodekk_options));
-    holodekk.init()?;
+    // let holodekk_options = HolodekkConfig {
+    //     fleet: "local".to_string(),
+    //     root_path: "~/.holodekk".into(),
+    //     bin_path: TEMPORARY_BIN.into(),
+    //     api_config: ConnectionInfo::unix("~/.holodekk/holodekk.sock"),
+    //     repo_kind: RepositoryKind::Memory,
+    // };
+    // let holodekk = Arc::new(Holodekk::new(holodekk_options));
+    // holodekk.init()?;
 
-    match &options.command {
-        Commands::Project { directory, name } => match runtime::detect(holodekk, directory, name) {
-            Ok(runtime) => {
-                runtime.project().await?;
-            }
-            Err(err) => match err {
-                CliRuntimeError::ArgumentError(reason) => {
-                    eprintln!("{}", reason);
-                }
-                _ => {
-                    eprintln!("Unknown error.");
-                }
-            },
-        },
-    };
+    // match &options.command {
+    //     Commands::Project { directory, name } => match runtime::detect(holodekk, directory, name) {
+    //         Ok(runtime) => {
+    //             runtime.project().await?;
+    //         }
+    //         Err(err) => match err {
+    //             CliRuntimeError::ArgumentError(reason) => {
+    //                 eprintln!("{}", reason);
+    //             }
+    //             _ => {
+    //                 eprintln!("Unknown error.");
+    //             }
+    //         },
+    //     },
+    // };
 
     Ok(())
 }

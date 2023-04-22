@@ -101,7 +101,7 @@ impl Store for Docker {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```rust,no_run
     /// use holodekk::engines::{docker, ImageKind, Store};
     /// # #[tokio::main]
     /// # async fn main() {
@@ -119,7 +119,7 @@ impl Store for Docker {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```rust,no_run
     /// # use holodekk::engines::{docker, ImageKind, Store};
     /// # #[tokio::main]
     /// # async fn main() {

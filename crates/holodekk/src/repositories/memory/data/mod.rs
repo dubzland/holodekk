@@ -1,21 +1,21 @@
+mod projectors;
+use projectors::*;
 mod subroutines;
 use subroutines::*;
-mod subroutine_instances;
-use subroutine_instances::*;
 
 use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct MemoryDatabase {
-    subroutines: Arc<SubroutineMemoryStore>,
-    subroutine_instances: Arc<SubroutineInstanceMemoryStore>,
+    projectors: Arc<ProjectorsMemoryStore>,
+    subroutines: Arc<SubroutinesMemoryStore>,
 }
 
 impl Default for MemoryDatabase {
     fn default() -> Self {
         Self {
-            subroutines: Arc::new(SubroutineMemoryStore::default()),
-            subroutine_instances: Arc::new(SubroutineInstanceMemoryStore::default()),
+            projectors: Arc::new(ProjectorsMemoryStore::default()),
+            subroutines: Arc::new(SubroutinesMemoryStore::default()),
         }
     }
 }
@@ -25,11 +25,11 @@ impl MemoryDatabase {
         Default::default()
     }
 
-    pub fn subroutines(&self) -> Arc<SubroutineMemoryStore> {
-        self.subroutines.clone()
+    pub fn projectors(&self) -> Arc<ProjectorsMemoryStore> {
+        self.projectors.clone()
     }
 
-    pub fn subroutine_instances(&self) -> Arc<SubroutineInstanceMemoryStore> {
-        self.subroutine_instances.clone()
+    pub fn subroutines(&self) -> Arc<SubroutinesMemoryStore> {
+        self.subroutines.clone()
     }
 }

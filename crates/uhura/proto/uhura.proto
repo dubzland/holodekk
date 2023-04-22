@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package uhura;
+
+service RpcUhura {
+	rpc Status(RpcUhuraStatusRequest) returns (RpcUhuraStatus) {}
+}
+
+message RpcUhuraStatusRequest {}
+
+message RpcUhuraStatus {
+	int32 pid = 1;
+}

@@ -6,12 +6,29 @@ repository.workspace = true
 license-file.workspace = true
 
 [dependencies]
+async-trait.workspace = true
+axum.workspace = true
 clap.workspace = true
 env_logger.workspace = true
 holodekk.workspace = true
+hyper.workspace = true
+log.workspace = true
+nix.workspace = true
+prost.workspace = true
 serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
 tokio.workspace = true
-axum = "0.6.12"
+tonic.workspace = true
+tower.workspace = true
+# uhura.workspace = true
+uuid.workspace = true
+walkdir.workspace = true
+
+[build-dependencies]
+tonic-build.workspace = true
 
 [dev-dependencies]
+mockall.workspace = true
+rstest.workspace = true
 tempfile = "3.4.0"

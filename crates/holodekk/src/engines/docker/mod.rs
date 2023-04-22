@@ -16,7 +16,7 @@ pub(crate) const DOCKER_PREFIX: &str = "holodekk";
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,no_run
 /// use holodekk::engines::docker::Docker;
 ///
 /// let engine = Docker::connect();
@@ -67,7 +67,7 @@ impl Docker {
                 &_ => panic!("Invalid DOCKER_HOST specified: {}", url),
             }
         } else {
-            println!("Connecting via local socket");
+            debug!("Connecting via local socket");
             Self::connect_local()
         }
     }

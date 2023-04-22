@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package subroutines;
+
+service RpcSubroutines {
+	rpc Create(RpcCreateSubroutineRequest) returns (RpcSubroutine) {}
+}
+
+enum RpcSubroutineStatusCode {
+	UNKNOWN_SUBROUTINE_STATUS = 0;
+	STOPPED = 1;
+	RUNNING = 2;
+	CRASHED = 3;
+}
+
+message RpcSubroutine {
+	string id = 1;
+	RpcSubroutineStatus status = 6;
+	string projector_id = 7;
+	string subroutine_definition_id = 8;
+}
+
+message RpcCreateSubroutineRequest {
+	string projector_id = 1;
+	string subroutine_definition_id = 2;
+}
+
+message RpcSubroutineStatus {
+	RpcSubroutineStatusCode code = 1;
+	optional int32 pid = 2;
+}
