@@ -5,7 +5,10 @@ use log::{error, trace};
 use crate::config::HolodekkConfig;
 use crate::core::projectors::entities::ProjectorEntity;
 use crate::core::subroutine_definitions::entities::SubroutineDefinitionEntity;
-use crate::core::subroutines::entities::{SubroutineEntity, SubroutineStatus};
+use crate::core::subroutines::{
+    entities::{SubroutineEntity, SubroutineStatus},
+    SubroutinePaths,
+};
 use crate::process::{daemonize, DaemonizeError};
 use crate::utils::fs::ensure_directory;
 
@@ -32,17 +35,18 @@ where
 
         let mut subroutine = SubroutineEntity::build(projector, definition);
 
-        let mut root_path = self.config.subroutines_root().clone();
-        root_path.push(projector.namespace());
+        let paths = SubroutinePaths::build(self.config.clone(), &subroutine);
 
         // ensure the root directory exists
-        ensure_directory(subroutine.path())?;
+        ensure_directory(paths.root())?;
 
         // build and execute the actual projector command
         let mut subroutine_executable = self.config.bin_root().clone();
         subroutine_executable.push("holodekk-subroutine");
 
         let mut command = Command::new(subroutine_executable);
+        command.arg("--id");
+        command.arg(subroutine.id());
         command.arg("--path");
         command.arg(definition.path());
         command.arg("--subroutine");
@@ -50,7 +54,7 @@ where
         command.arg("--projector-socket");
         command.arg(projector.projector_socket());
 
-        let pid = daemonize(self.config.clone(), command, subroutine.pidfile())?;
+        let pid = daemonize(self.config.clone(), command, paths.pidfile())?;
 
         subroutine.set_status(SubroutineStatus::Running(pid as u32));
         Ok(subroutine)

@@ -1,7 +1,10 @@
 use log::{debug, trace};
 
 use crate::config::HolodekkConfig;
-use crate::core::subroutines::entities::{SubroutineEntity, SubroutineStatus};
+use crate::core::subroutines::{
+    entities::{SubroutineEntity, SubroutineStatus},
+    SubroutinePaths,
+};
 use crate::errors::error_chain_fmt;
 use crate::process::{terminate_daemon, ProcessTerminationError};
 
@@ -41,7 +44,8 @@ where
         if let SubroutineStatus::Running(pid) = subroutine.status() {
             terminate_daemon(pid as i32)?;
 
-            std::fs::remove_dir_all(subroutine.path())?;
+            let paths = SubroutinePaths::build(self.config.clone(), subroutine);
+            std::fs::remove_dir_all(paths.root())?;
             debug!("Subroutine cleanup complete.");
         }
 

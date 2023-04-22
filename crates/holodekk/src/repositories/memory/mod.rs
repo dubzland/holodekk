@@ -52,7 +52,7 @@ mod tests {
         db.subroutines().add(subroutine.clone())?;
 
         let new_sub = db.subroutines().get(&subroutine.id())?;
-        assert_eq!(new_sub.path(), subroutine.path());
+        assert_eq!(new_sub.id(), subroutine.id());
         Ok(())
     }
 }

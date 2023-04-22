@@ -12,6 +12,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
+use log::error;
 use serde::{Deserialize, Serialize};
 
 use holodekk::config::HolodekkConfig;
@@ -125,34 +126,40 @@ pub enum ApiError {
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let response = match self {
-            ApiError::Projector(err) => match err {
-                ProjectorsError::AlreadyRunning(id) => (
-                    StatusCode::CONFLICT,
-                    format!("Projector already running with id {}", id),
-                ),
-                ProjectorsError::NotFound(id) => (
-                    StatusCode::NOT_FOUND,
-                    format!("Could not find a projector with id {}", id),
-                ),
-                err => (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Unexpected projector error occurred: {}", err),
-                ),
-            },
-            ApiError::Subroutine(err) => match err {
-                SubroutinesError::AlreadyRunning => (
-                    StatusCode::CONFLICT,
-                    "Subroutine already running".to_string(),
-                ),
-                SubroutinesError::NotFound(id) => (
-                    StatusCode::NOT_FOUND,
-                    format!("Could not find a subroutine with id {}", id),
-                ),
-                err => (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Unexpected subroutine error occurred: {}", err),
-                ),
-            },
+            ApiError::Projector(err) => {
+                error!("Error encountered: {:?}", err);
+                match err {
+                    ProjectorsError::AlreadyRunning(id) => (
+                        StatusCode::CONFLICT,
+                        format!("Projector already running with id {}", id),
+                    ),
+                    ProjectorsError::NotFound(id) => (
+                        StatusCode::NOT_FOUND,
+                        format!("Could not find a projector with id {}", id),
+                    ),
+                    err => (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Unexpected projector error occurred: {}", err),
+                    ),
+                }
+            }
+            ApiError::Subroutine(err) => {
+                error!("Error encountered: {:?}", err);
+                match err {
+                    SubroutinesError::AlreadyRunning => (
+                        StatusCode::CONFLICT,
+                        "Subroutine already running".to_string(),
+                    ),
+                    SubroutinesError::NotFound(id) => (
+                        StatusCode::NOT_FOUND,
+                        format!("Could not find a subroutine with id {}", id),
+                    ),
+                    err => (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Unexpected subroutine error occurred: {}", err),
+                    ),
+                }
+            }
             ApiError::SubroutineDefinition(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Unexpected subroutine definition error occurred: {}", err),

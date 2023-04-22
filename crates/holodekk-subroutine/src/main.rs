@@ -41,10 +41,6 @@ use streams::open_dev_null;
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Options {
-    /// Path to the subroutine to be executed
-    #[arg(long, short, required = true)]
-    path: PathBuf,
-
     /// Data root path
     #[arg(long, default_value = "/var/lib/holodekk")]
     data_root: PathBuf,
@@ -61,12 +57,20 @@ pub struct Options {
     #[arg(long = "sync-pipe")]
     syncpipe_fd: Option<i32>,
 
+    /// Subroutine ID
+    #[arg(long = "id", value_name = "subroutine id", required = true)]
+    subroutine_id: String,
+
+    /// Path to the subroutine to be executed
+    #[arg(long, required = true)]
+    path: PathBuf,
+
     /// Variant to execute
     #[arg(long = "subroutine", value_name = "name", required = true)]
     subroutine: String,
 
     /// Projector socket
-    #[arg(short, long, required = true)]
+    #[arg(long, required = true)]
     projector_socket: PathBuf,
 }
 
@@ -79,6 +83,7 @@ fn main() {
         &options.exec_root,
         &options.bin_path,
         RepositoryKind::Memory,
+        &options.subroutine_id,
         // &options.projector_socket,
     ));
 

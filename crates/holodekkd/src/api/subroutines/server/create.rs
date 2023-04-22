@@ -32,7 +32,7 @@ where
     let subroutine = state
         .subroutines()
         .create(&SubroutinesCreateInput::new(
-            projector.namespace(),
+            projector.id(),
             &new_subroutine.subroutine_definition_id,
         ))
         .await?;

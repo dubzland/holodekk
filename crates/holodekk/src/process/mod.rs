@@ -2,15 +2,15 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::os::unix::io::{FromRawFd, RawFd};
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::sync::Arc;
 
-use log::warn;
+use log::{debug, warn};
 use nix::{
     fcntl::OFlag,
     sys::{
         signal::{kill, SIGINT, SIGKILL},
-        wait::{waitpid, WaitPidFlag, WaitStatus},
+        wait::waitpid,
     },
     unistd::{pipe2, Pid},
 };
@@ -54,7 +54,9 @@ impl std::fmt::Debug for ProcessTerminationError {
 #[derive(thiserror::Error)]
 pub enum DaemonizeError {
     #[error("failed to execute process command")]
-    Execute(#[from] std::io::Error),
+    Command(std::process::ExitStatus),
+    #[error("command returned bad execution status")]
+    Execution(#[from] std::io::Error),
     #[error("failed to synchronize with process")]
     Synchronize(#[from] ProcessSyncError),
 }
@@ -133,43 +135,47 @@ where
     command.arg(config.data_root());
     command.arg("--exec-root");
     command.arg(config.exec_root());
-    command.arg("--bin-path123");
+    command.arg("--bin-path");
     command.arg(config.bin_root());
     command.arg("--sync-pipe");
     command.arg(child_fd.to_string());
 
-    command
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+    debug!("Spawning daemon: {:?}", command);
 
-    let status = command.status()?;
+    let output = command.output()?;
 
-    if status.success() {
+    if output.status.success() {
         let pid = get_daemon_pid(sync_pipe, pidfile.as_ref())?;
         Ok(pid)
     } else {
-        todo!()
+        warn!("Unable to spawn process: {:?}", output.status);
+        warn!("=====================================================================");
+        warn!("stdout:");
+        warn!("{}", std::str::from_utf8(&output.stdout).unwrap());
+        warn!("=====================================================================");
+        warn!("stderr:");
+        warn!("{}", std::str::from_utf8(&output.stderr).unwrap());
+        Err(DaemonizeError::Command(output.status))
     }
 }
 
 pub fn terminate_daemon(pid: i32) -> std::result::Result<i32, ProcessTerminationError> {
+    debug!("Terminating daemon with pid {}", pid);
     match kill(Pid::from_raw(pid), None) {
         Ok(_) => {
-            kill(Pid::from_raw(pid), SIGINT)?;
+            debug!("daemon active.  Attempting graceful shutdown ...");
             let mut count = 0;
+            kill(Pid::from_raw(pid), SIGINT)?;
+            debug!("SIGTERM sent.  awaiting process termination ...");
             while count < 10 {
-                match waitpid(Pid::from_raw(pid), Some(WaitPidFlag::WNOHANG))? {
-                    WaitStatus::Exited(_, code) => {
-                        return Ok(code);
-                    }
-                    WaitStatus::Signaled(..) => {
-                        return Ok(-1);
-                    }
-                    _ => {
-                        // process still active.  sleep and try again
+                match kill(Pid::from_raw(pid), None) {
+                    Ok(_) => {
                         count += 1;
                         std::thread::sleep(std::time::Duration::from_secs(1));
+                    }
+                    Err(_) => {
+                        debug!("Process shutdown.  Termination complete");
+                        return Ok(0);
                     }
                 }
             }
@@ -179,6 +185,12 @@ pub fn terminate_daemon(pid: i32) -> std::result::Result<i32, ProcessTermination
             waitpid(Pid::from_raw(pid), None)?;
             Ok(-1)
         }
-        Err(_) => Err(ProcessTerminationError::NotRunning(pid)),
+        Err(err) => {
+            warn!(
+                "Error encountered while checking the status of process: {}",
+                err
+            );
+            Err(ProcessTerminationError::NotRunning(pid))
+        }
     }
 }

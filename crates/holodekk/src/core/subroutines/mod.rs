@@ -3,9 +3,14 @@ pub mod repositories;
 pub mod services;
 pub mod worker;
 
+use std::path::PathBuf;
+use std::sync::Arc;
+
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall::automock;
+
+use crate::config::HolodekkConfig;
 
 use entities::SubroutineEntity;
 
@@ -144,6 +149,56 @@ impl<T> SubroutinesServiceMethods for T where
         + Sync
         + 'static
 {
+}
+
+#[derive(Debug)]
+pub struct SubroutinePaths {
+    root: PathBuf,
+    pidfile: PathBuf,
+    logfile: PathBuf,
+    socket: PathBuf,
+}
+
+impl SubroutinePaths {
+    pub fn build<C>(config: Arc<C>, subroutine: &SubroutineEntity) -> Self
+    where
+        C: HolodekkConfig,
+    {
+        let mut root = config.subroutines_root().clone();
+        root.push(subroutine.id());
+
+        let mut pidfile = root.clone();
+        pidfile.push("subroutine.pid");
+
+        let mut logfile = root.clone();
+        logfile.push("subroutine.log");
+
+        let mut socket = root.clone();
+        socket.push("log.sock");
+
+        Self {
+            root,
+            pidfile,
+            logfile,
+            socket,
+        }
+    }
+
+    pub fn root(&self) -> &PathBuf {
+        &self.root
+    }
+
+    pub fn pidfile(&self) -> &PathBuf {
+        &self.pidfile
+    }
+
+    pub fn logfile(&self) -> &PathBuf {
+        &self.logfile
+    }
+
+    pub fn socket(&self) -> &PathBuf {
+        &self.socket
+    }
 }
 
 #[cfg(test)]

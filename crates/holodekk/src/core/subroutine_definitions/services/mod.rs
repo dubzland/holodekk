@@ -46,13 +46,13 @@ where
 {
     let mut definitions = HashMap::new();
 
-    for entry in WalkDir::new(config.subroutines_root())
-        .min_depth(2)
-        .max_depth(2)
-    {
+    let mut subroutines_root = config.data_root().to_owned();
+    subroutines_root.push("subroutines");
+
+    for entry in WalkDir::new(&subroutines_root).min_depth(2).max_depth(2) {
         let path = entry.unwrap().path().to_path_buf();
         let name = path
-            .strip_prefix(config.subroutines_root())
+            .strip_prefix(&subroutines_root)
             .unwrap()
             .to_str()
             .unwrap()
@@ -87,10 +87,11 @@ mod tests {
         exec_root.push("exec");
         let config = MockConfig::new(&data_root, &exec_root);
 
-        let subroutines_root = config.subroutines_root().to_owned();
+        let mut subroutine_definitions_root = config.data_root().to_owned();
+        subroutine_definitions_root.push("subroutines");
 
         let subroutine_name = "acme/widgets";
-        let mut subroutine_path = subroutines_root.clone();
+        let mut subroutine_path = subroutine_definitions_root.clone();
         subroutine_path.push(subroutine_name);
         println!("creating {}", subroutine_path.display());
         std::fs::create_dir_all(&subroutine_path)?;
