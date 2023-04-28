@@ -1,191 +1,51 @@
-#[cfg(test)]
-mod fixtures;
-mod projectors;
-mod subroutine_definitions;
-mod subroutines;
+mod errors;
+pub use errors::ApiError;
+mod scenes;
+// #[cfg(test)]
+// mod fixtures;
+// mod subroutine_definitions;
+// mod subroutines;
 
 use std::sync::Arc;
 
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    routing::get,
-    Json, Router,
-};
-use log::error;
+use axum::{response::IntoResponse, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 
-use holodekk::config::HolodekkConfig;
-use holodekk::core::projectors::{ProjectorsError, ProjectorsServiceMethods};
-use holodekk::core::subroutine_definitions::{
-    SubroutineDefinitionsError, SubroutineDefinitionsServiceMethods,
-};
-use holodekk::core::subroutines::{SubroutinesError, SubroutinesServiceMethods};
+use holodekk::core::repositories::ScenesRepository;
 
-use projectors::server::ProjectorsApiServices;
-use subroutine_definitions::server::SubroutineDefinitionsApiServices;
-use subroutines::server::SubroutinesApiServices;
+// use holodekk::scenes::SceneMethods;
 
-pub trait ApiCoreState<C> {
-    fn config(&self) -> Arc<C>;
+pub struct ApiState<T>
+where
+    T: ScenesRepository,
+{
+    repo: Arc<T>,
 }
 
-pub struct ApiState<P, D, S, C>
+impl<T> ApiState<T>
 where
-    P: ProjectorsServiceMethods,
-    D: SubroutineDefinitionsServiceMethods,
-    S: SubroutinesServiceMethods,
-    C: HolodekkConfig,
+    T: ScenesRepository,
 {
-    projectors_service: Arc<P>,
-    subroutines_service: Arc<S>,
-    definitions_service: Arc<D>,
-    config: Arc<C>,
-}
+    pub fn new(repo: Arc<T>) -> Self {
+        Self { repo }
+    }
 
-impl<P, D, S, C> ApiState<P, D, S, C>
-where
-    P: ProjectorsServiceMethods,
-    D: SubroutineDefinitionsServiceMethods,
-    S: SubroutinesServiceMethods,
-    C: HolodekkConfig,
-{
-    pub fn new(
-        projectors_service: Arc<P>,
-        definitions_service: Arc<D>,
-        subroutines_service: Arc<S>,
-        config: Arc<C>,
-    ) -> Self {
-        Self {
-            projectors_service,
-            definitions_service,
-            subroutines_service,
-            config,
-        }
+    pub fn repo(&self) -> Arc<T> {
+        self.repo.clone()
     }
 }
 
-impl<P, D, S, C> ApiCoreState<C> for ApiState<P, D, S, C>
+pub fn router<T>(api_state: Arc<ApiState<T>>) -> axum::Router
 where
-    P: ProjectorsServiceMethods,
-    D: SubroutineDefinitionsServiceMethods,
-    S: SubroutinesServiceMethods,
-    C: HolodekkConfig,
-{
-    fn config(&self) -> Arc<C> {
-        self.config.clone()
-    }
-}
-
-impl<P, D, S, C> ProjectorsApiServices<P> for ApiState<P, D, S, C>
-where
-    P: ProjectorsServiceMethods,
-    D: SubroutineDefinitionsServiceMethods,
-    S: SubroutinesServiceMethods,
-    C: HolodekkConfig,
-{
-    fn projectors(&self) -> Arc<P> {
-        self.projectors_service.clone()
-    }
-}
-
-impl<P, D, S, C> SubroutineDefinitionsApiServices<D> for ApiState<P, D, S, C>
-where
-    P: ProjectorsServiceMethods,
-    D: SubroutineDefinitionsServiceMethods,
-    S: SubroutinesServiceMethods,
-    C: HolodekkConfig,
-{
-    fn definitions(&self) -> Arc<D> {
-        self.definitions_service.clone()
-    }
-}
-
-impl<P, D, S, C> SubroutinesApiServices<S> for ApiState<P, D, S, C>
-where
-    P: ProjectorsServiceMethods,
-    D: SubroutineDefinitionsServiceMethods,
-    S: SubroutinesServiceMethods,
-    C: HolodekkConfig,
-{
-    fn subroutines(&self) -> Arc<S> {
-        self.subroutines_service.clone()
-    }
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum ApiError {
-    #[error("Unexpected projector error occurred")]
-    Projector(#[from] ProjectorsError),
-    #[error("Unexpected subroutine definition error occurred")]
-    SubroutineDefinition(#[from] SubroutineDefinitionsError),
-    #[error("Unexpected subroutine error occurred")]
-    Subroutine(#[from] SubroutinesError),
-}
-
-impl IntoResponse for ApiError {
-    fn into_response(self) -> Response {
-        let response = match self {
-            ApiError::Projector(err) => {
-                error!("Error encountered: {:?}", err);
-                match err {
-                    ProjectorsError::AlreadyRunning(id) => (
-                        StatusCode::CONFLICT,
-                        format!("Projector already running with id {}", id),
-                    ),
-                    ProjectorsError::NotFound(id) => (
-                        StatusCode::NOT_FOUND,
-                        format!("Could not find a projector with id {}", id),
-                    ),
-                    err => (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        format!("Unexpected projector error occurred: {}", err),
-                    ),
-                }
-            }
-            ApiError::Subroutine(err) => {
-                error!("Error encountered: {:?}", err);
-                match err {
-                    SubroutinesError::AlreadyRunning => (
-                        StatusCode::CONFLICT,
-                        "Subroutine already running".to_string(),
-                    ),
-                    SubroutinesError::NotFound(id) => (
-                        StatusCode::NOT_FOUND,
-                        format!("Could not find a subroutine with id {}", id),
-                    ),
-                    err => (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        format!("Unexpected subroutine error occurred: {}", err),
-                    ),
-                }
-            }
-            ApiError::SubroutineDefinition(err) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Unexpected subroutine definition error occurred: {}", err),
-            ),
-        };
-        response.into_response()
-    }
-}
-
-pub fn router<P, D, S, C>(api_services: Arc<ApiState<P, D, S, C>>) -> axum::Router
-where
-    P: ProjectorsServiceMethods,
-    D: SubroutineDefinitionsServiceMethods,
-    S: SubroutinesServiceMethods,
-    C: HolodekkConfig,
+    T: ScenesRepository + 'static,
 {
     Router::new()
         .route("/health", get(health))
-        .nest(
-            "/projectors",
-            projectors::server::router(api_services.clone()),
-        )
-        .nest(
-            "/subroutine_definitions",
-            subroutine_definitions::server::router(api_services),
-        )
+        .nest("/scenes", scenes::server::router(api_state.clone()))
+    // .nest(
+    //     "/subroutine_definitions",
+    //     subroutine_definitions::server::router(api_services),
+    // )
 }
 
 #[derive(Debug, Deserialize, Serialize)]

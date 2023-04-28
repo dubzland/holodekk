@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use holodekk::config::{HolodekkApiConfig, HolodekkConfig};
 use holodekk::repositories::RepositoryKind;
-use holodekk::utils::ConnectionInfo;
+use holodekk_common::config::HolodekkApiConfig;
+use holodekk_common::utils::ConnectionInfo;
 
 #[derive(Clone, Debug)]
 pub struct HolodekkdConfig {
@@ -43,36 +43,34 @@ impl HolodekkdConfig {
             repo_kind,
         }
     }
-}
+    // }
 
-impl HolodekkConfig for HolodekkdConfig {
-    fn data_root(&self) -> &PathBuf {
+    // impl HolodekkConfig for HolodekkdConfig {
+    pub fn data_root(&self) -> &PathBuf {
         &self.data_root
     }
 
-    fn exec_root(&self) -> &PathBuf {
+    pub fn exec_root(&self) -> &PathBuf {
         &self.exec_root
     }
 
-    fn projectors_root(&self) -> &PathBuf {
+    pub fn projectors_root(&self) -> &PathBuf {
         &self.projectors_root
     }
 
-    fn subroutines_root(&self) -> &PathBuf {
+    pub fn subroutines_root(&self) -> &PathBuf {
         &self.subroutines_root
     }
 
-    fn bin_root(&self) -> &PathBuf {
+    pub fn bin_root(&self) -> &PathBuf {
         &self.bin_root
     }
 
-    fn repo_kind(&self) -> RepositoryKind {
+    pub fn repo_kind(&self) -> RepositoryKind {
         self.repo_kind
     }
-}
 
-impl HolodekkApiConfig for HolodekkdConfig {
-    fn holodekk_api_config(&self) -> &ConnectionInfo {
+    pub fn holodekk_api_config(&self) -> &ConnectionInfo {
         &self.holodekk_api_config
     }
 }

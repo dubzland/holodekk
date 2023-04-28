@@ -12,6 +12,7 @@ futures-util.workspace = true
 # holodekk-projector.workspace = true
 # holodekk-utils.workspace = true
 holodekk.workspace = true
+holodekk-common.workspace = true
 log.workspace = true
 mio.workspace = true
 nix.workspace = true

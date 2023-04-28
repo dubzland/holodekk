@@ -2,7 +2,7 @@
 members = [
     "crates/holodekk",
     "crates/holodekk-cli",
-    "crates/holodekk-subroutine",
+    "crates/holodekk-common",
     "crates/holodekkd",
     "crates/uhura"
 ]
@@ -16,25 +16,36 @@ license-file = "LICENSE"
 
 [workspace.dependencies]
 holodekk = { path = "./crates/holodekk" }
+holodekk-common = { path = "./crates/holodekk-common" }
+timestamps = { path = "../timestamps-rs" }
+# holodekk-director = { path = "./crates/holodekk-director" }
 # holodekkd = { path = "./crates/holodekkd" }
 # uhura = { path = "./crates/uhura" }
+anyhow = "1.0.70"
 axum = { version = "0.6.12", features = ["multipart"] }
 async-trait = "0.1.67"
 bytes = "1.4.0"
+chrono = { version = "0.4.24", features = ["serde"] }
 clap = { version = "4.1.6", features = ["derive"] }
 env_logger = "0.10.0"
 futures = "0.3.28"
 futures-core = "0.3.28"
 futures-util = "0.3.27"
+hex = "0.4.3"
+http = "0.2.9"
 hyper = "0.14.25"
+lazy_static = "1.4.0"
 log = "0.4.17"
 mio = "0.8.6"
 mockall = "0.11.4"
 nix = "0.26.2"
 prost = "0.11.8"
+rand = "0.8.5"
+regex = "1.7.1"
 rstest = "0.17.0"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.93"
+sha2 = "0.10.6"
 syslog = "6.0.1"
 tar = "0.4.38"
 tempfile = "3.5.0"

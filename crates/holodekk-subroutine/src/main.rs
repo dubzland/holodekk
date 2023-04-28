@@ -29,9 +29,9 @@ use nix::{
 
 use syslog::{BasicLogger, Facility, Formatter3164};
 
-use holodekk::process::PidSyncMessage;
 use holodekk::repositories::RepositoryKind;
-use holodekk::utils::libsee;
+use holodekk_common::process::PidSyncMessage;
+use holodekk_common::utils::libsee;
 
 use config::SubroutineConfig;
 use server::Server;

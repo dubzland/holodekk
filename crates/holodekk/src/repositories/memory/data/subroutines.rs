@@ -1,11 +1,11 @@
 use std::{collections::HashMap, sync::RwLock};
 
-use crate::core::subroutines::entities::SubroutineEntity;
+use crate::core::entities::{SubroutineEntity, SubroutineEntityId};
 use crate::repositories::{RepositoryError, Result};
 
 #[derive(Debug)]
 pub struct SubroutinesMemoryStore {
-    records: RwLock<HashMap<String, SubroutineEntity>>,
+    records: RwLock<HashMap<SubroutineEntityId, SubroutineEntity>>,
 }
 
 impl Default for SubroutinesMemoryStore {
@@ -18,13 +18,16 @@ impl Default for SubroutinesMemoryStore {
 
 impl SubroutinesMemoryStore {
     pub fn add(&self, subroutine: SubroutineEntity) -> Result<()> {
-        if self.records.read().unwrap().contains_key(subroutine.id()) {
-            Err(RepositoryError::Duplicate(subroutine.id().into()))
+        if self.records.read().unwrap().contains_key(&subroutine.id) {
+            Err(RepositoryError::Conflict(format!(
+                "Subroutine already exists with id {}",
+                subroutine.id
+            )))
         } else {
             self.records
                 .write()
                 .unwrap()
-                .insert(subroutine.id().into(), subroutine);
+                .insert(subroutine.id.clone(), subroutine);
             Ok(())
         }
     }
@@ -38,12 +41,12 @@ impl SubroutinesMemoryStore {
             .collect()
     }
 
-    pub fn delete(&self, id: &str) -> Result<()> {
+    pub fn delete(&self, id: &SubroutineEntityId) -> Result<()> {
         self.records.write().unwrap().remove(id);
         Ok(())
     }
 
-    pub fn exists(&self, id: &str) -> Result<bool> {
+    pub fn exists(&self, id: &SubroutineEntityId) -> Result<bool> {
         if self.records.read().unwrap().contains_key(id) {
             Ok(true)
         } else {
@@ -51,11 +54,11 @@ impl SubroutinesMemoryStore {
         }
     }
 
-    pub fn get(&self, id: &str) -> Result<SubroutineEntity> {
+    pub fn get(&self, id: &SubroutineEntityId) -> Result<SubroutineEntity> {
         if let Some(record) = self.records.read().unwrap().get(id) {
             Ok(record.to_owned())
         } else {
-            Err(RepositoryError::NotFound(id.into()))
+            Err(RepositoryError::NotFound(id.to_owned()))
         }
     }
 }

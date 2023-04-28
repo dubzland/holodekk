@@ -1,33 +1,47 @@
 use std::fs;
-use std::net::Ipv4Addr;
+// use std::net::Ipv4Addr;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use clap::Parser;
 use log::debug;
 
-use holodekk::{
-    config::{HolodekkApiConfig, HolodekkConfig},
-    core::{
-        projectors::services::ProjectorsService,
-        subroutine_definitions::services::SubroutineDefinitionsService,
-        subroutines::services::SubroutinesService,
-    },
-    repositories::{
-        memory::{MemoryDatabase, MemoryRepository},
-        RepositoryKind,
-    },
-    servers::director::{DirectorRequest, DirectorServer},
-    utils::{
-        servers::start_http_server,
-        signals::{SignalKind, Signals},
-        ConnectionInfo,
-    },
+// use holodekk::config::HolodekkConfig;
+// use holodekk::{
+//     config::{HolodekkApiConfig, HolodekkConfig},
+//     core::{
+//         projectors::services::ProjectorsService,
+//         subroutine_definitions::services::SubroutineDefinitionsService,
+//         subroutines::services::SubroutinesService,
+//     },
+//     repositories::{
+//         memory::{MemoryDatabase, MemoryRepository},
+//         RepositoryKind,
+//     },
+//     servers::director::{DirectorRequest, DirectorServer},
+//     utils::{
+//         servers::start_http_server,
+//         signals::{SignalKind, Signals},
+//         ConnectionInfo,
+//     },
+// };
+
+// use holodekkd::api::{router, ApiState};
+use holodekk::repositories::{
+    memory::{MemoryDatabase, MemoryRepository},
+    RepositoryKind,
+};
+use holodekk_common::utils::{
+    servers::start_http_server,
+    signals::{SignalKind, Signals},
+    ConnectionInfo,
 };
 
-use holodekkd::api::{router, ApiState};
 use holodekkd::config::HolodekkdConfig;
-use holodekkd::errors::HolodekkError;
+// use holodekkd::errors::HolodekkError;
+
+use holodekkd::api::{router, ApiState};
+use holodekkd::{Holodekk, HolodekkError};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -44,24 +58,12 @@ struct Options {
     #[arg(long, default_value = "/usr/local/bin/")]
     bin_path: PathBuf,
 
-    /// Path to holodekk daemon pid file
-    #[arg(long, value_name = "file", required = true)]
-    pidfile: PathBuf,
+    /// Holodekk API port
+    #[arg(short, long, default_value = "7979")]
+    port: u16,
 
-    /// Port to listen on
-    #[arg(long, short)]
-    port: Option<u16>,
-
-    /// Listen address (IP)
-    #[arg(long)]
-    address: Option<Ipv4Addr>,
-
-    /// Listen socket (UDS)
-    #[arg(long, conflicts_with_all = ["port", "address"])]
-    socket: Option<PathBuf>,
-
-    /// Repository type
-    #[arg(long, value_enum, default_value = "memory")]
+    /// Holodekk API port
+    #[arg(long, value_enum)]
     repository: RepositoryKind,
 }
 
@@ -76,12 +78,13 @@ fn ensure_directory<P: AsRef<Path>>(path: P) -> std::io::Result<()> {
 async fn main() -> std::result::Result<(), HolodekkError> {
     let options = Options::parse();
 
-    let api_config = ConnectionInfo::from_options(
-        options.port.as_ref(),
-        options.address.as_ref(),
-        options.socket,
-    )
-    .unwrap();
+    // let api_config = ConnectionInfo::from_options(
+    //     options.port.as_ref(),
+    //     options.address.as_ref(),
+    //     options.socket,
+    // )
+    // .unwrap();
+    let api_config = ConnectionInfo::tcp(&options.port, None);
 
     let holodekkd_config = Arc::new(HolodekkdConfig::new(
         &options.data_root,
@@ -109,29 +112,8 @@ async fn main() -> std::result::Result<(), HolodekkError> {
         }
     };
 
-    // start the director server
-    let (director_handle, director_sender) =
-        DirectorServer::start(holodekkd_config.clone(), repo.clone());
-
-    // start the api server
-    let projectors_service = Arc::new(ProjectorsService::new(
-        repo.clone(),
-        director_sender.clone(),
-    ));
-    let definitions_service =
-        Arc::new(SubroutineDefinitionsService::init(holodekkd_config.clone()).unwrap());
-    let subroutines_service = Arc::new(SubroutinesService::new(
-        repo.clone(),
-        director_sender.clone(),
-        projectors_service.clone(),
-        definitions_service.clone(),
-    ));
-    let state = ApiState::new(
-        projectors_service,
-        definitions_service,
-        subroutines_service,
-        holodekkd_config.clone(),
-    );
+    let holodekk = Holodekk::start().await?;
+    let state = ApiState::new(repo.clone());
     let mut api_server = start_http_server(
         holodekkd_config.holodekk_api_config(),
         router(Arc::new(state)),
@@ -141,16 +123,17 @@ async fn main() -> std::result::Result<(), HolodekkError> {
     match signal {
         SignalKind::Int => {
             debug!("SIGINT received.  Processing shutdown.");
-            let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
-            api_server.stop().await.unwrap();
-            director_sender
-                .send(DirectorRequest::Shutdown { resp: resp_tx })
-                .await
-                .unwrap();
-            drop(director_sender);
-            resp_rx.await.unwrap().unwrap();
+            // let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
+            // director_sender
+            //     .send(DirectorRequest::Shutdown { resp: resp_tx })
+            //     .await
+            //     .unwrap();
+            // drop(director_sender);
+            // resp_rx.await.unwrap().unwrap();
 
-            director_handle.await.unwrap();
+            // director_handle.await.unwrap();
+            api_server.stop().await.unwrap();
+            holodekk.stop().await;
             debug!("received shutdown response.");
         }
         SignalKind::Quit | SignalKind::Term => {

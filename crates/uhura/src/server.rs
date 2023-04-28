@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use log::debug;
 
-use holodekk::{
-    config::{HolodekkConfig, ProjectorConfig, UhuraApiConfig},
+use holodekk_common::{
+    config::{HolodekkPaths, ProjectorConfig, UhuraApiConfig},
     utils::{
         servers::{start_grpc_server, GrpcServerHandle},
         ConnectionInfo,
@@ -29,7 +29,7 @@ impl UhuraServerHandle {
 
 pub fn start_uhura_server<C>(config: Arc<C>) -> UhuraServerHandle
 where
-    C: HolodekkConfig + ProjectorConfig + UhuraApiConfig,
+    C: HolodekkPaths + ProjectorConfig + UhuraApiConfig,
 {
     debug!("starting Uhura API server...");
     let uhura_service = Arc::new(UhuraService::new());

@@ -85,7 +85,7 @@ checksum = "16e62a023e7c117e27523144c5d2459f4397fcc3cab0085af8e2224f643a0193"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.13",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -96,7 +96,7 @@ checksum = "b9ccdd8f2a161be9bd5c023df56f1b2a0bd1d83872ae53b71a84a12c9bf6e842"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.13",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -312,7 +312,7 @@ dependencies = [
  "heck",
  "proc-macro2",
  "quote",
- "syn 2.0.13",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -416,7 +416,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "scratch",
- "syn 2.0.13",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -433,7 +433,7 @@ checksum = "2345488264226bf682893e25de0769f3360aac9957980ec49361b083ddaa5bc5"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.13",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -535,6 +535,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d2f06b9cac1506ece98fe3231e3cc9c4410ec3d5b1f24ae1c8946f0742cdefc"
 dependencies = [
  "version_check",
+]
+
+[[package]]
+name = "etcd-client"
+version = "0.10.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4319dc0fb739a6e84cb8678b8cf50c9bcfa4712ae826b33ecf00cc0850550a58"
+dependencies = [
+ "http",
+ "prost",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-build",
+ "tower",
+ "tower-service",
 ]
 
 [[package]]
@@ -650,7 +666,7 @@ checksum = "89ca545a94061b6365f2c7355b4b32bd20df3ff95f02da9329b34ccc3bd6ee72"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.13",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -778,6 +794,57 @@ dependencies = [
  "anyhow",
  "async-trait",
  "axum",
+ "chrono",
+ "clap",
+ "etcd-client",
+ "hex",
+ "holodekk-common",
+ "http",
+ "hyper",
+ "lazy_static",
+ "log",
+ "mockall",
+ "mockall_double",
+ "prost",
+ "rand",
+ "regex",
+ "rstest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror",
+ "timestamps",
+ "tokio",
+ "tonic",
+ "tonic-build",
+ "tower",
+ "walkdir",
+]
+
+[[package]]
+name = "holodekk-cli"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "clap",
+ "colored",
+ "env_logger",
+ "holodekk-common",
+ "log",
+ "serde_json",
+ "tar",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "holodekk-common"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
  "bollard",
  "bytes",
  "clap",
@@ -816,45 +883,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "holodekk-cli"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "clap",
- "colored",
- "env_logger",
- "holodekk",
- "log",
- "serde_json",
- "tar",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "holodekk-subroutine"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "clap",
- "holodekk",
- "log",
- "mio",
- "nix",
- "serde",
- "serde_json",
- "syslog",
-]
-
-[[package]]
 name = "holodekkd"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "axum",
  "clap",
  "env_logger",
  "holodekk",
+ "holodekk-common",
  "hyper",
  "log",
  "mockall",
@@ -1200,6 +1238,18 @@ name = "mockall_derive"
 version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22ce75669015c4f47b289fd4d4f56e894e4c96003ffdf3ac51313126f94c6cbb"
+dependencies = [
+ "cfg-if",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "mockall_double"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae71c7bb287375187c775cf82e2dcf1bef3388aaf58f0789a77f9c7ab28466f6"
 dependencies = [
  "cfg-if",
  "proc-macro2",
@@ -1761,7 +1811,7 @@ checksum = "4c614d17805b093df4b147b51339e7e44bf05ef59fba1e45d83500bcfb4d8585"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.13",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -1792,7 +1842,7 @@ checksum = "bcec881020c684085e55a25f7fd888954d56609ef363479dc5a1305eb0d40cab"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.13",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -1904,9 +1954,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.13"
+version = "2.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c9da457c5285ac1f936ebd076af6dac17a61cfe7826f2076b4d015cf47bc8ec"
+checksum = "a34fcf3e8b60f57e6a14301a2e916d323af98b0ea63c599441eec8558660c822"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1988,7 +2038,7 @@ checksum = "f9456a42c5b0d803c8cd86e73dd7cc9edd429499f37a3550d286d5e86720569f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.13",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -2029,6 +2079,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd80a657e71da814b8e5d60d3374fc6d35045062245d80224748ae522dd76f36"
 dependencies = [
  "time-core",
+]
+
+[[package]]
+name = "timestamps"
+version = "0.1.0"
+dependencies = [
+ "timestamps_core",
+ "timestamps_macro",
+]
+
+[[package]]
+name = "timestamps_core"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+]
+
+[[package]]
+name = "timestamps_macro"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -2083,7 +2158,7 @@ checksum = "61a573bdc87985e9d6ddeed1b3d864e8a302c847e40d647746df2f1de209d1ce"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.13",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -2263,6 +2338,7 @@ dependencies = [
  "env_logger",
  "futures-util",
  "holodekk",
+ "holodekk-common",
  "log",
  "mio",
  "mockall",
