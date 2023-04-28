@@ -1,7 +1,11 @@
+pub mod config;
 pub mod core;
+pub mod errors;
 // mod holodekk;
 // mod projectors;
+pub mod process;
 pub mod repositories;
+pub mod utils;
 // pub use repositories::memory::{MemoryDatabase, MemoryRepository};
 // mod server;
 // mod subroutine_definitions;

@@ -51,7 +51,7 @@ pub mod subroutines_find;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use holodekk_common::config::HolodekkPaths;
+use crate::config::HolodekkPaths;
 
 use entities::{SceneEntity, SubroutineEntity};
 

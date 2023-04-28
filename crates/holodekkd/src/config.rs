@@ -1,8 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use holodekk::repositories::RepositoryKind;
-use holodekk_common::config::HolodekkApiConfig;
-use holodekk_common::utils::ConnectionInfo;
+use holodekk::{repositories::RepositoryKind, utils::ConnectionInfo};
 
 #[derive(Clone, Debug)]
 pub struct HolodekkdConfig {

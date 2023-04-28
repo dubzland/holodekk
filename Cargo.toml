@@ -1,10 +1,9 @@
 [workspace]
 members = [
     "crates/holodekk",
-    "crates/holodekk-cli",
-    "crates/holodekk-common",
+    # "crates/holodekk-cli",
     "crates/holodekkd",
-    "crates/uhura"
+    # "crates/uhura"
 ]
 
 [workspace.package]
@@ -16,11 +15,7 @@ license-file = "LICENSE"
 
 [workspace.dependencies]
 holodekk = { path = "./crates/holodekk" }
-holodekk-common = { path = "./crates/holodekk-common" }
 timestamps = { path = "../timestamps-rs" }
-# holodekk-director = { path = "./crates/holodekk-director" }
-# holodekkd = { path = "./crates/holodekkd" }
-# uhura = { path = "./crates/uhura" }
 anyhow = "1.0.70"
 axum = { version = "0.6.12", features = ["multipart"] }
 async-trait = "0.1.67"

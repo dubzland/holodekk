@@ -41,7 +41,7 @@ where
 {
     Router::new()
         .route("/health", get(health))
-        .nest("/scenes", scenes::server::router(api_state.clone()))
+        .nest("/scenes", scenes::server::router(api_state))
     // .nest(
     //     "/subroutine_definitions",
     //     subroutine_definitions::server::router(api_services),
