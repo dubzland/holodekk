@@ -35,6 +35,7 @@
 pub mod actions;
 pub mod entities;
 pub mod enums;
+pub mod images;
 pub mod repositories;
 // pub mod subroutine_definitions;
 

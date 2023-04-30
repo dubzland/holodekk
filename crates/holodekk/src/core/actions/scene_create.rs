@@ -49,7 +49,7 @@ mod tests {
     use rstest::*;
     use timestamps::Timestamps;
 
-    use crate::core::entities::fixtures::mock_scene;
+    use crate::core::entities::fixtures::mock_scene_entity;
     use crate::core::repositories::{fixtures::mock_scenes_repository, MockScenesRepository};
 
     use super::*;
@@ -58,9 +58,9 @@ mod tests {
     #[tokio::test]
     async fn returns_error_when_scene_already_exists(
         mut mock_scenes_repository: MockScenesRepository,
-        mock_scene: SceneEntity,
+        mock_scene_entity: SceneEntity,
     ) {
-        let scene_name = mock_scene.name.clone();
+        let scene_name = mock_scene_entity.name.clone();
 
         // scene already exists
         mock_scenes_repository
@@ -71,8 +71,8 @@ mod tests {
         let res = execute(
             Arc::new(mock_scenes_repository),
             Request {
-                name: &mock_scene.name,
-                status: &mock_scene.status,
+                name: &mock_scene_entity.name,
+                status: &mock_scene_entity.status,
             },
         )
         .await;
@@ -84,7 +84,7 @@ mod tests {
     #[tokio::test]
     async fn adds_entity_to_repository(
         mut mock_scenes_repository: MockScenesRepository,
-        mock_scene: SceneEntity,
+        mock_scene_entity: SceneEntity,
     ) {
         // scene does not exist
         let scenes_exists_result = Ok(false);
@@ -93,8 +93,8 @@ mod tests {
             .return_once(move |_| scenes_exists_result);
 
         // expect creation
-        let scene_name = mock_scene.name.clone();
-        let scene_status = mock_scene.status;
+        let scene_name = mock_scene_entity.name.clone();
+        let scene_status = mock_scene_entity.status;
         mock_scenes_repository
             .expect_scenes_create()
             .withf(move |scene| scene.name == scene_name && scene.status == scene_status)
@@ -107,8 +107,8 @@ mod tests {
         execute(
             Arc::new(mock_scenes_repository),
             Request {
-                name: &mock_scene.name,
-                status: &mock_scene.status,
+                name: &mock_scene_entity.name,
+                status: &mock_scene_entity.status,
             },
         )
         .await
@@ -119,7 +119,7 @@ mod tests {
     #[tokio::test]
     async fn returns_scene_entity(
         mut mock_scenes_repository: MockScenesRepository,
-        mock_scene: SceneEntity,
+        mock_scene_entity: SceneEntity,
     ) {
         // scene does not exist
         let scenes_exists_result = Ok(false);
@@ -139,13 +139,16 @@ mod tests {
         let new_scene = execute(
             Arc::new(mock_scenes_repository),
             Request {
-                name: &mock_scene.name,
-                status: &mock_scene.status,
+                name: &mock_scene_entity.name,
+                status: &mock_scene_entity.status,
             },
         )
         .await
         .unwrap();
 
-        assert!(new_scene.name == mock_scene.name && new_scene.status == mock_scene.status);
+        assert!(
+            new_scene.name == mock_scene_entity.name
+                && new_scene.status == mock_scene_entity.status
+        );
     }
 }

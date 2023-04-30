@@ -37,7 +37,7 @@ mod tests {
     use rstest::*;
 
     use crate::core::{
-        entities::{fixtures::mock_scene, SceneEntity},
+        entities::{fixtures::mock_scene_entity, SceneEntity},
         repositories::{fixtures::mock_scenes_repository, MockScenesRepository},
     };
 
@@ -60,9 +60,9 @@ mod tests {
     #[tokio::test]
     async fn returns_results_of_query(
         mut mock_scenes_repository: MockScenesRepository,
-        mock_scene: SceneEntity,
+        mock_scene_entity: SceneEntity,
     ) {
-        let scenes_find_result = Ok(vec![mock_scene.clone()]);
+        let scenes_find_result = Ok(vec![mock_scene_entity.clone()]);
         mock_scenes_repository
             .expect_scenes_find()
             .return_once(move |_| scenes_find_result);
@@ -70,6 +70,6 @@ mod tests {
         let scenes = execute(Arc::new(mock_scenes_repository), Request {})
             .await
             .unwrap();
-        assert_eq!(scenes, vec![mock_scene]);
+        assert_eq!(scenes, vec![mock_scene_entity]);
     }
 }

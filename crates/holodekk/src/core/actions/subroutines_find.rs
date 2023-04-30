@@ -3,14 +3,15 @@ use std::sync::Arc;
 use log::trace;
 
 use crate::core::{
-    entities::{SceneEntityId, SubroutineDefinitionEntityId, SubroutineEntity},
+    entities::{SceneEntityId, SubroutineEntity},
+    images::SubroutineImageId,
     repositories::{self, SubroutinesQuery, SubroutinesRepository},
 };
 
 #[derive(Clone, Debug)]
 pub struct Request<'a> {
-    pub scene_id: Option<&'a SceneEntityId>,
-    pub subroutine_definition_id: Option<&'a SubroutineDefinitionEntityId>,
+    pub scene_entity_id: Option<&'a SceneEntityId>,
+    pub subroutine_image_id: Option<&'a SubroutineImageId>,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -36,7 +37,8 @@ mod tests {
     use std::sync::Arc;
 
     use crate::core::{
-        entities::{fixtures::mock_subroutine, SubroutineEntity},
+        entities::{fixtures::mock_subroutine_entity, SubroutineEntity},
+        images::ImageName,
         repositories::{fixtures::mock_subroutines_repository, MockSubroutinesRepository},
     };
     use rstest::*;
@@ -46,17 +48,17 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn executes_query(mut mock_subroutines_repository: MockSubroutinesRepository) {
-        let scene_id = SceneEntityId::generate();
-        let subroutine_definition_id = SubroutineDefinitionEntityId::generate();
+        let scene_entity_id = SceneEntityId::generate();
+        let subroutine_image_id = SubroutineImageId::generate(&ImageName::from("test"));
 
         {
-            let scene_id = scene_id.clone();
-            let subroutine_definition_id = subroutine_definition_id.clone();
+            let scene_entity_id = scene_entity_id.clone();
+            let subroutine_image_id = subroutine_image_id.clone();
             mock_subroutines_repository
                 .expect_subroutines_find()
                 .withf(move |query: &SubroutinesQuery| {
-                    query.scene_id == Some(&scene_id)
-                        && query.subroutine_definition_id == Some(&subroutine_definition_id)
+                    query.scene_entity_id == Some(&scene_entity_id)
+                        && query.subroutine_image_id == Some(&subroutine_image_id)
                 })
                 .return_once(|_| Ok(vec![]));
         }
@@ -64,8 +66,8 @@ mod tests {
         execute(
             Arc::new(mock_subroutines_repository),
             Request {
-                scene_id: Some(&scene_id),
-                subroutine_definition_id: Some(&subroutine_definition_id),
+                scene_entity_id: Some(&scene_entity_id),
+                subroutine_image_id: Some(&subroutine_image_id),
             },
         )
         .await
@@ -76,27 +78,27 @@ mod tests {
     #[tokio::test]
     async fn returns_results_of_query(
         mut mock_subroutines_repository: MockSubroutinesRepository,
-        mock_subroutine: SubroutineEntity,
+        mock_subroutine_entity: SubroutineEntity,
     ) {
-        let scene_id = mock_subroutine.scene_id.clone();
-        let subroutine_definition_id = mock_subroutine.subroutine_definition_id.clone();
+        let scene_entity_id = mock_subroutine_entity.scene_entity_id.clone();
+        let subroutine_image_id = mock_subroutine_entity.subroutine_image_id.clone();
 
         {
-            let mock_subroutine = mock_subroutine.clone();
+            let mock_subroutine_entity = mock_subroutine_entity.clone();
             mock_subroutines_repository
                 .expect_subroutines_find()
-                .return_once(move |_| Ok(vec![mock_subroutine]));
+                .return_once(move |_| Ok(vec![mock_subroutine_entity]));
         }
 
         let subroutines = execute(
             Arc::new(mock_subroutines_repository),
             Request {
-                scene_id: Some(&scene_id),
-                subroutine_definition_id: Some(&subroutine_definition_id),
+                scene_entity_id: Some(&scene_entity_id),
+                subroutine_image_id: Some(&subroutine_image_id),
             },
         )
         .await
         .unwrap();
-        assert_eq!(subroutines, vec![mock_subroutine]);
+        assert_eq!(subroutines, vec![mock_subroutine_entity]);
     }
 }

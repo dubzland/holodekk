@@ -2,8 +2,9 @@ use async_trait::async_trait;
 use timestamps::Timestamps;
 
 pub use crate::core::{
-    entities::{SceneEntityId, SubroutineDefinitionEntityId, SubroutineEntity, SubroutineEntityId},
+    entities::{SceneEntityId, SubroutineEntity, SubroutineEntityId},
     enums::SubroutineStatus,
+    images::SubroutineImageId,
     repositories::{Error, RepositoryQuery, Result, SubroutinesQuery, SubroutinesRepository},
 };
 
@@ -83,7 +84,7 @@ mod tests {
 
     use crate::{
         core::{
-            entities::fixtures::mock_subroutine,
+            entities::fixtures::mock_subroutine_entity,
             repositories::{Error, SubroutinesQuery},
         },
         repositories::memory::MemoryDatabase,
@@ -100,12 +101,12 @@ mod tests {
     #[tokio::test]
     async fn create_fails_when_subroutine_already_exists(
         db: Arc<MemoryDatabase>,
-        mock_subroutine: SubroutineEntity,
+        mock_subroutine_entity: SubroutineEntity,
     ) -> Result<()> {
-        db.subroutines().add(mock_subroutine.clone())?;
+        db.subroutines().add(mock_subroutine_entity.clone())?;
         let repo = MemoryRepository::new(db.clone());
 
-        let result = repo.subroutines_create(mock_subroutine).await;
+        let result = repo.subroutines_create(mock_subroutine_entity).await;
 
         assert!(matches!(result.unwrap_err(), Error::Conflict(..)));
 
@@ -116,11 +117,11 @@ mod tests {
     #[tokio::test]
     async fn create_succeeds(
         db: Arc<MemoryDatabase>,
-        mock_subroutine: SubroutineEntity,
+        mock_subroutine_entity: SubroutineEntity,
     ) -> Result<()> {
         let repo = MemoryRepository::new(db.clone());
 
-        let result = repo.subroutines_create(mock_subroutine).await;
+        let result = repo.subroutines_create(mock_subroutine_entity).await;
 
         assert!(result.is_ok());
         Ok(())
@@ -130,13 +131,14 @@ mod tests {
     #[tokio::test]
     async fn create_stores_subroutine(
         db: Arc<MemoryDatabase>,
-        mock_subroutine: SubroutineEntity,
+        mock_subroutine_entity: SubroutineEntity,
     ) -> Result<()> {
         let repo = MemoryRepository::new(db.clone());
 
-        repo.subroutines_create(mock_subroutine.clone()).await?;
+        repo.subroutines_create(mock_subroutine_entity.clone())
+            .await?;
 
-        let exists = db.subroutines().exists(&mock_subroutine.id)?;
+        let exists = db.subroutines().exists(&mock_subroutine_entity.id)?;
         assert!(exists);
         Ok(())
     }
@@ -157,12 +159,12 @@ mod tests {
     #[tokio::test]
     async fn delete_removes_the_record(
         db: Arc<MemoryDatabase>,
-        mock_subroutine: SubroutineEntity,
+        mock_subroutine_entity: SubroutineEntity,
     ) -> Result<()> {
-        db.subroutines().add(mock_subroutine.clone())?;
+        db.subroutines().add(mock_subroutine_entity.clone())?;
         let repo = MemoryRepository::new(db.clone());
-        repo.subroutines_delete(&mock_subroutine.id).await?;
-        let exists = db.subroutines().exists(&mock_subroutine.id)?;
+        repo.subroutines_delete(&mock_subroutine_entity.id).await?;
+        let exists = db.subroutines().exists(&mock_subroutine_entity.id)?;
         assert!(!exists);
         Ok(())
     }
@@ -183,13 +185,13 @@ mod tests {
     #[tokio::test]
     async fn exists_returns_true_for_existing_subroutine(
         db: Arc<MemoryDatabase>,
-        mock_subroutine: SubroutineEntity,
+        mock_subroutine_entity: SubroutineEntity,
     ) -> Result<()> {
-        db.subroutines().add(mock_subroutine.clone())?;
+        db.subroutines().add(mock_subroutine_entity.clone())?;
         let repo = MemoryRepository::new(db.clone());
         let query = SubroutinesQuery::builder()
-            .for_scene(&mock_subroutine.scene_id)
-            .for_subroutine_definition(&mock_subroutine.subroutine_definition_id)
+            .for_scene_entity(&mock_subroutine_entity.scene_entity_id)
+            .for_subroutine_image(&mock_subroutine_entity.subroutine_image_id)
             .build();
         let exists = repo.subroutines_exists(query).await?;
         assert!(exists);
@@ -210,13 +212,15 @@ mod tests {
     #[tokio::test]
     async fn find_retrieves_nothing_when_no_matches(
         db: Arc<MemoryDatabase>,
-        mock_subroutine: SubroutineEntity,
+        mock_subroutine_entity: SubroutineEntity,
     ) -> Result<()> {
-        db.subroutines().add(mock_subroutine.clone())?;
+        db.subroutines().add(mock_subroutine_entity.clone())?;
         let repo = MemoryRepository::new(db.clone());
         let invalid_id = SceneEntityId::generate();
 
-        let query = SubroutinesQuery::builder().for_scene(&invalid_id).build();
+        let query = SubroutinesQuery::builder()
+            .for_scene_entity(&invalid_id)
+            .build();
         let instances = repo.subroutines_find(query).await?;
         assert!(instances.is_empty());
         Ok(())
@@ -226,18 +230,18 @@ mod tests {
     #[tokio::test]
     async fn find_retrieves_matches(
         db: Arc<MemoryDatabase>,
-        mock_subroutine: SubroutineEntity,
+        mock_subroutine_entity: SubroutineEntity,
     ) -> Result<()> {
-        db.subroutines().add(mock_subroutine.clone())?;
+        db.subroutines().add(mock_subroutine_entity.clone())?;
         let repo = MemoryRepository::new(db.clone());
         let query = SubroutinesQuery::builder()
-            .for_scene(&mock_subroutine.scene_id)
-            .for_subroutine_definition(&mock_subroutine.subroutine_definition_id)
+            .for_scene_entity(&mock_subroutine_entity.scene_entity_id)
+            .for_subroutine_image(&mock_subroutine_entity.subroutine_image_id)
             .build();
 
         let instances = repo.subroutines_find(query).await?;
         assert!(!instances.is_empty());
-        assert_eq!(instances[0], mock_subroutine);
+        assert_eq!(instances[0], mock_subroutine_entity);
         Ok(())
     }
 
@@ -257,13 +261,13 @@ mod tests {
     #[tokio::test]
     async fn get_retrieves_subroutine(
         db: Arc<MemoryDatabase>,
-        mock_subroutine: SubroutineEntity,
+        mock_subroutine_entity: SubroutineEntity,
     ) -> Result<()> {
-        db.subroutines().add(mock_subroutine.clone())?;
+        db.subroutines().add(mock_subroutine_entity.clone())?;
         let repo = MemoryRepository::new(db.clone());
 
-        let instance = repo.subroutines_get(&mock_subroutine.id).await?;
-        assert_eq!(instance.id, mock_subroutine.id);
+        let instance = repo.subroutines_get(&mock_subroutine_entity.id).await?;
+        assert_eq!(instance.id, mock_subroutine_entity.id);
         Ok(())
     }
 }

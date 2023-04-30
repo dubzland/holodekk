@@ -71,59 +71,49 @@ impl Repository for MemoryRepository {
 mod tests {
     use rstest::*;
 
-    use crate::core::entities::{fixtures::mock_scene, SceneEntity};
+    use crate::core::entities::{
+        fixtures::{mock_scene_entity, mock_subroutine_entity},
+        SceneEntity, SubroutineEntity,
+    };
 
     use super::*;
 
     #[rstest]
     #[test]
-    fn can_add_scene(mock_scene: SceneEntity) {
+    fn can_add_scene(mock_scene_entity: SceneEntity) {
         let db = MemoryDatabase::new();
 
-        let result = db.scenes().add(mock_scene);
+        let result = db.scenes().add(mock_scene_entity);
         assert!(result.is_ok())
     }
 
     #[rstest]
     #[test]
-    fn can_get_scene(mock_scene: SceneEntity) {
+    fn can_get_scene(mock_scene_entity: SceneEntity) {
         let db = MemoryDatabase::new();
-        db.scenes().add(mock_scene.clone()).unwrap();
+        db.scenes().add(mock_scene_entity.clone()).unwrap();
 
-        let new_scene = db.scenes().get(&mock_scene.id).unwrap();
-        assert_eq!(new_scene.id, mock_scene.id);
+        let new_scene = db.scenes().get(&mock_scene_entity.id).unwrap();
+        assert_eq!(new_scene.id, mock_scene_entity.id);
     }
 
-    // #[rstest]
-    // #[test]
-    // fn can_get_subroutine(subroutine: SubroutineEntity) -> Result<()> {
-    //     let db = MemoryDatabase::new();
-    //     // let key = subroutine_key(&subroutine.id);
-    //     db.subroutines().add(subroutine.clone())?;
+    #[rstest]
+    #[test]
+    fn can_get_subroutine(mock_subroutine_entity: SubroutineEntity) -> Result<()> {
+        let db = MemoryDatabase::new();
+        db.subroutines().add(mock_subroutine_entity.clone())?;
 
-    //     let new_sub = db.subroutines().get(&subroutine.id())?;
-    //     assert_eq!(new_sub.id(), subroutine.id());
-    //     Ok(())
-    // }
+        let new_sub = db.subroutines().get(&mock_subroutine_entity.id)?;
+        assert_eq!(new_sub.id, mock_subroutine_entity.id);
+        Ok(())
+    }
 
-    // #[rstest]
-    // #[test]
-    // fn can_add_subroutine(subroutine: SubroutineEntity) {
-    //     let db = MemoryDatabase::new();
+    #[rstest]
+    #[test]
+    fn can_add_subroutine(mock_subroutine_entity: SubroutineEntity) {
+        let db = MemoryDatabase::new();
 
-    //     let result = db.subroutines().add(subroutine.to_owned());
-    //     assert!(result.is_ok())
-    // }
-
-    // #[rstest]
-    // #[test]
-    // fn can_get_subroutine(subroutine: SubroutineEntity) -> Result<()> {
-    //     let db = MemoryDatabase::new();
-    //     // let key = subroutine_key(&subroutine.id);
-    //     db.subroutines().add(subroutine.clone())?;
-
-    //     let new_sub = db.subroutines().get(&subroutine.id())?;
-    //     assert_eq!(new_sub.id(), subroutine.id());
-    //     Ok(())
-    // }
+        let result = db.subroutines().add(mock_subroutine_entity.to_owned());
+        assert!(result.is_ok())
+    }
 }

@@ -51,7 +51,7 @@ mod tests {
     use rstest::*;
 
     use crate::core::{
-        entities::{fixtures::mock_subroutine, SubroutineEntity},
+        entities::{fixtures::mock_subroutine_entity, SubroutineEntity},
         repositories::{fixtures::mock_subroutines_repository, MockSubroutinesRepository},
     };
 
@@ -84,10 +84,10 @@ mod tests {
     #[tokio::test]
     async fn removes_entry_in_repository(
         mut mock_subroutines_repository: MockSubroutinesRepository,
-        mock_subroutine: SubroutineEntity,
+        mock_subroutine_entity: SubroutineEntity,
     ) {
         {
-            let sub = mock_subroutine.clone();
+            let sub = mock_subroutine_entity.clone();
             let sub_id = sub.id.clone();
             mock_subroutines_repository
                 .expect_subroutines_get()
@@ -96,7 +96,7 @@ mod tests {
         }
 
         {
-            let sub_id = mock_subroutine.id.clone();
+            let sub_id = mock_subroutine_entity.id.clone();
             mock_subroutines_repository
                 .expect_subroutines_delete()
                 .withf(move |id| id == &sub_id)
@@ -106,7 +106,7 @@ mod tests {
         execute(
             Arc::new(mock_subroutines_repository),
             Request {
-                id: &mock_subroutine.id,
+                id: &mock_subroutine_entity.id,
             },
         )
         .await
@@ -117,10 +117,10 @@ mod tests {
     #[tokio::test]
     async fn returns_ok(
         mut mock_subroutines_repository: MockSubroutinesRepository,
-        mock_subroutine: SubroutineEntity,
+        mock_subroutine_entity: SubroutineEntity,
     ) {
         {
-            let sub = mock_subroutine.clone();
+            let sub = mock_subroutine_entity.clone();
             mock_subroutines_repository
                 .expect_subroutines_get()
                 .return_once(move |_| Ok(sub));
@@ -133,7 +133,7 @@ mod tests {
         let res = execute(
             Arc::new(mock_subroutines_repository),
             Request {
-                id: &mock_subroutine.id,
+                id: &mock_subroutine_entity.id,
             },
         )
         .await;

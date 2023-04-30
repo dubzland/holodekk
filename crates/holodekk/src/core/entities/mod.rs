@@ -1,14 +1,7 @@
-// mod projector;
-// pub use projector::*;
 mod scene;
 pub use scene::*;
 mod subroutine;
 pub use subroutine::*;
-mod subroutine_definition;
-pub use subroutine_definition::*;
-
-// pub mod subroutine_manifest;
-// pub use subroutine_manifest::*;
 
 use std::convert::TryFrom;
 use std::ops::Deref;
@@ -92,29 +85,20 @@ where
 pub mod fixtures {
     use rstest::*;
 
-    use crate::core::enums::SubroutineKind;
+    use crate::core::images::{fixtures::mock_subroutine_image, SubroutineImage};
 
     use super::*;
 
     #[fixture]
-    pub fn mock_scene() -> SceneEntity {
+    pub fn mock_scene_entity() -> SceneEntity {
         SceneEntity::new("test".into())
     }
 
     #[fixture]
-    pub fn mock_subroutine_definition() -> SubroutineDefinitionEntity {
-        SubroutineDefinitionEntity::new(
-            "test/sub",
-            "/tmp/holodekk/subroutines/test/sub",
-            SubroutineKind::Ruby,
-        )
-    }
-
-    #[fixture]
-    pub fn mock_subroutine(
-        mock_scene: SceneEntity,
-        mock_subroutine_definition: SubroutineDefinitionEntity,
+    pub fn mock_subroutine_entity(
+        mock_scene_entity: SceneEntity,
+        mock_subroutine_image: SubroutineImage,
     ) -> SubroutineEntity {
-        SubroutineEntity::new(&mock_scene.id, &mock_subroutine_definition.id)
+        SubroutineEntity::new(&mock_scene_entity.id, &mock_subroutine_image.id)
     }
 }

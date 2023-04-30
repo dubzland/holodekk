@@ -40,40 +40,6 @@ where
     Ok(())
 }
 
-// impl<R> ScenesService<R>
-// where
-//     R: ScenesRepository,
-// {
-//     async fn send_terminate_command(&self, scene: SceneEntity) -> Result<()> {
-//         trace!("ScenesService::send_shutdown_command({:?})", scene);
-
-//         let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
-
-//         let request = DirectorRequest::TerminateScene {
-//             scene: scene.clone(),
-//             resp: resp_tx,
-//         };
-
-//         debug!("request: {:?}", request);
-//         self.director()
-//             .send(request)
-//             .await
-//             .context("Failed to send Terminate request to Director")?;
-
-//         trace!("Terminate request sent to Director.  Awaiting response...");
-//         let response = resp_rx
-//             .await
-//             .context("Error receiving response to Terminate request from Director")?;
-
-//         trace!("Terminate response received from Director: {:?}", response);
-//         response.map_err(|err| match err {
-//             DirectorError::SceneTermination(terminate) => ScenesError::from(terminate),
-//             DirectorError::Unexpected(unexpected) => ScenesError::from(unexpected),
-//             _ => ScenesError::from(anyhow::anyhow!(err.to_string())),
-//         })
-//     }
-// }
-
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
@@ -82,7 +48,7 @@ mod tests {
     use rstest::*;
 
     use crate::core::{
-        entities::{fixtures::mock_scene, SceneEntity},
+        entities::{fixtures::mock_scene_entity, SceneEntity},
         repositories::{fixtures::mock_scenes_repository, MockScenesRepository},
     };
 
@@ -110,16 +76,16 @@ mod tests {
     #[tokio::test]
     async fn removes_entry_in_repository(
         mut mock_scenes_repository: MockScenesRepository,
-        mock_scene: SceneEntity,
+        mock_scene_entity: SceneEntity,
     ) {
         // scene exists
-        let scenes_get_result = Ok(mock_scene.clone());
+        let scenes_get_result = Ok(mock_scene_entity.clone());
         mock_scenes_repository
             .expect_scenes_get()
             .return_once(move |_| scenes_get_result);
 
         // expect deletion
-        let id = mock_scene.id.clone();
+        let id = mock_scene_entity.id.clone();
         let scenes_delete_result = Ok(());
         mock_scenes_repository
             .expect_scenes_delete()
@@ -128,7 +94,9 @@ mod tests {
 
         execute(
             Arc::new(mock_scenes_repository),
-            Request { id: &mock_scene.id },
+            Request {
+                id: &mock_scene_entity.id,
+            },
         )
         .await
         .unwrap();
@@ -136,8 +104,11 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn returns_ok(mut mock_scenes_repository: MockScenesRepository, mock_scene: SceneEntity) {
-        let scenes_get_result = Ok(mock_scene.clone());
+    async fn returns_ok(
+        mut mock_scenes_repository: MockScenesRepository,
+        mock_scene_entity: SceneEntity,
+    ) {
+        let scenes_get_result = Ok(mock_scene_entity.clone());
         mock_scenes_repository
             .expect_scenes_get()
             .return_once(move |_| scenes_get_result);
@@ -149,7 +120,9 @@ mod tests {
 
         let result = execute(
             Arc::new(mock_scenes_repository),
-            Request { id: &mock_scene.id },
+            Request {
+                id: &mock_scene_entity.id,
+            },
         )
         .await;
 

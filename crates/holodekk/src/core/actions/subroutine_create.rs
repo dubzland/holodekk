@@ -1,25 +1,23 @@
 use std::sync::Arc;
 
 use crate::core::{
-    entities::{
-        SceneEntity, SceneEntityId, SubroutineDefinitionEntity, SubroutineDefinitionEntityId,
-        SubroutineEntity,
-    },
+    entities::{SceneEntity, SceneEntityId, SubroutineEntity},
     enums::SubroutineStatus,
+    images::{SubroutineImage, SubroutineImageId},
     repositories::{self, SubroutinesQuery, SubroutinesRepository},
 };
 
 #[derive(Clone, Debug)]
 pub struct Request<'a> {
     pub scene: &'a SceneEntity,
-    pub subroutine_definition: &'a SubroutineDefinitionEntity,
+    pub subroutine_definition: &'a SubroutineImage,
     pub status: SubroutineStatus,
 }
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Subroutine already exists for definition {0} on scene {1}")]
-    Conflict(SubroutineDefinitionEntityId, SceneEntityId),
+    Conflict(SubroutineImageId, SceneEntityId),
     #[error("General repository error occurred")]
     Repository(#[from] repositories::Error),
 }
@@ -31,8 +29,8 @@ where
     R: SubroutinesRepository,
 {
     let query = SubroutinesQuery::builder()
-        .for_subroutine_definition(&request.subroutine_definition.id)
-        .for_scene(&request.scene.id)
+        .for_subroutine_image(&request.subroutine_definition.id)
+        .for_scene_entity(&request.scene.id)
         .build();
 
     if repo.subroutines_exists(query).await? {
@@ -56,9 +54,12 @@ mod tests {
     use rstest::*;
     use timestamps::Timestamps;
 
-    use crate::core::entities::fixtures::{mock_scene, mock_subroutine_definition};
-    use crate::core::repositories::{
-        fixtures::mock_subroutines_repository, MockSubroutinesRepository, SubroutinesQuery,
+    use crate::core::{
+        entities::fixtures::mock_scene_entity,
+        images::fixtures::mock_subroutine_image,
+        repositories::{
+            fixtures::mock_subroutines_repository, MockSubroutinesRepository, SubroutinesQuery,
+        },
     };
 
     use super::*;
@@ -67,19 +68,19 @@ mod tests {
     #[tokio::test]
     async fn returns_error_when_subroutine_already_exists(
         mut mock_subroutines_repository: MockSubroutinesRepository,
-        mock_scene: SceneEntity,
-        mock_subroutine_definition: SubroutineDefinitionEntity,
+        mock_scene_entity: SceneEntity,
+        mock_subroutine_image: SubroutineImage,
     ) {
         // subroutine already exists
-        let scene_id = mock_scene.id.clone();
-        let definition_id = mock_subroutine_definition.id.clone();
+        let scene_id = mock_scene_entity.id.clone();
+        let definition_id = mock_subroutine_image.id.clone();
         mock_subroutines_repository
             .expect_subroutines_exists()
             .withf(move |query| {
                 query
                     == &SubroutinesQuery::builder()
-                        .for_scene(&scene_id)
-                        .for_subroutine_definition(&definition_id)
+                        .for_scene_entity(&scene_id)
+                        .for_subroutine_image(&definition_id)
                         .build()
             })
             .return_once(move |_| Ok(true));
@@ -87,8 +88,8 @@ mod tests {
         let res = execute(
             Arc::new(mock_subroutines_repository),
             Request {
-                scene: &mock_scene,
-                subroutine_definition: &mock_subroutine_definition,
+                scene: &mock_scene_entity,
+                subroutine_definition: &mock_subroutine_image,
                 status: SubroutineStatus::Unknown,
             },
         )
@@ -102,11 +103,11 @@ mod tests {
     #[tokio::test]
     async fn adds_entity_to_repository(
         mut mock_subroutines_repository: MockSubroutinesRepository,
-        mock_scene: SceneEntity,
-        mock_subroutine_definition: SubroutineDefinitionEntity,
+        mock_scene_entity: SceneEntity,
+        mock_subroutine_image: SubroutineImage,
     ) {
-        let scene_id = mock_scene.id.clone();
-        let definition_id = mock_subroutine_definition.id.clone();
+        let scene_id = mock_scene_entity.id.clone();
+        let definition_id = mock_subroutine_image.id.clone();
         let status = SubroutineStatus::Unknown;
 
         mock_subroutines_repository
@@ -117,8 +118,8 @@ mod tests {
         mock_subroutines_repository
             .expect_subroutines_create()
             .withf(move |sub| {
-                &sub.scene_id == &scene_id
-                    && &sub.subroutine_definition_id == &definition_id
+                &sub.scene_entity_id == &scene_id
+                    && &sub.subroutine_image_id == &definition_id
                     && &sub.status == &status
             })
             .return_once(move |mut sub| {
@@ -130,8 +131,8 @@ mod tests {
         execute(
             Arc::new(mock_subroutines_repository),
             Request {
-                scene: &mock_scene,
-                subroutine_definition: &mock_subroutine_definition,
+                scene: &mock_scene_entity,
+                subroutine_definition: &mock_subroutine_image,
                 status,
             },
         )
@@ -143,11 +144,11 @@ mod tests {
     #[tokio::test]
     async fn returns_new_subroutine(
         mut mock_subroutines_repository: MockSubroutinesRepository,
-        mock_scene: SceneEntity,
-        mock_subroutine_definition: SubroutineDefinitionEntity,
+        mock_scene_entity: SceneEntity,
+        mock_subroutine_image: SubroutineImage,
     ) {
-        let scene_id = mock_scene.id.clone();
-        let definition_id = mock_subroutine_definition.id.clone();
+        let scene_id = mock_scene_entity.id.clone();
+        let image_id = mock_subroutine_image.id.clone();
         let status = SubroutineStatus::Unknown;
 
         mock_subroutines_repository
@@ -165,15 +166,15 @@ mod tests {
         let new_subroutine = execute(
             Arc::new(mock_subroutines_repository),
             Request {
-                scene: &mock_scene,
-                subroutine_definition: &mock_subroutine_definition,
+                scene: &mock_scene_entity,
+                subroutine_definition: &mock_subroutine_image,
                 status,
             },
         )
         .await
         .unwrap();
-        assert_eq!(new_subroutine.scene_id, scene_id);
-        assert_eq!(new_subroutine.subroutine_definition_id, definition_id);
+        assert_eq!(new_subroutine.scene_entity_id, scene_id);
+        assert_eq!(new_subroutine.subroutine_image_id, image_id);
         assert_eq!(new_subroutine.status, status);
     }
 }

@@ -41,9 +41,9 @@ mod tests {
     use mockall::predicate::eq;
     use rstest::*;
 
-    use crate::core::entities::fixtures::mock_subroutine;
-    use crate::core::repositories::{
-        fixtures::mock_subroutines_repository, MockSubroutinesRepository,
+    use crate::core::{
+        entities::fixtures::mock_subroutine_entity,
+        repositories::{fixtures::mock_subroutines_repository, MockSubroutinesRepository},
     };
 
     use super::*;
@@ -75,12 +75,12 @@ mod tests {
     #[tokio::test]
     async fn returns_subroutine_for_existing_subroutine(
         mut mock_subroutines_repository: MockSubroutinesRepository,
-        mock_subroutine: SubroutineEntity,
+        mock_subroutine_entity: SubroutineEntity,
     ) {
-        let id = mock_subroutine.id.clone();
+        let id = mock_subroutine_entity.id.clone();
 
         {
-            let sub = mock_subroutine.clone();
+            let sub = mock_subroutine_entity.clone();
             mock_subroutines_repository
                 .expect_subroutines_get()
                 .return_once(move |_| Ok(sub.clone()));
@@ -90,7 +90,7 @@ mod tests {
             execute(Arc::new(mock_subroutines_repository), Request { id: &id })
                 .await
                 .unwrap(),
-            mock_subroutine
+            mock_subroutine_entity
         );
     }
 }
