@@ -6,10 +6,8 @@ use crate::core::{
         SubroutineEntity,
     },
     enums::SubroutineStatus,
-    repositories::{SubroutinesQuery, SubroutinesRepository},
+    repositories::{self, SubroutinesQuery, SubroutinesRepository},
 };
-
-use crate::repositories::RepositoryError;
 
 #[derive(Clone, Debug)]
 pub struct Request<'a> {
@@ -23,7 +21,7 @@ pub enum Error {
     #[error("Subroutine already exists for definition {0} on scene {1}")]
     Conflict(SubroutineDefinitionEntityId, SceneEntityId),
     #[error("General repository error occurred")]
-    Repository(#[from] RepositoryError),
+    Repository(#[from] repositories::Error),
 }
 
 pub type Result = std::result::Result<SubroutineEntity, Error>;

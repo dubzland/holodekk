@@ -2,9 +2,10 @@ use std::sync::Arc;
 
 use log::trace;
 
-use crate::core::entities::SceneEntityId;
-use crate::core::repositories::ScenesRepository;
-use crate::repositories::RepositoryError;
+use crate::core::{
+    entities::SceneEntityId,
+    repositories::{self, ScenesRepository},
+};
 
 #[derive(Clone, Debug)]
 pub struct Request<'a> {
@@ -16,7 +17,7 @@ pub enum Error {
     #[error("Invalid scene id")]
     NotFound(SceneEntityId),
     #[error("General repository error occurred")]
-    Repository(#[from] RepositoryError),
+    Repository(#[from] repositories::Error),
 }
 
 pub type Result = std::result::Result<(), Error>;
@@ -29,7 +30,7 @@ where
 
     // ensure the scene exists
     let scene = repo.scenes_get(request.id).await.map_err(|err| match err {
-        RepositoryError::NotFound(id) => Error::NotFound(id),
+        repositories::Error::NotFound(id) => Error::NotFound(id),
         _ => Error::from(err),
     })?;
 
@@ -84,7 +85,6 @@ mod tests {
         entities::{fixtures::mock_scene, SceneEntity},
         repositories::{fixtures::mock_scenes_repository, MockScenesRepository},
     };
-    use crate::repositories::RepositoryError;
 
     use super::*;
 
@@ -99,7 +99,7 @@ mod tests {
         mock_scenes_repository
             .expect_scenes_get()
             .with(eq(mock_id.clone()))
-            .return_once(move |id| Err(RepositoryError::NotFound(id.clone())));
+            .return_once(move |id| Err(repositories::Error::NotFound(id.clone())));
 
         let res = execute(Arc::new(mock_scenes_repository), Request { id: &mock_id }).await;
 

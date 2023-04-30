@@ -2,30 +2,76 @@ mod scene;
 pub use scene::*;
 mod subroutine;
 pub use subroutine::*;
+mod watch;
+pub use watch::*;
+
+use async_trait::async_trait;
+
+use super::entities::EntityId;
+use crate::errors::error_chain_fmt;
+
+#[derive(thiserror::Error)]
+pub enum Error {
+    #[error("Error initializing repository: {0}")]
+    Initialization(String),
+    #[error("General repository error: {0}")]
+    General(String),
+    #[error("Record not found: {0}")]
+    NotFound(EntityId),
+    #[error("Entity conflict: {0}")]
+    Conflict(String),
+    #[error("Failed to setup subscription: {0}")]
+    Subscribe(String),
+    #[error("Etcd communication error")]
+    Etcd(#[from] etcd_client::Error),
+    #[error("Serialization error")]
+    Serialization(#[from] serde_json::Error),
+}
+
+impl std::fmt::Debug for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        error_chain_fmt(self, f)
+    }
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+pub trait RepositoryQuery: Send + Sized + Sync {
+    type Entity: Sized;
+
+    fn matches(&self, record: &Self::Entity) -> bool;
+}
+
+#[async_trait]
+pub trait Repository: scene::ScenesRepository + 'static {
+    //+ subroutine::SubroutinesRepository {
+    async fn init(&self) -> Result<()>;
+    async fn shutdown(&self);
+    async fn subscribe_scenes(&self) -> Result<watch::WatchHandle<SceneEvent>>;
+}
 
 #[cfg(test)]
-pub(crate) mod fixtures {
+pub mod fixtures {
     use async_trait::async_trait;
     use mockall::mock;
     use rstest::*;
 
     use super::{
-        MockScenesRepository, MockSubroutinesRepository, ScenesQuery, ScenesRepository,
+        MockScenesRepository, MockSubroutinesRepository, Result, ScenesQuery, ScenesRepository,
         SubroutinesQuery, SubroutinesRepository,
     };
     use crate::core::entities::{
         SceneEntity, SceneEntityId, SceneName, SubroutineEntity, SubroutineEntityId,
     };
     use crate::core::enums::{SceneStatus, SubroutineStatus};
-    use crate::repositories::Result;
 
     #[fixture]
-    pub(crate) fn mock_scenes_repository() -> MockScenesRepository {
+    pub fn mock_scenes_repository() -> MockScenesRepository {
         MockScenesRepository::default()
     }
 
     #[fixture]
-    pub(crate) fn mock_subroutines_repository() -> MockSubroutinesRepository {
+    pub fn mock_subroutines_repository() -> MockSubroutinesRepository {
         MockSubroutinesRepository::default()
     }
 

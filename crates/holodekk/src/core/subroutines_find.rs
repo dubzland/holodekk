@@ -4,9 +4,8 @@ use log::trace;
 
 use crate::core::{
     entities::{SceneEntityId, SubroutineDefinitionEntityId, SubroutineEntity},
-    repositories::{SubroutinesQuery, SubroutinesRepository},
+    repositories::{self, SubroutinesQuery, SubroutinesRepository},
 };
-use crate::repositories::RepositoryError;
 
 #[derive(Clone, Debug)]
 pub struct Request<'a> {
@@ -17,7 +16,7 @@ pub struct Request<'a> {
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("General repository error occurred")]
-    Repository(#[from] RepositoryError),
+    Repository(#[from] repositories::Error),
 }
 
 pub type Result = std::result::Result<Vec<SubroutineEntity>, Error>;

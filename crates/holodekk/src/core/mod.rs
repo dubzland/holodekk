@@ -43,19 +43,16 @@ pub mod subroutine_create;
 pub mod subroutine_delete;
 pub mod subroutine_get;
 pub mod subroutines_find;
-// pub mod workers;
-// pub mod scenes;
 // pub mod subroutine_definitions;
-// pub mod subroutines;
 
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::config::HolodekkPaths;
 
-use entities::{SceneEntity, SubroutineEntity};
+use entities::{SceneName, SubroutineEntity};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ScenePaths {
     root: PathBuf,
     pidfile: PathBuf,
@@ -63,9 +60,9 @@ pub struct ScenePaths {
 }
 
 impl ScenePaths {
-    pub fn build(paths: Arc<HolodekkPaths>, scene: &SceneEntity) -> Self {
-        let mut root = paths.projectors_root().clone();
-        root.push(&scene.id);
+    pub fn build(paths: &HolodekkPaths, name: &SceneName) -> Self {
+        let mut root = paths.scenes_root().clone();
+        root.push(name);
 
         let mut pidfile = root.clone();
         pidfile.push("uhura.pid");

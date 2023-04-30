@@ -20,14 +20,11 @@ use nix::{
 use serde::Serialize;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
-use holodekk::{
-    config::{ProjectorApiConfig, ProjectorConfig, UhuraApiConfig},
-    repositories::RepositoryKind,
-    utils::{
-        libsee,
-        signals::{SignalKind, Signals},
-        ConnectionInfo, ConnectionInfoError,
-    },
+use holodekk::core::entities::{SceneEntityId, SceneName};
+use holodekk::utils::{
+    libsee,
+    signals::{SignalKind, Signals},
+    ConnectionInfoError,
 };
 
 use uhura::config::UhuraConfig;
@@ -59,9 +56,13 @@ impl MessageProjectorPid {
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Options {
-    /// Namespace this projector is responsible for
-    #[arg(long, short, required = true)]
-    namespace: String,
+    /// ID of the Scene this projector is running under
+    #[arg(long, required = true)]
+    id: SceneEntityId,
+
+    /// Name of the Scene is projector is running under
+    #[arg(long, required = true)]
+    name: SceneName,
 
     /// Data root path
     #[arg(long, default_value = "/var/lib/holodekk")]
@@ -84,11 +85,11 @@ fn main() -> Result<()> {
     let options = Options::parse();
 
     let config = Arc::new(UhuraConfig::new(
-        &options.namespace,
+        &options.id,
+        &options.name,
         &options.data_root,
         &options.exec_root,
         &options.bin_path,
-        RepositoryKind::Memory,
     ));
 
     // Perform the initial fork
@@ -125,7 +126,7 @@ fn main() -> Result<()> {
     // fork again
     match unsafe { fork() } {
         Ok(ForkResult::Parent { child, .. }) => {
-            write_pidfile(config.pidfile(), child);
+            write_pidfile(config.scene_paths().pidfile(), child);
             libsee::_exit(1);
         }
         Ok(ForkResult::Child) => {}
@@ -141,14 +142,14 @@ fn main() -> Result<()> {
     // Ensure the root directory exists
     debug!(
         "Checking for existence of root directory: {}",
-        config.projector_path().display()
+        config.scene_paths().root().display()
     );
-    if !config.projector_path().exists() {
+    if !config.scene_paths().root().exists() {
         info!(
             "Creating uhura root directory: {}",
-            config.projector_path().display()
+            config.scene_paths().root().display()
         );
-        fs::create_dir_all(config.projector_path())
+        fs::create_dir_all(config.scene_paths().root())
             .expect("Failed to create root directory for uhura");
     }
 
@@ -186,24 +187,11 @@ async fn main_loop(
 }
 
 fn cleanup(config: Arc<UhuraConfig>) {
-    if let ConnectionInfo::Unix { socket } = config.uhura_api_config() {
-        if socket.exists() {
-            match std::fs::remove_file(socket) {
-                Ok(_) => {}
-                Err(err) => {
-                    warn!("Failed to remove admin socket: {}", err);
-                }
-            }
-        }
-    }
-
-    if let ConnectionInfo::Unix { socket } = config.projector_api_config() {
-        if socket.exists() {
-            match std::fs::remove_file(socket) {
-                Ok(_) => {}
-                Err(err) => {
-                    warn!("Failed to remove projector socket: {}", err);
-                }
+    if config.scene_paths().socket().exists() {
+        match std::fs::remove_file(config.scene_paths().socket()) {
+            Ok(_) => {}
+            Err(err) => {
+                warn!("Failed to remove projector socket: {}", err);
             }
         }
     }

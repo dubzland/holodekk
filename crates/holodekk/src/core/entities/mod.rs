@@ -11,7 +11,7 @@ pub use subroutine_definition::*;
 // pub use subroutine_manifest::*;
 
 use std::convert::TryFrom;
-use std::path::Path;
+use std::ops::Deref;
 use std::str::FromStr;
 
 use lazy_static::lazy_static;
@@ -64,12 +64,6 @@ impl TryFrom<String> for EntityId {
     }
 }
 
-impl AsRef<Path> for EntityId {
-    fn as_ref(&self) -> &Path {
-        Path::new(&self.0)
-    }
-}
-
 impl std::fmt::Display for EntityId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
@@ -81,6 +75,16 @@ impl std::ops::Deref for EntityId {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<T> AsRef<T> for EntityId
+where
+    T: ?Sized,
+    <EntityId as Deref>::Target: AsRef<T>,
+{
+    fn as_ref(&self) -> &T {
+        self.deref().as_ref()
     }
 }
 

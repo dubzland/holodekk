@@ -1,7 +1,9 @@
 use std::{collections::HashMap, sync::RwLock};
 
-use crate::core::entities::{SubroutineEntity, SubroutineEntityId};
-use crate::repositories::{RepositoryError, Result};
+use crate::core::{
+    entities::{SubroutineEntity, SubroutineEntityId},
+    repositories::{Error, Result},
+};
 
 #[derive(Debug)]
 pub struct SubroutinesMemoryStore {
@@ -19,7 +21,7 @@ impl Default for SubroutinesMemoryStore {
 impl SubroutinesMemoryStore {
     pub fn add(&self, subroutine: SubroutineEntity) -> Result<()> {
         if self.records.read().unwrap().contains_key(&subroutine.id) {
-            Err(RepositoryError::Conflict(format!(
+            Err(Error::Conflict(format!(
                 "Subroutine already exists with id {}",
                 subroutine.id
             )))
@@ -58,7 +60,7 @@ impl SubroutinesMemoryStore {
         if let Some(record) = self.records.read().unwrap().get(id) {
             Ok(record.to_owned())
         } else {
-            Err(RepositoryError::NotFound(id.to_owned()))
+            Err(Error::NotFound(id.to_owned()))
         }
     }
 }

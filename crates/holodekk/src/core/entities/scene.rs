@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use timestamps::Timestamps;
@@ -9,7 +11,7 @@ use super::EntityId;
 
 pub type SceneEntityId = EntityId;
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct SceneName(String);
 
 impl std::fmt::Display for SceneName {
@@ -33,6 +35,24 @@ impl From<&str> for SceneName {
 impl From<String> for SceneName {
     fn from(s: String) -> Self {
         Self(s)
+    }
+}
+
+impl Deref for SceneName {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> AsRef<T> for SceneName
+where
+    T: ?Sized,
+    <SceneName as Deref>::Target: AsRef<T>,
+{
+    fn as_ref(&self) -> &T {
+        self.deref().as_ref()
     }
 }
 

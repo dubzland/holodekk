@@ -4,9 +4,8 @@ use log::trace;
 
 use crate::core::{
     entities::{SceneEntity, SceneEntityId},
-    repositories::ScenesRepository,
+    repositories::{self, ScenesRepository},
 };
-use crate::repositories::RepositoryError;
 
 #[derive(Clone, Debug)]
 pub struct Request<'a> {
@@ -18,7 +17,7 @@ pub enum Error {
     #[error("Scene not found with id {0}")]
     NotFound(SceneEntityId),
     #[error("General repository error occurred")]
-    Repository(#[from] RepositoryError),
+    Repository(#[from] repositories::Error),
 }
 
 pub type Result = std::result::Result<SceneEntity, Error>;
@@ -30,7 +29,7 @@ where
     trace!("get_scene:execute({:?})", request);
 
     let scene = repo.scenes_get(request.id).await.map_err(|err| match err {
-        RepositoryError::NotFound(id) => Error::NotFound(id),
+        repositories::Error::NotFound(id) => Error::NotFound(id),
         _ => Error::from(err),
     })?;
 

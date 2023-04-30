@@ -1,11 +1,45 @@
+use std::process::Command;
+use std::sync::Arc;
+
+use log::{debug, info, trace, warn};
+use nix::{sys::signal::kill, unistd::Pid};
+use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
 
-pub enum SceneMessage {}
-pub enum SceneEvent {}
+use holodekk::core::ScenePaths;
+use holodekk::core::{
+    entities::{SceneEntity, SceneEntityId, SceneName},
+    enums::SceneStatus,
+};
+use holodekk::utils::{
+    fs::ensure_directory,
+    process::{daemonize, terminate_daemon, DaemonTerminationError, DaemonizeError},
+};
+
+use crate::config::HolodekkdConfig;
+
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+pub enum SceneMessage {
+    Shutdown,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+pub enum SceneEvent {
+    Started(i32),
+}
 
 #[derive(thiserror::Error, Debug)]
-pub enum SceneError {}
+pub enum SceneError {
+    #[error("Scene is invalid")]
+    InvalidScene,
+    #[error("Failed to launch projector process")]
+    Daemonize(#[from] DaemonizeError),
+    #[error("Failed to terminate projector process")]
+    Termination(#[from] DaemonTerminationError),
+    #[error("Error during cleanup")]
+    Io(#[from] std::io::Error),
+}
 
 pub struct SceneHandle {
     pub sender: Option<Sender<SceneMessage>>,
@@ -15,33 +49,50 @@ pub struct SceneHandle {
 
 impl SceneHandle {
     pub async fn stop(mut self) -> Result<(), SceneError> {
-        let sender = self.sender.take().unwrap();
-        drop(sender);
-        self.handle.await.unwrap();
+        let sender = self.sender.take();
+        if let Some(sender) = sender {
+            sender.send(SceneMessage::Shutdown).await.unwrap();
+            drop(sender);
+        }
+        debug!("Shutdown message sent.  Awiting Scene termination ...");
+        if let Err(err) = self.handle.await {
+            warn!("Error waiting for Scene termination: {}", err);
+        }
+        debug!("Scene termination complete.");
         Ok(())
     }
 }
 
 pub struct Scene {
-    pub name: String,
-    pub sender: Sender<SceneMessage>,
+    pub id: SceneEntityId,
+    pub name: SceneName,
+    pub status: SceneStatus,
+    pub paths: ScenePaths,
     pub receiver: Receiver<SceneMessage>,
     pub event_sender: Sender<SceneEvent>,
+    pub config: Arc<HolodekkdConfig>,
 }
 
 impl Scene {
-    pub async fn start(name: &str) -> std::result::Result<SceneHandle, SceneError> {
+    pub async fn start(
+        config: Arc<HolodekkdConfig>,
+        entity: &SceneEntity,
+    ) -> std::result::Result<SceneHandle, SceneError> {
         let (messages_tx, messages_rx) = channel(32);
         let (events_tx, events_rx) = channel(32);
-        let scene_name = name.to_string();
+        let scene_id = entity.id.clone();
+        let scene_name = entity.name.clone();
+        let paths = ScenePaths::build(config.paths(), &scene_name);
 
-        let projector_sender = messages_tx.clone();
         let handle = tokio::spawn(async move {
             let mut scene = Scene {
+                id: scene_id,
                 name: scene_name,
-                sender: projector_sender,
+                status: SceneStatus::Unknown,
+                paths,
                 receiver: messages_rx,
                 event_sender: events_tx,
+                config,
             };
 
             scene.run().await;
@@ -55,56 +106,105 @@ impl Scene {
     }
 
     async fn run(&mut self) {
-        // check for scene process, and start if not running
+        // check for projector process, and start if not running
+        self.check_projector().await.unwrap();
         // monitor events
-        todo!()
+        loop {
+            tokio::select! {
+                Some(message) = self.receiver.recv() => {
+                    info!("Received message: {:?}", message);
+                    match message {
+                        SceneMessage::Shutdown => {
+                            debug!("Shutting down projector for scene {} ...", self.name);
+                            self.stop_projector().await.unwrap();
+                            debug!("Projector shutdown complete.");
+                        }
+                    }
+                }
+                else => {
+                    debug!("All senders closed.  Exiting.");
+                    break;
+                }
+            }
+        }
+    }
+
+    async fn check_projector(&mut self) -> std::result::Result<(), SceneError> {
+        let status = if self.paths.pidfile().try_exists().unwrap() {
+            let pid = std::fs::read_to_string(self.paths.pidfile())
+                .expect("Should have been able to read pid file");
+            let pid: i32 = pid
+                .parse()
+                .expect("Unable to convert pidfile contents to pid");
+            match kill(Pid::from_raw(pid), None) {
+                Err(_) => {
+                    info!(
+                        "Found existing pidfile at {}, but no process found",
+                        self.paths.pidfile().display()
+                    );
+                    SceneStatus::Crashed
+                }
+                Ok(_) => SceneStatus::Running(pid),
+            }
+        } else {
+            SceneStatus::Unknown
+        };
+
+        if matches!(status, SceneStatus::Running(..)) {
+            self.status = status;
+            Ok(())
+        } else {
+            // start it up
+            if let SceneStatus::Running(pid) = self
+                .start_projector(&self.id, &self.name, &self.paths)
+                .await?
+            {
+                self.event_sender
+                    .send(SceneEvent::Started(pid))
+                    .await
+                    .unwrap();
+                self.status = SceneStatus::Running(pid);
+            }
+            Ok(())
+        }
+    }
+
+    async fn start_projector(
+        &self,
+        id: &SceneEntityId,
+        name: &SceneName,
+        paths: &ScenePaths,
+    ) -> std::result::Result<SceneStatus, SceneError> {
+        trace!("Scene::start_projector({:?}, {:?}, {:?}", id, name, paths);
+
+        // ensure the root directory exists
+        ensure_directory(paths.root()).unwrap();
+
+        // build and execute the actual projector command
+        let mut uhura = self.config.paths().bin_root().clone();
+        uhura.push("uhura");
+
+        let mut command = Command::new(uhura);
+        command.arg("--id");
+        command.arg(id);
+        command.arg("--name");
+        command.arg(name);
+
+        let pid = daemonize(self.config.paths(), command, paths.pidfile())?;
+        Ok(SceneStatus::Running(pid))
+    }
+
+    async fn stop_projector(&self) -> std::result::Result<(), SceneError> {
+        trace!("Scene::stop_projector()");
+        if let SceneStatus::Running(pid) = self.status {
+            terminate_daemon(pid)?;
+            std::fs::remove_dir_all(self.paths.root())?;
+            debug!("Scene cleanup complete.");
+        }
+
+        Ok(())
     }
 }
-
-// async fn process_spawn_request(
-//     &self,
-//     mut projector: ProjectorEntity,
-// ) -> std::result::Result<ProjectorEntity, ProjectorSpawnError> {
-//     trace!("ProjectorsWorker::process_spawn_request({:?})", projector);
-
-//     let projector_paths = ProjectorPaths::build(self.paths.clone(), &projector);
-
-//     // ensure the root directory exists
-//     ensure_directory(projector_paths.root())?;
-
-//     // build and execute the actual projector command
-//     let mut uhura = self.paths.bin_root().clone();
-//     uhura.push("uhura");
-
-//     let mut command = Command::new(uhura);
-//     command.arg("--name");
-//     command.arg(projector.name());
-
-//     let pid = daemonize(self.paths.clone(), command, projector_paths.pidfile())?;
-
-//     projector.set_status(ProjectorStatus::Running(pid as u32));
-//     Ok(projector)
-// }
-
-// async fn process_terminate_request(
-//     &self,
-//     projector: &ProjectorEntity,
-// ) -> std::result::Result<(), ProjectorTerminationError> {
-//     trace!(
-//         "ProjectorsWorker::process_terminate_request({:?})",
-//         projector
-//     );
-//     if let ProjectorStatus::Running(pid) = projector.status() {
-//         terminate_daemon(pid as i32)?;
-
-//         let projector_paths = ProjectorPaths::build(self.paths.clone(), &projector);
-
-//         std::fs::remove_dir_all(projector_paths.root())?;
-//         debug!("Projector cleanup complete.");
-//     }
-
-//     Ok(())
-// }
 
 // pub async fn initialize_subroutines<C, R>(config: Arc<C>, repo: Arc<R>) -> super::Result<()>
 // where

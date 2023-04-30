@@ -2,15 +2,12 @@ use std::sync::Arc;
 
 use log::debug;
 
-use holodekk_common::{
-    config::{HolodekkPaths, ProjectorConfig, UhuraApiConfig},
-    utils::{
-        servers::{start_grpc_server, GrpcServerHandle},
-        ConnectionInfo,
-    },
+use holodekk::utils::{
+    servers::{start_grpc_server, GrpcServerHandle},
+    ConnectionInfo,
 };
 
-use crate::{apis::grpc::uhura::uhura_api_server, services::UhuraService};
+use crate::{apis::grpc::uhura::uhura_api_server, config::UhuraConfig, services::UhuraService};
 
 pub struct UhuraServerHandle {
     api_server: GrpcServerHandle,
@@ -27,18 +24,13 @@ impl UhuraServerHandle {
     }
 }
 
-pub fn start_uhura_server<C>(config: Arc<C>) -> UhuraServerHandle
-where
-    C: HolodekkPaths + ProjectorConfig + UhuraApiConfig,
-{
+pub fn start_uhura_server(config: Arc<UhuraConfig>) -> UhuraServerHandle {
     debug!("starting Uhura API server...");
     let uhura_service = Arc::new(UhuraService::new());
     let uhura_server =
         tonic::transport::Server::builder().add_service(uhura_api_server(uhura_service));
 
-    let mut socket_path = config.projector_path().to_owned();
-    socket_path.push("uhura.sock");
-    let uhura_listener = ConnectionInfo::unix(socket_path);
+    let uhura_listener = ConnectionInfo::unix(config.scene_paths().socket());
 
     let api_server = start_grpc_server(&uhura_listener, uhura_server);
 

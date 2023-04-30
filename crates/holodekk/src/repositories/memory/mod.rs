@@ -5,24 +5,65 @@ pub use scenes::*;
 mod subroutines;
 pub use subroutines::*;
 
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
+
+use async_trait::async_trait;
+use log::debug;
+use tokio::sync::broadcast::{channel, Sender};
+
+use crate::core::repositories::{Error, Repository, SceneEvent, WatchHandle, WatchId};
 
 #[derive(Debug)]
 pub struct MemoryRepository {
     db: Arc<MemoryDatabase>,
+    scene_notify_tx: RwLock<Option<Sender<SceneEvent>>>,
 }
 
 impl Default for MemoryRepository {
     fn default() -> Self {
+        let (scene_notify_tx, _scene_notify_rx) = channel(10);
         Self {
             db: Arc::new(MemoryDatabase::new()),
+            scene_notify_tx: RwLock::new(Some(scene_notify_tx)),
         }
     }
 }
 
 impl MemoryRepository {
     pub fn new(db: Arc<MemoryDatabase>) -> Self {
-        Self { db }
+        Self {
+            db,
+            ..Default::default()
+        }
+    }
+}
+
+#[async_trait]
+impl Repository for MemoryRepository {
+    async fn init(&self) -> std::result::Result<(), Error> {
+        Ok(())
+    }
+
+    async fn shutdown(&self) {
+        debug!("Shutting down memory repository ...");
+        if let Some(scene_notify_tx) = self.scene_notify_tx.write().unwrap().take() {
+            drop(scene_notify_tx);
+        }
+        debug!("Shutdown complete.");
+    }
+
+    async fn subscribe_scenes(&self) -> Result<WatchHandle<SceneEvent>> {
+        let id = WatchId::generate();
+        Ok(WatchHandle {
+            id,
+            rx: self
+                .scene_notify_tx
+                .read()
+                .unwrap()
+                .clone()
+                .unwrap()
+                .subscribe(),
+        })
     }
 }
 
@@ -30,7 +71,6 @@ impl MemoryRepository {
 mod tests {
     use rstest::*;
 
-    // use crate::core::subroutines::entities::fixtures::subroutine;
     use crate::core::entities::{fixtures::mock_scene, SceneEntity};
 
     use super::*;

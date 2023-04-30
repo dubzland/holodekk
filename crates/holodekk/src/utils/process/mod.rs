@@ -3,7 +3,6 @@ use std::io::Read;
 use std::os::unix::io::{FromRawFd, RawFd};
 use std::path::Path;
 use std::process::Command;
-use std::sync::Arc;
 
 use log::{debug, warn};
 use nix::{
@@ -121,7 +120,7 @@ pub fn get_daemon_pid<P: AsRef<Path>>(
 }
 
 pub fn daemonize<P>(
-    paths: Arc<HolodekkPaths>,
+    paths: &HolodekkPaths,
     mut command: Command,
     pidfile: P,
 ) -> std::result::Result<i32, DaemonizeError>

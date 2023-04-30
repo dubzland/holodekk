@@ -4,9 +4,8 @@ use timestamps::Timestamps;
 pub use crate::core::{
     entities::{SceneEntityId, SubroutineDefinitionEntityId, SubroutineEntity, SubroutineEntityId},
     enums::SubroutineStatus,
-    repositories::{SubroutinesQuery, SubroutinesRepository},
+    repositories::{Error, RepositoryQuery, Result, SubroutinesQuery, SubroutinesRepository},
 };
-pub use crate::repositories::{RepositoryError, RepositoryQuery, Result};
 
 pub(self) use super::MemoryRepository;
 
@@ -17,13 +16,13 @@ impl SubroutinesRepository for MemoryRepository {
         mut subroutine: SubroutineEntity,
     ) -> Result<SubroutineEntity> {
         match self.subroutines_get(&subroutine.id).await {
-            Err(RepositoryError::NotFound(_)) => {
+            Err(Error::NotFound(_)) => {
                 subroutine.created();
                 subroutine.updated();
                 self.db.subroutines().add(subroutine.clone())?;
                 Ok(subroutine)
             }
-            Ok(_) => Err(RepositoryError::Conflict(format!(
+            Ok(_) => Err(Error::Conflict(format!(
                 "Subroutine already exists with id {}",
                 subroutine.id
             ))),
@@ -36,9 +35,7 @@ impl SubroutinesRepository for MemoryRepository {
             self.db.subroutines().delete(id)?;
             Ok(())
         } else {
-            Err(RepositoryError::NotFound(
-                id.to_string().try_into().unwrap(),
-            ))
+            Err(Error::NotFound(id.to_string().try_into().unwrap()))
         }
     }
 
@@ -85,8 +82,11 @@ mod tests {
     use rstest::*;
 
     use crate::{
-        core::{entities::fixtures::mock_subroutine, repositories::SubroutinesQuery},
-        repositories::{memory::MemoryDatabase, RepositoryError},
+        core::{
+            entities::fixtures::mock_subroutine,
+            repositories::{Error, SubroutinesQuery},
+        },
+        repositories::memory::MemoryDatabase,
     };
 
     use super::*;
@@ -107,7 +107,7 @@ mod tests {
 
         let result = repo.subroutines_create(mock_subroutine).await;
 
-        assert!(matches!(result.unwrap_err(), RepositoryError::Conflict(..)));
+        assert!(matches!(result.unwrap_err(), Error::Conflict(..)));
 
         Ok(())
     }
@@ -149,7 +149,7 @@ mod tests {
             .subroutines_delete(&SubroutineEntityId::generate())
             .await;
         assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), RepositoryError::NotFound(..)));
+        assert!(matches!(res.unwrap_err(), Error::NotFound(..)));
         Ok(())
     }
 
@@ -249,7 +249,7 @@ mod tests {
 
         let res = repo.subroutines_get(&invalid_id).await;
         assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), RepositoryError::NotFound(..)));
+        assert!(matches!(res.unwrap_err(), Error::NotFound(..)));
         Ok(())
     }
 

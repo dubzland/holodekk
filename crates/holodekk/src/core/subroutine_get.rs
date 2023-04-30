@@ -2,9 +2,8 @@ use std::sync::Arc;
 
 use crate::core::{
     entities::{SubroutineEntity, SubroutineEntityId},
-    repositories::SubroutinesRepository,
+    repositories::{self, SubroutinesRepository},
 };
-use crate::repositories::RepositoryError;
 
 #[derive(Clone, Debug)]
 pub struct Request<'a> {
@@ -16,7 +15,7 @@ pub enum Error {
     #[error("Subroutine not found with id {0}")]
     NotFound(SubroutineEntityId),
     #[error("General repository error occurred")]
-    Repository(#[from] RepositoryError),
+    Repository(#[from] repositories::Error),
 }
 
 pub type Result = std::result::Result<SubroutineEntity, Error>;
@@ -26,7 +25,7 @@ where
     R: SubroutinesRepository,
 {
     let subroutine = repo.subroutines_get(request.id).await.map_err(|err| {
-        if matches!(err, RepositoryError::NotFound(..)) {
+        if matches!(err, repositories::Error::NotFound(..)) {
             Error::NotFound(request.id.to_owned())
         } else {
             Error::from(err)
@@ -61,7 +60,7 @@ mod tests {
             mock_subroutines_repository
                 .expect_subroutines_get()
                 .with(eq(sub_id))
-                .return_once(|id| Err(RepositoryError::NotFound(id.to_owned())));
+                .return_once(|id| Err(repositories::Error::NotFound(id.to_owned())));
         }
 
         assert!(matches!(

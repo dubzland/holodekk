@@ -2,8 +2,10 @@ use std::{collections::HashMap, sync::RwLock};
 
 use log::debug;
 
-use crate::core::entities::{SceneEntity, SceneEntityId};
-use crate::repositories::{RepositoryError, Result};
+use crate::core::{
+    entities::{SceneEntity, SceneEntityId},
+    repositories::{Error, Result},
+};
 
 #[derive(Debug)]
 pub struct ScenesMemoryStore {
@@ -21,7 +23,7 @@ impl Default for ScenesMemoryStore {
 impl ScenesMemoryStore {
     pub fn add(&self, scene: SceneEntity) -> Result<()> {
         if self.records.read().unwrap().contains_key(&scene.id) {
-            Err(RepositoryError::Conflict(format!(
+            Err(Error::Conflict(format!(
                 "Scene already exists with id {}",
                 scene.id
             )))
@@ -50,7 +52,7 @@ impl ScenesMemoryStore {
         if self.records.write().unwrap().remove(id).is_some() {
             Ok(())
         } else {
-            Err(RepositoryError::NotFound(id.to_owned()))
+            Err(Error::NotFound(id.to_owned()))
         }
     }
 
@@ -62,7 +64,7 @@ impl ScenesMemoryStore {
         if let Some(record) = self.records.read().unwrap().get(id) {
             Ok(record.to_owned())
         } else {
-            Err(RepositoryError::NotFound(id.to_owned()))
+            Err(Error::NotFound(id.to_owned()))
         }
     }
 

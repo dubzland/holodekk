@@ -2,13 +2,12 @@ use async_trait::async_trait;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
-use crate::core::entities::{
-    SceneEntityId, SubroutineDefinitionEntityId, SubroutineEntity, SubroutineEntityId,
+use crate::core::{
+    entities::{SceneEntityId, SubroutineDefinitionEntityId, SubroutineEntity, SubroutineEntityId},
+    enums::SubroutineStatus,
+    repositories::{RepositoryQuery, Result},
+    subroutines_find,
 };
-use crate::core::enums::SubroutineStatus;
-use crate::core::subroutines_find;
-
-use crate::repositories::{RepositoryQuery, Result};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SubroutinesQuery<'a> {

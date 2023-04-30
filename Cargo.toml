@@ -3,7 +3,7 @@ members = [
     "crates/holodekk",
     # "crates/holodekk-cli",
     "crates/holodekkd",
-    # "crates/uhura"
+    "crates/uhura"
 ]
 
 [workspace.package]

@@ -5,9 +5,8 @@ use log::{trace, warn};
 use crate::core::{
     entities::{SceneEntity, SceneName},
     enums::SceneStatus,
-    repositories::{ScenesQuery, ScenesRepository},
+    repositories::{self, ScenesQuery, ScenesRepository},
 };
-use crate::repositories::RepositoryError;
 
 #[derive(Clone, Debug)]
 pub struct Request<'a> {
@@ -20,7 +19,7 @@ pub enum Error {
     #[error("Scene already exists for specified name")]
     Conflict(String),
     #[error("General repository error occurred")]
-    Repository(#[from] RepositoryError),
+    Repository(#[from] repositories::Error),
 }
 
 pub type Result = std::result::Result<SceneEntity, Error>;

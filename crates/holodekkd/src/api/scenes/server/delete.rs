@@ -16,12 +16,8 @@ pub async fn handler<T>(
 where
     T: ScenesRepository,
 {
-    scene_delete::execute(
-        state.repo(),
-        scene_delete::Request {
-            id: &scene.try_into().unwrap(),
-        },
-    )
-    .await?;
+    let id = scene.try_into()?;
+
+    scene_delete::execute(state.repo(), scene_delete::Request { id: &id }).await?;
     Ok(())
 }

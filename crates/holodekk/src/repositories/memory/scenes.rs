@@ -1,14 +1,46 @@
 use async_trait::async_trait;
+use log::warn;
 use timestamps::Timestamps;
 
 use crate::core::{
     entities::{SceneEntity, SceneEntityId, SceneName},
     enums::SceneStatus,
-    repositories::{ScenesQuery, ScenesRepository},
+    repositories::{RepositoryQuery, Result, SceneEvent, ScenesQuery, ScenesRepository},
 };
-use crate::repositories::{RepositoryQuery, Result};
 
 use super::MemoryRepository;
+
+impl MemoryRepository {
+    pub async fn broadcast_scene_notification(&mut self, msg: SceneEvent) {
+        if let Some(tx) = self.scene_notify_tx.read().unwrap().as_ref() {
+            if let Err(err) = tx.send(msg) {
+                warn!("Error broadcasting scene event: {}", err);
+            }
+        }
+    }
+
+    pub async fn notify_scene_insert(&mut self, scene: &SceneEntity) {
+        self.broadcast_scene_notification(SceneEvent::Insert {
+            scene: scene.to_owned(),
+        })
+        .await;
+    }
+
+    pub async fn notify_scene_update(&mut self, scene: &SceneEntity, orig: &SceneEntity) {
+        self.broadcast_scene_notification(SceneEvent::Update {
+            scene: scene.to_owned(),
+            orig: orig.to_owned(),
+        })
+        .await;
+    }
+
+    pub async fn notify_scene_delete(&mut self, scene: &SceneEntity) {
+        self.broadcast_scene_notification(SceneEvent::Delete {
+            scene: scene.to_owned(),
+        })
+        .await;
+    }
+}
 
 #[async_trait]
 impl ScenesRepository for MemoryRepository {
@@ -16,6 +48,7 @@ impl ScenesRepository for MemoryRepository {
         scene.created();
         scene.updated();
         self.db.scenes().add(scene.clone())?;
+
         Ok(scene)
     }
 
@@ -67,9 +100,11 @@ mod tests {
 
     use rstest::*;
 
-    use crate::core::entities::{fixtures::mock_scene, SceneEntity};
+    use crate::core::{
+        entities::{fixtures::mock_scene, SceneEntity},
+        repositories::{Error, Result},
+    };
     use crate::repositories::memory::MemoryDatabase;
-    use crate::repositories::RepositoryError;
 
     use super::*;
 
@@ -116,7 +151,7 @@ mod tests {
         let scene_id = SceneEntityId::generate();
         let repo = MemoryRepository::new(db.clone());
         let res = repo.scenes_delete(&scene_id).await;
-        assert!(matches!(res.unwrap_err(), RepositoryError::NotFound(..)));
+        assert!(matches!(res.unwrap_err(), Error::NotFound(..)));
         Ok(())
     }
 
@@ -203,7 +238,7 @@ mod tests {
         let repo = MemoryRepository::new(db.clone());
         let res = repo.scenes_get(&mock_scene.id).await;
         assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), RepositoryError::NotFound(..)));
+        assert!(matches!(res.unwrap_err(), Error::NotFound(..)));
         Ok(())
     }
 

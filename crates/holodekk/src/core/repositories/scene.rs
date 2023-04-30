@@ -1,11 +1,28 @@
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
+use serde::{Deserialize, Serialize};
 
-use crate::repositories::{RepositoryQuery, Result};
+use crate::core::{
+    entities::{SceneEntity, SceneEntityId, SceneName},
+    enums::SceneStatus,
+    repositories::{RepositoryQuery, Result},
+};
 
-use crate::core::entities::{SceneEntity, SceneEntityId, SceneName};
-use crate::core::enums::SceneStatus;
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum SceneEvent {
+    Unknown,
+    Insert {
+        scene: SceneEntity,
+    },
+    Update {
+        scene: SceneEntity,
+        orig: SceneEntity,
+    },
+    Delete {
+        scene: SceneEntity,
+    },
+}
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ScenesQuery<'a> {
@@ -76,6 +93,43 @@ impl<'a> PartialEq<SceneEntity> for ScenesQuery<'a> {
         self.matches(other)
     }
 }
+
+// #[derive(Debug)]
+// pub struct ScenesWatcher {
+//     pub id: WatchId,
+//     pub tx: tokio::sync::mpsc::Sender<SceneEvent>,
+// }
+
+// impl ScenesWatcher {
+//     pub fn new(tx: tokio::sync::mpsc::Sender<SceneEvent>) -> Self {
+//         Self {
+//             id: WatchId::generate(),
+//             tx,
+//         }
+//     }
+
+//     pub async fn send_insert(&mut self, scene: &SceneEntity) {
+//         let event = SceneEvent::Insert {
+//             scene: scene.to_owned(),
+//         };
+//         self.tx.send(event).await.unwrap();
+//     }
+
+//     pub async fn send_update(&mut self, scene: &SceneEntity, orig: &SceneEntity) {
+//         let event = SceneEvent::Update {
+//             scene: scene.to_owned(),
+//             orig: orig.to_owned(),
+//         };
+//         self.tx.send(event).await.unwrap();
+//     }
+
+//     pub async fn send_delete(&mut self, value: &SceneEntity) {
+//         let event = SceneEvent::Delete {
+//             scene: value.to_owned(),
+//         };
+//         self.tx.send(event).await.unwrap();
+//     }
+// }
 
 #[cfg_attr(test, automock)]
 #[async_trait]

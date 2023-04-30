@@ -4,10 +4,13 @@ use axum::{
 };
 use log::error;
 
+use holodekk::core::entities::EntityIdError;
 use holodekk::core::{scene_create, scene_delete, scenes_find};
 
 #[derive(thiserror::Error, Debug)]
 pub enum ApiError {
+    #[error("Invalid Resource Id")]
+    InvalidResourceId(#[from] EntityIdError),
     #[error("Scene already exists")]
     SceneConflict {
         #[source]
@@ -47,6 +50,7 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         error!("Error encountered: {:?}", self);
         let code = match self {
+            ApiError::InvalidResourceId(_) => StatusCode::NOT_FOUND,
             ApiError::SceneConflict { .. } => StatusCode::CONFLICT,
             ApiError::SceneNotFound(_) => StatusCode::NOT_FOUND,
             ApiError::Unexpected(_) => StatusCode::INTERNAL_SERVER_ERROR,
