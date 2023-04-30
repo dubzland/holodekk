@@ -15,7 +15,7 @@ license-file = "LICENSE"
 
 [workspace.dependencies]
 holodekk = { path = "./crates/holodekk" }
-timestamps = { path = "../timestamps-rs" }
+timestamps = { git = "https://git.dubzland.net/holodekk/timestamps-rs.git" }
 anyhow = "1.0.70"
 axum = { version = "0.6.12", features = ["multipart"] }
 async-trait = "0.1.67"

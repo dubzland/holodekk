@@ -1715,6 +1715,7 @@ dependencies = [
 [[package]]
 name = "timestamps"
 version = "0.1.0"
+source = "git+https://git.dubzland.net/holodekk/timestamps-rs.git#f109147354fc064a79ebdde04e3e530b9d23bfb1"
 dependencies = [
  "timestamps_core",
  "timestamps_macro",
@@ -1723,6 +1724,7 @@ dependencies = [
 [[package]]
 name = "timestamps_core"
 version = "0.1.0"
+source = "git+https://git.dubzland.net/holodekk/timestamps-rs.git#f109147354fc064a79ebdde04e3e530b9d23bfb1"
 dependencies = [
  "chrono",
 ]
@@ -1730,6 +1732,7 @@ dependencies = [
 [[package]]
 name = "timestamps_macro"
 version = "0.1.0"
+source = "git+https://git.dubzland.net/holodekk/timestamps-rs.git#f109147354fc064a79ebdde04e3e530b9d23bfb1"
 dependencies = [
  "chrono",
  "proc-macro2",
