@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 
-use holodekk::core::{enums::SceneStatus, repositories::ScenesRepository, scene_create};
+use holodekk::core::{actions::scene_create, enums::SceneStatus, repositories::ScenesRepository};
 
 use crate::api::scenes::models::NewScene;
 use crate::api::{ApiError, ApiState};

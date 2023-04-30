@@ -7,10 +7,11 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
 
 use holodekk::core::{
+    actions::scenes_find,
     entities::{SceneEntity, SceneName},
     enums::SceneStatus,
     repositories::{Repository, SceneEvent, WatchHandle},
-    scenes_find, ScenePaths,
+    ScenePaths,
 };
 use holodekk::utils::process::terminate_daemon;
 

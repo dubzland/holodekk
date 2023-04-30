@@ -5,7 +5,7 @@ use axum::{
     response::IntoResponse,
 };
 
-use holodekk::core::{repositories::ScenesRepository, scene_delete};
+use holodekk::core::{actions::scene_delete, repositories::ScenesRepository};
 
 use crate::api::{ApiError, ApiState};
 

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{extract::State, response::IntoResponse, Json};
 
-use holodekk::core::{repositories::ScenesRepository, scenes_find};
+use holodekk::core::{actions::scenes_find, repositories::ScenesRepository};
 
 use crate::api::ApiState;
 
