@@ -1,8 +1,8 @@
 pub mod api;
 pub mod config;
 pub mod holodekk;
-// pub mod errors;
 pub mod scene;
+// pub mod server;
 
 // pub fn initialize_subroutine_definitions(
 //     paths: Arc<HolodekkPaths>,

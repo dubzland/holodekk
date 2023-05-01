@@ -20,6 +20,7 @@ hyper.workspace = true
 lazy_static.workspace = true
 log.workspace = true
 mio.workspace = true
+mockall_double.workspace = true
 nix.workspace = true
 prost.workspace = true
 rand.workspace = true

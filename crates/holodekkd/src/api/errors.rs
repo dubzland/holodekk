@@ -6,6 +6,7 @@ use log::error;
 
 use holodekk::core::actions::{scene_create, scene_delete, scenes_find};
 use holodekk::core::entities::EntityIdError;
+use holodekk::core::services;
 
 #[derive(thiserror::Error, Debug)]
 pub enum ApiError {
@@ -20,6 +21,12 @@ pub enum ApiError {
     SceneNotFound(String),
     #[error(transparent)]
     Unexpected(#[from] anyhow::Error),
+}
+
+impl From<services::Error> for ApiError {
+    fn from(err: services::Error) -> Self {
+        Self::from(anyhow::Error::new(err))
+    }
 }
 
 impl From<scene_create::Error> for ApiError {

@@ -5,10 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use holodekk::apis::http::{routers, ApiState};
 use holodekk::core::{repositories::ScenesRepository, services::scene::ScenesService};
-use holodekk::utils::{
-    servers::{start_http_server, HttpServerHandle},
-    ConnectionInfo,
-};
 
 pub struct HolodekkdApiState<R>
 where
@@ -51,30 +47,6 @@ where
     Router::new()
         .route("/health", get(health))
         .nest("/scenes", routers::scenes(api_state))
-}
-
-pub struct Server {
-    handle: HttpServerHandle,
-}
-
-impl Server {
-    pub fn new(handle: HttpServerHandle) -> Self {
-        Self { handle }
-    }
-
-    pub fn start<R>(config: &ConnectionInfo, repo: Arc<R>) -> Self
-    where
-        R: ScenesRepository,
-    {
-        let state = HolodekkdApiState::new(repo);
-        let handle = start_http_server(config, router(Arc::new(state)));
-
-        Self::new(handle)
-    }
-
-    pub async fn stop(&mut self) {
-        self.handle.stop().await.unwrap();
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]

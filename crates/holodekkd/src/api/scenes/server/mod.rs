@@ -5,21 +5,21 @@ mod list;
 use std::sync::Arc;
 
 use axum::{
-    routing::{delete, get},
+    routing::{delete, get, post},
     Router,
 };
 
-use holodekk::core::repositories::ScenesRepository;
+use holodekk::core::services::ScenesServiceMethods;
 
-use crate::api::ApiState;
-
-pub fn router<T>(state: Arc<ApiState<T>>) -> axum::Router
+pub fn router<A, S>(state: Arc<A>) -> axum::Router
 where
-    T: ScenesRepository + Send + Sync + 'static,
+    A: ScenesApiState<S>,
+    S: ScenesServiceMethods,
 {
     Router::new()
-        .route("/", get(list::handler).post(create::handler))
-        .route("/:scene", delete(self::delete::handler))
+        .route("/", post(create::handler))
+        // .route("/", get(list::handler).post(create::handler))
+        // .route("/:scene", delete(self::delete::handler))
         // .nest(
         //     "/:projector/subroutines",
         //     subroutines::server::router(services.clone()),

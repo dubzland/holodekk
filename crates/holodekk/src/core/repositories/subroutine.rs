@@ -72,7 +72,7 @@ impl<'a> RepositoryQuery for SubroutinesQuery<'a> {
 
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait SubroutinesRepository: Send + Sync {
+pub trait SubroutinesRepository: Send + Sync + 'static {
     async fn subroutines_create(&self, subroutine: SubroutineEntity) -> Result<SubroutineEntity>;
     async fn subroutines_delete(&self, id: &SubroutineEntityId) -> Result<()>;
     async fn subroutines_exists<'a>(&self, query: SubroutinesQuery<'a>) -> Result<bool>;

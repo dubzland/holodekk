@@ -26,7 +26,7 @@ pub enum SceneEvent {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ScenesQuery<'a> {
-    name: Option<&'a SceneName>,
+    name: Option<&'a str>,
     status: Option<&'a SceneStatus>,
 }
 
@@ -35,7 +35,7 @@ impl<'a> ScenesQuery<'a> {
         Self::default()
     }
 
-    pub fn name_eq(&mut self, name: &'a SceneName) -> &mut Self {
+    pub fn name_eq(&mut self, name: &'a str) -> &mut Self {
         self.name = Some(name);
         self
     }
@@ -52,7 +52,7 @@ impl<'a> ScenesQuery<'a> {
         }
     }
 
-    pub fn name(&self) -> Option<&'a SceneName> {
+    pub fn name(&self) -> Option<&'a str> {
         self.name
     }
 
@@ -133,7 +133,7 @@ impl<'a> PartialEq<SceneEntity> for ScenesQuery<'a> {
 
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait ScenesRepository: Send + Sync {
+pub trait ScenesRepository: Send + Sync + 'static {
     async fn scenes_create(&self, scene: SceneEntity) -> Result<SceneEntity>;
     async fn scenes_delete(&self, id: &SceneEntityId) -> Result<()>;
     async fn scenes_exists<'a>(&self, query: ScenesQuery<'a>) -> Result<bool>;

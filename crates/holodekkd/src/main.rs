@@ -14,7 +14,6 @@ use holodekk::{
         RepositoryKind,
     },
     utils::{
-        servers::start_http_server,
         signals::{SignalKind, Signals},
         ConnectionInfo,
     },
@@ -22,7 +21,7 @@ use holodekk::{
 
 use holodekkd::config::HolodekkdConfig;
 
-use holodekkd::api::{router, ApiState};
+use holodekkd::api::Server;
 use holodekkd::holodekk::{Holodekk, HolodekkError};
 
 #[derive(Parser, Debug)]
@@ -105,8 +104,9 @@ where
     R: Repository + 'static,
 {
     let holodekk = Holodekk::start(config.clone(), repo.clone()).await?;
-    let state = ApiState::new(repo.clone());
-    let mut api_server = start_http_server(config.holodekk_api_config(), router(Arc::new(state)));
+    let mut api_server = Server::start(config.holodekk_api_config(), repo.clone());
+    // let state = ApiState::new(repo.clone());
+    // let mut api_server = start_http_server(config.holodekk_api_config(), router(Arc::new(state)));
 
     let signal = Signals::new().await;
     match signal {
@@ -114,7 +114,7 @@ where
             debug!("SIGINT received.  Processing shutdown.");
 
             debug!("Awaiting api server shutdown ...");
-            api_server.stop().await.unwrap();
+            api_server.stop().await;
             debug!("API server shutdown complete.");
             debug!("Awaiting Holodekk shutdown ...");
             holodekk.stop().await;

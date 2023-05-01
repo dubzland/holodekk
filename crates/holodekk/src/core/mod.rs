@@ -36,7 +36,9 @@ pub mod actions;
 pub mod entities;
 pub mod enums;
 pub mod images;
+pub mod models;
 pub mod repositories;
+pub mod services;
 // pub mod subroutine_definitions;
 
 use std::path::PathBuf;

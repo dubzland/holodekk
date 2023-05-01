@@ -4,7 +4,6 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use timestamps::Timestamps;
 
-use crate::core::actions::scene_create;
 use crate::core::enums::SceneStatus;
 
 use super::EntityId;
@@ -20,9 +19,15 @@ impl std::fmt::Display for SceneName {
     }
 }
 
-impl From<&SceneName> for String {
-    fn from(value: &SceneName) -> Self {
-        value.0.clone()
+impl From<SceneName> for String {
+    fn from(name: SceneName) -> Self {
+        name.0
+    }
+}
+
+impl From<String> for SceneName {
+    fn from(value: String) -> Self {
+        SceneName(value)
     }
 }
 
@@ -32,17 +37,17 @@ impl From<&str> for SceneName {
     }
 }
 
-impl From<String> for SceneName {
-    fn from(s: String) -> Self {
-        Self(s)
-    }
-}
-
 impl Deref for SceneName {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl PartialEq<str> for SceneName {
+    fn eq(&self, other: &str) -> bool {
+        self.0.as_str() == other
     }
 }
 
@@ -83,13 +88,5 @@ impl SceneEntity {
             name,
             ..Default::default()
         }
-    }
-}
-
-impl From<scene_create::Request<'_>> for SceneEntity {
-    fn from(req: scene_create::Request) -> Self {
-        let mut scene = Self::new(req.name.to_owned());
-        scene.status = req.status.to_owned();
-        scene
     }
 }

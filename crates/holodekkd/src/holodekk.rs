@@ -7,10 +7,10 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
 
 use holodekk::core::{
-    actions::scenes_find,
     entities::{SceneEntity, SceneName},
     enums::SceneStatus,
     repositories::{Repository, SceneEvent, WatchHandle},
+    services::scene::{FindScenes, ScenesFindInput, ScenesService},
     ScenePaths,
 };
 use holodekk::utils::process::terminate_daemon;
@@ -154,8 +154,11 @@ where
 {
     let mut scenes = HashMap::new();
 
+    let scenes_service = ScenesService::new(repo.clone());
+
     // get the list of scenes from repository
-    let mut repo_scenes = scenes_find::execute(repo.clone(), scenes_find::Request {})
+    let mut repo_scenes = scenes_service
+        .find(&ScenesFindInput::default())
         .await
         .map_err(|err| HolodekkError::Initialization(format!("{:?}", err)))?;
 
