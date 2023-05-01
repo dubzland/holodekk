@@ -1,49 +1,40 @@
-use std::sync::Arc;
+use async_trait::async_trait;
 
 use crate::core::{
-    entities::{SceneEntity, SceneEntityId, SubroutineEntity},
+    entities::{SceneEntityId, SubroutineEntity},
     enums::SubroutineStatus,
-    images::{SubroutineImage, SubroutineImageId},
-    repositories::{self, SubroutinesQuery, SubroutinesRepository},
+    images::SubroutineImageId,
+    repositories::{SubroutinesQuery, SubroutinesRepository},
+    services::{Error, Result},
 };
 
-#[derive(Clone, Debug)]
-pub struct Request<'a> {
-    pub scene: &'a SceneEntity,
-    pub subroutine_definition: &'a SubroutineImage,
-    pub status: SubroutineStatus,
-}
+use super::{CreateSubroutine, SubroutinesCreateInput, SubroutinesService};
 
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("Subroutine already exists for definition {0} on scene {1}")]
-    Conflict(SubroutineImageId, SceneEntityId),
-    #[error("General repository error occurred")]
-    Repository(#[from] repositories::Error),
-}
-
-pub type Result = std::result::Result<SubroutineEntity, Error>;
-
-pub async fn execute<R>(repo: Arc<R>, request: Request<'_>) -> Result
+#[async_trait]
+impl<R> CreateSubroutine for SubroutinesService<R>
 where
     R: SubroutinesRepository,
 {
-    let query = SubroutinesQuery::builder()
-        .for_subroutine_image(&request.subroutine_definition.id)
-        .for_scene_entity(&request.scene.id)
-        .build();
+    async fn create<'a>(&self, input: &'a SubroutinesCreateInput<'a>) -> Result<SubroutineEntity> {
+        let scene_entity_id: SceneEntityId = input.scene_entity_id.parse()?;
+        let subroutine_image_id: SubroutineImageId = input.subroutine_image_id.parse()?;
 
-    if repo.subroutines_exists(query).await? {
-        Err(Error::Conflict(
-            request.subroutine_definition.id.clone(),
-            request.scene.id.to_owned(),
-        ))
-    } else {
-        let mut subroutine =
-            SubroutineEntity::new(&request.scene.id, &request.subroutine_definition.id);
-        subroutine.status = request.status;
-        let subroutine = repo.subroutines_create(subroutine).await?;
-        Ok(subroutine)
+        let query = SubroutinesQuery::builder()
+            .for_scene_entity(&scene_entity_id)
+            .for_subroutine_image(&subroutine_image_id)
+            .build();
+
+        if self.repo.subroutines_exists(query).await? {
+            Err(Error::NotUnique(format!(
+                "Scene already exists: {} - {}",
+                scene_entity_id, subroutine_image_id
+            )))
+        } else {
+            let mut subroutine = SubroutineEntity::new(&scene_entity_id, &subroutine_image_id);
+            subroutine.status = SubroutineStatus::Unknown;
+            let subroutine = self.repo.subroutines_create(subroutine).await?;
+            Ok(subroutine)
+        }
     }
 }
 
@@ -55,14 +46,26 @@ mod tests {
     use timestamps::Timestamps;
 
     use crate::core::{
-        entities::fixtures::mock_scene_entity,
-        images::fixtures::mock_subroutine_image,
+        entities::{fixtures::mock_scene_entity, SceneEntity},
+        images::{fixtures::mock_subroutine_image, SubroutineImage},
         repositories::{
             fixtures::mock_subroutines_repository, MockSubroutinesRepository, SubroutinesQuery,
         },
     };
 
     use super::*;
+
+    async fn execute(
+        repo: MockSubroutinesRepository,
+        scene: &str,
+        image: &str,
+    ) -> Result<SubroutineEntity> {
+        let service = SubroutinesService::new(Arc::new(repo));
+
+        service
+            .create(&SubroutinesCreateInput::new(scene, image))
+            .await
+    }
 
     #[rstest]
     #[tokio::test]
@@ -86,17 +89,14 @@ mod tests {
             .return_once(move |_| Ok(true));
 
         let res = execute(
-            Arc::new(mock_subroutines_repository),
-            Request {
-                scene: &mock_scene_entity,
-                subroutine_definition: &mock_subroutine_image,
-                status: SubroutineStatus::Unknown,
-            },
+            mock_subroutines_repository,
+            &mock_scene_entity.id,
+            &mock_subroutine_image.id,
         )
         .await;
 
         assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), Error::Conflict(..)));
+        assert!(matches!(res.unwrap_err(), Error::NotUnique(..)));
     }
 
     #[rstest]
@@ -129,12 +129,9 @@ mod tests {
             });
 
         execute(
-            Arc::new(mock_subroutines_repository),
-            Request {
-                scene: &mock_scene_entity,
-                subroutine_definition: &mock_subroutine_image,
-                status,
-            },
+            mock_subroutines_repository,
+            &mock_scene_entity.id,
+            &mock_subroutine_image.id,
         )
         .await
         .unwrap();
@@ -164,12 +161,9 @@ mod tests {
             });
 
         let new_subroutine = execute(
-            Arc::new(mock_subroutines_repository),
-            Request {
-                scene: &mock_scene_entity,
-                subroutine_definition: &mock_subroutine_image,
-                status,
-            },
+            mock_subroutines_repository,
+            &mock_scene_entity.id,
+            &mock_subroutine_image.id,
         )
         .await
         .unwrap();

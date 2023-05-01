@@ -1,29 +1,12 @@
 use std::sync::Arc;
 
-use crate::core::{
-    entities::{EntityIdError, SceneEntity, SceneEntityId, SceneName},
-    repositories::{self, ScenesRepository},
-};
+use crate::core::{entities::SceneEntity, repositories::ScenesRepository};
+
+use super::Result;
 
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall::automock;
-
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("Invalid Scene ID: {0}")]
-    InvalidId(#[from] EntityIdError),
-    #[error("Scene already exists for the specified name")]
-    NotFound(SceneEntityId),
-    #[error("Repository error occurred")]
-    NotUnique(SceneName),
-    #[error("Scene not found with id {0}")]
-    Repository(#[from] repositories::Error),
-    #[error(transparent)]
-    Unexpected(#[from] anyhow::Error),
-}
-
-pub type Result<T> = std::result::Result<T, Error>;
 
 #[cfg_attr(test, automock)]
 #[async_trait]
@@ -163,8 +146,18 @@ pub mod fixtures {
     }
 
     #[fixture]
+    pub fn mock_delete_scene() -> MockDeleteScene {
+        MockDeleteScene::default()
+    }
+
+    #[fixture]
     pub fn mock_find_scenes() -> MockFindScenes {
         MockFindScenes::default()
+    }
+
+    #[fixture]
+    pub fn mock_get_scene() -> MockGetScene {
+        MockGetScene::default()
     }
 
     #[fixture]

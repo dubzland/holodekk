@@ -4,9 +4,10 @@ use log::{trace, warn};
 use crate::core::{
     entities::SceneEntity,
     repositories::{ScenesQuery, ScenesRepository},
+    services::{Error, Result},
 };
 
-use super::{CreateScene, Error, Result, ScenesCreateInput, ScenesService};
+use super::{CreateScene, ScenesCreateInput, ScenesService};
 
 impl From<&ScenesCreateInput<'_>> for SceneEntity {
     fn from(input: &ScenesCreateInput<'_>) -> SceneEntity {
@@ -32,21 +33,6 @@ where
             let scene = self.repo.scenes_create(input.into()).await?;
             Ok(scene)
         }
-        // trace!("ScenesService.create({:?})", input);
-        // match SceneCreate::new(
-        //     self.repo.clone(),
-        //     scene_create::Request {
-        //         name: SceneName::from(input.name),
-        //         status: SceneStatus::Unknown,
-        //     },
-        // )
-        // .execute()
-        // .await
-        // {
-        //     Ok(scene) => Ok(scene),
-        //     Err(scene_create::Error::Conflict(name)) => Err(Error::NotUnique(name)),
-        //     Err(e) => Err(Error::from(anyhow::Error::new(e))),
-        // }
     }
 }
 

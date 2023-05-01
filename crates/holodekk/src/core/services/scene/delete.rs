@@ -4,9 +4,10 @@ use log::trace;
 use crate::core::{
     entities::SceneEntityId,
     repositories::{self, ScenesRepository},
+    services::{Error, Result},
 };
 
-use super::{DeleteScene, Error, Result, ScenesDeleteInput, ScenesService};
+use super::{DeleteScene, ScenesDeleteInput, ScenesService};
 
 #[async_trait]
 impl<R> DeleteScene for ScenesService<R>

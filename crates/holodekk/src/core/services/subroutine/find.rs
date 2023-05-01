@@ -1,35 +1,37 @@
-use std::sync::Arc;
-
+use async_trait::async_trait;
 use log::trace;
 
 use crate::core::{
     entities::{SceneEntityId, SubroutineEntity},
     images::SubroutineImageId,
-    repositories::{self, SubroutinesQuery, SubroutinesRepository},
+    repositories::{SubroutinesQuery, SubroutinesRepository},
 };
 
-#[derive(Clone, Debug)]
-pub struct Request<'a> {
-    pub scene_entity_id: Option<&'a SceneEntityId>,
-    pub subroutine_image_id: Option<&'a SubroutineImageId>,
-}
+use super::{FindSubroutines, Result, SubroutinesFindInput, SubroutinesService};
 
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("General repository error occurred")]
-    Repository(#[from] repositories::Error),
-}
-
-pub type Result = std::result::Result<Vec<SubroutineEntity>, Error>;
-
-pub async fn execute<R>(repo: Arc<R>, request: Request<'_>) -> Result
+#[async_trait]
+impl<R> FindSubroutines for SubroutinesService<R>
 where
     R: SubroutinesRepository,
 {
-    trace!("subroutines_find::execute({:?})", request);
-    let query = SubroutinesQuery::from(request);
-    let subroutines = repo.subroutines_find(query).await?;
-    Ok(subroutines)
+    async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> Result<Vec<SubroutineEntity>> {
+        trace!("SubroutinesService::find({:?})", input);
+
+        let mut query = SubroutinesQuery::builder();
+        let scene_id: SceneEntityId;
+        let image_id: SubroutineImageId;
+        if let Some(scene_entity_id) = input.scene_entity_id {
+            scene_id = scene_entity_id.parse()?;
+            query.for_scene_entity(&scene_id);
+        }
+        if let Some(subroutine_image_id) = input.subroutine_image_id {
+            image_id = subroutine_image_id.parse()?;
+            query.for_subroutine_image(&image_id);
+        }
+
+        let subroutines = self.repo.subroutines_find(query).await?;
+        Ok(subroutines)
+    }
 }
 
 #[cfg(test)]
@@ -44,6 +46,18 @@ mod tests {
     use rstest::*;
 
     use super::*;
+
+    async fn execute(
+        repo: MockSubroutinesRepository,
+        scene: &str,
+        image: &str,
+    ) -> Result<Vec<SubroutineEntity>> {
+        let service = SubroutinesService::new(Arc::new(repo));
+
+        service
+            .find(&SubroutinesFindInput::new(Some(scene), Some(image)))
+            .await
+    }
 
     #[rstest]
     #[tokio::test]
@@ -64,11 +78,9 @@ mod tests {
         }
 
         execute(
-            Arc::new(mock_subroutines_repository),
-            Request {
-                scene_entity_id: Some(&scene_entity_id),
-                subroutine_image_id: Some(&subroutine_image_id),
-            },
+            mock_subroutines_repository,
+            &scene_entity_id,
+            &subroutine_image_id,
         )
         .await
         .unwrap();
@@ -91,11 +103,9 @@ mod tests {
         }
 
         let subroutines = execute(
-            Arc::new(mock_subroutines_repository),
-            Request {
-                scene_entity_id: Some(&scene_entity_id),
-                subroutine_image_id: Some(&subroutine_image_id),
-            },
+            mock_subroutines_repository,
+            &scene_entity_id,
+            &subroutine_image_id,
         )
         .await
         .unwrap();

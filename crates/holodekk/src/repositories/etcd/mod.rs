@@ -1,5 +1,7 @@
 mod scenes;
 pub use scenes::*;
+mod subroutines;
+pub use subroutines::*;
 
 use std::sync::RwLock;
 
@@ -68,6 +70,14 @@ pub fn etcd_scene_key(partial: Option<&EntityId>) -> String {
         format!("/scenes/{}", partial)
     } else {
         "/scenes/".to_string()
+    }
+}
+
+pub fn etcd_subroutine_key(partial: Option<&EntityId>) -> String {
+    if let Some(partial) = partial {
+        format!("/subroutines/{}", partial)
+    } else {
+        "/subroutines/".to_string()
     }
 }
 

@@ -4,7 +4,10 @@ use axum::{response::IntoResponse, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 
 use holodekk::apis::http::{routers, ApiState};
-use holodekk::core::{repositories::ScenesRepository, services::scene::ScenesService};
+use holodekk::core::{
+    repositories::{ScenesRepository, SubroutinesRepository},
+    services::{scene::ScenesService, subroutine::SubroutinesService},
+};
 use holodekk::utils::{
     servers::{start_http_server, HttpServerHandle},
     ConnectionInfo,
@@ -12,21 +15,24 @@ use holodekk::utils::{
 
 pub struct HolodekkdApiState<R>
 where
-    R: ScenesRepository,
+    R: ScenesRepository + SubroutinesRepository,
 {
     repo: Arc<R>,
     scenes_service: Arc<ScenesService<R>>,
+    subroutines_service: Arc<SubroutinesService<R>>,
 }
 
 impl<R> HolodekkdApiState<R>
 where
-    R: ScenesRepository,
+    R: ScenesRepository + SubroutinesRepository,
 {
     pub fn new(repo: Arc<R>) -> Self {
         let scenes_service = Arc::new(ScenesService::new(repo.clone()));
+        let subroutines_service = Arc::new(SubroutinesService::new(repo.clone()));
         Self {
             repo,
             scenes_service,
+            subroutines_service,
         }
     }
 
@@ -35,18 +41,22 @@ where
     }
 }
 
-impl<R> ApiState<ScenesService<R>> for HolodekkdApiState<R>
+impl<R> ApiState<ScenesService<R>, SubroutinesService<R>> for HolodekkdApiState<R>
 where
-    R: ScenesRepository,
+    R: ScenesRepository + SubroutinesRepository,
 {
     fn scenes_service(&self) -> Arc<ScenesService<R>> {
         self.scenes_service.clone()
+    }
+
+    fn subroutines_service(&self) -> Arc<SubroutinesService<R>> {
+        self.subroutines_service.clone()
     }
 }
 
 pub fn router<R>(api_state: Arc<HolodekkdApiState<R>>) -> axum::Router
 where
-    R: ScenesRepository,
+    R: ScenesRepository + SubroutinesRepository,
 {
     Router::new()
         .route("/health", get(health))
@@ -64,7 +74,7 @@ impl Server {
 
     pub fn start<R>(config: &ConnectionInfo, repo: Arc<R>) -> Self
     where
-        R: ScenesRepository,
+        R: ScenesRepository + SubroutinesRepository,
     {
         let state = HolodekkdApiState::new(repo);
         let handle = start_http_server(config, router(Arc::new(state)));

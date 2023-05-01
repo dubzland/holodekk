@@ -4,3 +4,8 @@ use serde::{Deserialize, Serialize};
 pub struct NewScene {
     pub name: String,
 }
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct NewSubroutine {
+    pub subroutine_image_id: String,
+}

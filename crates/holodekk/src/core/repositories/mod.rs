@@ -43,7 +43,9 @@ pub trait RepositoryQuery: Send + Sized + Sync {
 }
 
 #[async_trait]
-pub trait Repository: scene::ScenesRepository + 'static {
+pub trait Repository:
+    scene::ScenesRepository + subroutine::SubroutinesRepository + 'static
+{
     //+ subroutine::SubroutinesRepository {
     async fn init(&self) -> Result<()>;
     async fn shutdown(&self);

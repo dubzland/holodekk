@@ -1,28 +1,34 @@
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
+use serde::{Deserialize, Serialize};
 
 use crate::core::{
-    actions::subroutines_find,
     entities::{SceneEntityId, SubroutineEntity, SubroutineEntityId},
     enums::SubroutineStatus,
     images::SubroutineImageId,
     repositories::{RepositoryQuery, Result},
 };
 
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum SubroutineEvent {
+    Unknown,
+    Insert {
+        subroutine: SubroutineEntity,
+    },
+    Update {
+        subroutine: SubroutineEntity,
+        orig: SubroutineEntity,
+    },
+    Delete {
+        subroutine: SubroutineEntity,
+    },
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SubroutinesQuery<'a> {
     pub scene_entity_id: Option<&'a SceneEntityId>,
     pub subroutine_image_id: Option<&'a SubroutineImageId>,
-}
-
-impl<'a> From<subroutines_find::Request<'a>> for SubroutinesQuery<'a> {
-    fn from(request: subroutines_find::Request<'a>) -> SubroutinesQuery<'a> {
-        Self {
-            scene_entity_id: request.scene_entity_id,
-            subroutine_image_id: request.subroutine_image_id,
-        }
-    }
 }
 
 impl<'a> SubroutinesQuery<'a> {

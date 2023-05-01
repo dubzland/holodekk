@@ -1,37 +1,30 @@
-use std::sync::Arc;
+use async_trait::async_trait;
 
 use crate::core::{
     entities::{SubroutineEntity, SubroutineEntityId},
     repositories::{self, SubroutinesRepository},
+    services::{Error, Result},
 };
 
-#[derive(Clone, Debug)]
-pub struct Request<'a> {
-    pub id: &'a SubroutineEntityId,
-}
+use super::{GetSubroutine, SubroutinesGetInput, SubroutinesService};
 
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("Subroutine not found with id {0}")]
-    NotFound(SubroutineEntityId),
-    #[error("General repository error occurred")]
-    Repository(#[from] repositories::Error),
-}
-
-pub type Result = std::result::Result<SubroutineEntity, Error>;
-
-pub async fn execute<R>(repo: Arc<R>, request: Request<'_>) -> Result
+#[async_trait]
+impl<R> GetSubroutine for SubroutinesService<R>
 where
     R: SubroutinesRepository,
 {
-    let subroutine = repo.subroutines_get(request.id).await.map_err(|err| {
-        if matches!(err, repositories::Error::NotFound(..)) {
-            Error::NotFound(request.id.to_owned())
-        } else {
-            Error::from(err)
-        }
-    })?;
-    Ok(subroutine)
+    async fn get<'a>(&self, input: &'a SubroutinesGetInput<'a>) -> Result<SubroutineEntity> {
+        let id: SubroutineEntityId = input.id.parse()?;
+
+        let subroutine = self.repo.subroutines_get(&id).await.map_err(|err| {
+            if matches!(err, repositories::Error::NotFound(..)) {
+                Error::NotFound(id)
+            } else {
+                Error::from(err)
+            }
+        })?;
+        Ok(subroutine)
+    }
 }
 
 #[cfg(test)]
@@ -47,6 +40,12 @@ mod tests {
     };
 
     use super::*;
+
+    async fn execute(repo: MockSubroutinesRepository, id: &str) -> Result<SubroutineEntity> {
+        let service = SubroutinesService::new(Arc::new(repo));
+
+        service.get(&SubroutinesGetInput::new(id)).await
+    }
 
     #[rstest]
     #[tokio::test]
@@ -64,9 +63,7 @@ mod tests {
         }
 
         assert!(matches!(
-            execute(Arc::new(mock_subroutines_repository), Request { id: &id })
-                .await
-                .unwrap_err(),
+            execute(mock_subroutines_repository, &id).await.unwrap_err(),
             Error::NotFound(..)
         ));
     }
@@ -87,9 +84,7 @@ mod tests {
         }
 
         assert_eq!(
-            execute(Arc::new(mock_subroutines_repository), Request { id: &id })
-                .await
-                .unwrap(),
+            execute(mock_subroutines_repository, &id).await.unwrap(),
             mock_subroutine_entity
         );
     }

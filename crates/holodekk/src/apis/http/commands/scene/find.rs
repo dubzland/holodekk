@@ -3,12 +3,16 @@ use std::sync::Arc;
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 
 use crate::apis::http::ApiState;
-use crate::core::services::scene::{Error, FindScenes, ScenesFindInput};
+use crate::core::services::{
+    scene::{FindScenes, ScenesFindInput},
+    Error,
+};
 
-pub async fn find<A, S>(State(state): State<Arc<A>>) -> Result<impl IntoResponse, Error>
+pub async fn find<A, E, U>(State(state): State<Arc<A>>) -> Result<impl IntoResponse, Error>
 where
-    A: ApiState<S>,
-    S: FindScenes,
+    A: ApiState<E, U>,
+    E: FindScenes,
+    U: Send + Sync + 'static,
 {
     let scenes = state
         .scenes_service()
@@ -31,13 +35,16 @@ mod tests {
     use crate::apis::http::MockApiState;
     use crate::core::{
         entities::{fixtures::mock_scene_entity, SceneEntity},
-        services::scene::{fixtures::mock_find_scenes, MockFindScenes},
+        services::{
+            scene::{fixtures::mock_find_scenes, MockFindScenes},
+            subroutine::fixtures::MockSubroutinesService,
+        },
     };
 
     use super::*;
 
     fn mock_app(mock_find: MockFindScenes) -> Router {
-        let mut state = MockApiState::default();
+        let mut state = MockApiState::<MockFindScenes, MockSubroutinesService>::default();
         state
             .expect_scenes_service()
             .return_once(move || Arc::new(mock_find));

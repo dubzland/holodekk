@@ -8,15 +8,19 @@ use axum::{
 };
 
 use crate::apis::http::ApiState;
-use crate::core::services::scene::{DeleteScene, Error, ScenesDeleteInput};
+use crate::core::services::{
+    scene::{DeleteScene, ScenesDeleteInput},
+    Error,
+};
 
-pub async fn delete<A, S>(
+pub async fn delete<A, E, U>(
     State(state): State<Arc<A>>,
     Path(scene): Path<String>,
 ) -> Result<impl IntoResponse, Error>
 where
-    A: ApiState<S>,
-    S: DeleteScene,
+    A: ApiState<E, U>,
+    E: DeleteScene,
+    U: Send + Sync + 'static,
 {
     state
         .scenes_service()

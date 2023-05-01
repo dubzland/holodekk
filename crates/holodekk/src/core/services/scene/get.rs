@@ -4,9 +4,10 @@ use log::trace;
 use crate::core::{
     entities::{SceneEntity, SceneEntityId},
     repositories::{self, ScenesRepository},
+    services::{Error, Result},
 };
 
-use super::{Error, GetScene, Result, ScenesGetInput, ScenesService};
+use super::{GetScene, ScenesGetInput, ScenesService};
 
 #[async_trait]
 impl<R> GetScene for ScenesService<R>
