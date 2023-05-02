@@ -1,8 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use holodekk::core::ScenePaths;
 use holodekk::entities::{SceneEntityId, SceneName};
-use holodekk::HolodekkPaths;
+use holodekk::{HolodekkPaths, ScenePaths};
 
 #[derive(Clone, Debug)]
 pub struct UhuraConfig {
