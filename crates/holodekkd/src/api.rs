@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::{response::IntoResponse, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 
-use holodekk::apis::http::{scene, ApiState};
+use holodekk::apis::http::{entity::scene, ApiState};
 use holodekk::entities::{SceneEntityRepository, SubroutineEntityRepository};
 use holodekk::services::{scene::SceneEntityService, subroutine::SubroutineEntityService};
 use holodekk::utils::{

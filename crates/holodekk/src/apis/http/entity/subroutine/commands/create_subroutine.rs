@@ -5,7 +5,7 @@ use axum::{
     Json,
 };
 
-use crate::apis::http::subroutine::models::{NewSubroutine, Subroutine};
+use crate::apis::http::entity::subroutine::models::{NewSubroutine, Subroutine};
 use crate::apis::http::{ApiState, CreateResponse};
 use crate::services::{
     subroutine::{CreateSubroutine, CreateSubroutineInput},

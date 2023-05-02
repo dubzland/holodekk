@@ -69,5 +69,7 @@ impl IntoResponse for EntityServiceError {
     }
 }
 
-pub mod scene;
-pub mod subroutine;
+pub mod entity {
+    pub mod scene;
+    pub mod subroutine;
+}

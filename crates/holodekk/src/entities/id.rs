@@ -52,9 +52,9 @@ impl TryFrom<String> for EntityId {
     }
 }
 
-impl Into<String> for EntityId {
-    fn into(self) -> String {
-        self.0
+impl From<EntityId> for String {
+    fn from(id: EntityId) -> String {
+        id.0
     }
 }
 

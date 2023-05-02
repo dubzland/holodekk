@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::extract::State;
 
-use crate::apis::http::scene::models::Scene;
+use crate::apis::http::entity::scene::models::Scene;
 use crate::apis::http::{ApiState, GetResponse};
 use crate::services::{
     scene::{FindScenes, FindScenesInput},

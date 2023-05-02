@@ -100,9 +100,9 @@ impl TryFrom<String> for ImageId {
     }
 }
 
-impl Into<String> for ImageId {
-    fn into(self) -> String {
-        self.0
+impl From<ImageId> for String {
+    fn from(id: ImageId) -> String {
+        id.0
     }
 }
 
