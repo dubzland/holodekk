@@ -5,8 +5,8 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use timestamps::Timestamps;
 
-use crate::core::enums::SubroutineStatus;
 use crate::core::images::SubroutineImageId;
+use crate::enums::SubroutineStatus;
 
 use super::{EntityId, SceneEntityId};
 

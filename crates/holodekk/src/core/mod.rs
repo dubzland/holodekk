@@ -33,7 +33,6 @@
 //!
 // pub mod containers;
 pub mod entities;
-pub mod enums;
 pub mod images;
 pub mod models;
 pub mod services;

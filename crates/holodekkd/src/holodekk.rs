@@ -11,10 +11,10 @@ use holodekk::core::{
         EntityRepository, EntityRepositoryWatchHandle, SceneEntity, SceneEntityRepositoryEvent,
         SceneName,
     },
-    enums::SceneStatus,
     services::scene::{FindScenes, FindScenesInput, SceneEntityService},
     ScenePaths,
 };
+use holodekk::enums::SceneStatus;
 use holodekk::utils::process::terminate_daemon;
 
 use super::scene::{Scene, SceneError, SceneHandle};

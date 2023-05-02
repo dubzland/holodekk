@@ -7,9 +7,9 @@ pub use crate::core::{
         SubroutineEntity, SubroutineEntityId, SubroutineEntityRepository,
         SubroutineEntityRepositoryQuery,
     },
-    enums::SubroutineStatus,
     images::SubroutineImageId,
 };
+pub use crate::enums::SubroutineStatus;
 
 pub(self) use super::MemoryRepository;
 
