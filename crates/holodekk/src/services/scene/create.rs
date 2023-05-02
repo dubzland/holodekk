@@ -1,10 +1,8 @@
 use async_trait::async_trait;
 use log::{trace, warn};
 
-use crate::core::{
-    entities::{SceneEntity, SceneEntityRepository, SceneEntityRepositoryQuery},
-    services::{EntityServiceError, EntityServiceResult},
-};
+use crate::entities::{SceneEntity, SceneEntityRepository, SceneEntityRepositoryQuery};
+use crate::services::{EntityServiceError, EntityServiceResult};
 
 use super::{CreateScene, CreateSceneInput, SceneEntityService};
 
@@ -46,13 +44,11 @@ mod tests {
 
     use rstest::*;
 
-    use crate::core::{
-        entities::{
-            fixtures::{mock_scene_entity, mock_scene_entity_repository},
-            MockSceneEntityRepository, SceneEntity,
-        },
-        enums::SceneStatus,
+    use crate::entities::{
+        fixtures::{mock_scene_entity, mock_scene_entity_repository},
+        MockSceneEntityRepository, SceneEntity,
     };
+    use crate::enums::SceneStatus;
 
     use super::*;
 

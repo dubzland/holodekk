@@ -5,7 +5,7 @@ use axum::{
     Router,
 };
 
-use crate::core::services::{
+use crate::services::{
     scene::SceneEntityServiceMethods, subroutine::SubroutineEntityServiceMethods,
 };
 

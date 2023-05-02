@@ -2,14 +2,12 @@ use async_trait::async_trait;
 use etcd_client::GetOptions;
 use timestamps::Timestamps;
 
-use crate::core::{
-    entities::{
-        EntityId, EntityRepositoryError, EntityRepositoryQuery, EntityRepositoryResult,
-        SubroutineEntity, SubroutineEntityId, SubroutineEntityRepository,
-        SubroutineEntityRepositoryEvent, SubroutineEntityRepositoryQuery,
-    },
-    enums::SubroutineStatus,
+use crate::entities::{
+    EntityId, EntityRepositoryError, EntityRepositoryQuery, EntityRepositoryResult,
+    SubroutineEntity, SubroutineEntityId, SubroutineEntityRepository,
+    SubroutineEntityRepositoryEvent, SubroutineEntityRepositoryQuery,
 };
+use crate::enums::SubroutineStatus;
 
 use super::{etcd_subroutine_key, EtcdRepository};
 

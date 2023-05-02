@@ -7,7 +7,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use timestamps::Timestamps;
 
-use crate::core::enums::SceneStatus;
+use crate::enums::SceneStatus;
 
 use super::EntityId;
 

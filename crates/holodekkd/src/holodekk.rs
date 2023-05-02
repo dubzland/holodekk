@@ -6,16 +6,14 @@ use nix::{sys::signal::kill, unistd::Pid};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
 
-use holodekk::core::{
-    entities::{
-        EntityRepository, EntityRepositoryWatchHandle, SceneEntity, SceneEntityRepositoryEvent,
-        SceneName,
-    },
-    enums::SceneStatus,
-    services::scene::{FindScenes, FindScenesInput, SceneEntityService},
-    ScenePaths,
+use holodekk::entities::{
+    EntityRepository, EntityRepositoryWatchHandle, SceneEntity, SceneEntityRepositoryEvent,
+    SceneName,
 };
+use holodekk::enums::SceneStatus;
+use holodekk::services::scene::{FindScenes, FindScenesInput, SceneEntityService};
 use holodekk::utils::process::terminate_daemon;
+use holodekk::ScenePaths;
 
 use super::scene::{Scene, SceneError, SceneHandle};
 use crate::config::HolodekkdConfig;

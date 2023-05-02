@@ -20,7 +20,7 @@ use nix::{
 use serde::Serialize;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
-use holodekk::core::entities::{SceneEntityId, SceneName};
+use holodekk::entities::{SceneEntityId, SceneName};
 use holodekk::utils::{
     libsee,
     signals::{SignalKind, Signals},

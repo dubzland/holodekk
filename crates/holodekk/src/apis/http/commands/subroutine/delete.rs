@@ -7,7 +7,7 @@ use axum::{
 };
 
 use crate::apis::http::ApiState;
-use crate::core::services::{
+use crate::services::{
     scene::{GetScene, GetSceneInput},
     subroutine::{DeleteSubroutine, DeleteSubroutineInput},
     EntityServiceError,
@@ -41,15 +41,13 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::apis::http::MockApiState;
-    use crate::core::{
-        entities::{
-            fixtures::{mock_scene_entity, mock_subroutine_entity},
-            EntityId, SceneEntity, SubroutineEntity,
-        },
-        services::{
-            scene::{fixtures::mock_get_scene, MockGetScene},
-            subroutine::{fixtures::mock_delete_subroutine, MockDeleteSubroutine},
-        },
+    use crate::entities::{
+        fixtures::{mock_scene_entity, mock_subroutine_entity},
+        EntityId, SceneEntity, SubroutineEntity,
+    };
+    use crate::services::{
+        scene::{fixtures::mock_get_scene, MockGetScene},
+        subroutine::{fixtures::mock_delete_subroutine, MockDeleteSubroutine},
     };
 
     use super::*;

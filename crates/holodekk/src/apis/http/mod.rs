@@ -8,7 +8,7 @@ use log::error;
 #[cfg(test)]
 use mockall::automock;
 
-use crate::core::services::EntityServiceError;
+use crate::services::EntityServiceError;
 
 #[cfg_attr(test, automock)]
 pub trait ApiState<S1, S2>: Send + Sync + 'static

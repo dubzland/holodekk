@@ -10,7 +10,7 @@ use etcd_client::{Client, Event, WatchStream, Watcher};
 use log::{debug, error, warn};
 use tokio::sync::broadcast::{channel, Sender};
 
-use crate::core::entities::{
+use crate::entities::{
     EntityId, EntityRepository, EntityRepositoryError, EntityRepositoryResult,
     EntityRepositoryWatchHandle, EntityRepositoryWatchId, SceneEntityRepositoryEvent,
 };

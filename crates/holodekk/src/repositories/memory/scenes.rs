@@ -2,13 +2,11 @@ use async_trait::async_trait;
 use log::warn;
 use timestamps::Timestamps;
 
-use crate::core::{
-    entities::{
-        EntityRepositoryQuery, EntityRepositoryResult, SceneEntity, SceneEntityId,
-        SceneEntityRepository, SceneEntityRepositoryEvent, SceneEntityRepositoryQuery, SceneName,
-    },
-    enums::SceneStatus,
+use crate::entities::{
+    EntityRepositoryQuery, EntityRepositoryResult, SceneEntity, SceneEntityId,
+    SceneEntityRepository, SceneEntityRepositoryEvent, SceneEntityRepositoryQuery, SceneName,
 };
+use crate::enums::SceneStatus;
 
 use super::MemoryRepository;
 
@@ -108,7 +106,7 @@ mod tests {
 
     use rstest::*;
 
-    use crate::core::entities::{
+    use crate::entities::{
         fixtures::mock_scene_entity, EntityRepositoryError, EntityRepositoryResult, SceneEntity,
     };
     use crate::repositories::memory::MemoryDatabase;

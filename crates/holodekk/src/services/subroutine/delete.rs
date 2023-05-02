@@ -1,10 +1,8 @@
 use async_trait::async_trait;
 use log::trace;
 
-use crate::core::{
-    entities::{EntityRepositoryError, SubroutineEntityId, SubroutineEntityRepository},
-    services::{EntityServiceError, EntityServiceResult},
-};
+use crate::entities::{EntityRepositoryError, SubroutineEntityId, SubroutineEntityRepository};
+use crate::services::{EntityServiceError, EntityServiceResult};
 
 use super::{DeleteSubroutine, DeleteSubroutineInput, SubroutineEntityService};
 
@@ -45,7 +43,7 @@ mod tests {
     use mockall::predicate::eq;
     use rstest::*;
 
-    use crate::core::entities::{
+    use crate::entities::{
         fixtures::{mock_subroutine_entity, mock_subroutine_entity_repository},
         EntityRepositoryError, MockSubroutineEntityRepository, SubroutineEntity,
     };

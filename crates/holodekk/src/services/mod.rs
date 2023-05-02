@@ -1,7 +1,5 @@
-use crate::core::{
-    entities::{EntityId, EntityIdError, EntityRepositoryError},
-    images::ImageIdError,
-};
+use crate::entities::{EntityId, EntityIdError, EntityRepositoryError};
+use crate::images::ImageIdError;
 
 #[derive(thiserror::Error, Debug)]
 pub enum EntityServiceError {

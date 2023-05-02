@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::core::enums::SubroutineKind;
+use crate::enums::SubroutineKind;
 
 use super::{ImageId, ImageName};
 

@@ -7,15 +7,13 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
 
-use holodekk::core::ScenePaths;
-use holodekk::core::{
-    entities::{SceneEntity, SceneEntityId, SceneName},
-    enums::SceneStatus,
-};
+use holodekk::entities::{SceneEntity, SceneEntityId, SceneName};
+use holodekk::enums::SceneStatus;
 use holodekk::utils::{
     fs::ensure_directory,
     process::{daemonize, terminate_daemon, DaemonTerminationError, DaemonizeError},
 };
+use holodekk::ScenePaths;
 
 use crate::config::HolodekkdConfig;
 

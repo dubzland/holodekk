@@ -20,8 +20,8 @@ pub mod fixtures {
         SceneEntityRepositoryQuery, SubroutineEntityRepository, SubroutineEntityRepositoryQuery,
     };
 
-    use crate::core::enums::{SceneStatus, SubroutineStatus};
-    use crate::core::images::{fixtures::mock_subroutine_image, SubroutineImage};
+    use crate::enums::{SceneStatus, SubroutineStatus};
+    use crate::images::{fixtures::mock_subroutine_image, SubroutineImage};
 
     use super::*;
 

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::RwLock};
 
-use crate::core::entities::{
+use crate::entities::{
     EntityRepositoryError, EntityRepositoryResult, SubroutineEntity, SubroutineEntityId,
 };
 

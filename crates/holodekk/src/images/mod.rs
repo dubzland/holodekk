@@ -128,7 +128,7 @@ where
 pub mod fixtures {
     use rstest::*;
 
-    use crate::core::enums::SubroutineKind;
+    use crate::enums::SubroutineKind;
 
     use super::*;
 

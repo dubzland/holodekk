@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use log::trace;
 
-use crate::core::entities::{SceneEntity, SceneEntityRepository, SceneEntityRepositoryQuery};
+use crate::entities::{SceneEntity, SceneEntityRepository, SceneEntityRepositoryQuery};
 
 use super::{EntityServiceResult, FindScenes, FindScenesInput, SceneEntityService};
 
@@ -29,7 +29,7 @@ mod tests {
 
     use rstest::*;
 
-    use crate::core::entities::{
+    use crate::entities::{
         fixtures::{mock_scene_entity, mock_scene_entity_repository},
         MockSceneEntityRepository, SceneEntity,
     };

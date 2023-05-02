@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::core::entities::{SceneEntity, SceneEntityRepository};
+use crate::entities::{SceneEntity, SceneEntityRepository};
 
 use super::EntityServiceResult;
 

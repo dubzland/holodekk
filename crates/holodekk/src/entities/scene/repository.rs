@@ -3,10 +3,8 @@ use async_trait::async_trait;
 use mockall::{automock, predicate::*};
 use serde::{Deserialize, Serialize};
 
-use crate::core::{
-    entities::repository::{EntityRepositoryQuery, EntityRepositoryResult},
-    enums::SceneStatus,
-};
+use crate::entities::repository::{EntityRepositoryQuery, EntityRepositoryResult};
+use crate::enums::SceneStatus;
 
 use super::{SceneEntity, SceneEntityId, SceneName};
 

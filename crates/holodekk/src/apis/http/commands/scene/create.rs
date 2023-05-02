@@ -3,12 +3,10 @@ use std::sync::Arc;
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 
 use crate::apis::http::ApiState;
-use crate::core::{
-    models::NewScene,
-    services::{
-        scene::{CreateScene, CreateSceneInput},
-        EntityServiceError,
-    },
+use crate::models::NewScene;
+use crate::services::{
+    scene::{CreateScene, CreateSceneInput},
+    EntityServiceError,
 };
 
 pub async fn create<A, E, U>(
@@ -36,12 +34,10 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::apis::http::MockApiState;
-    use crate::core::{
-        entities::{fixtures::mock_scene_entity, SceneEntity},
-        services::{
-            scene::{fixtures::mock_create_scene, MockCreateScene},
-            subroutine::fixtures::MockSubroutineEntityService,
-        },
+    use crate::entities::{fixtures::mock_scene_entity, SceneEntity};
+    use crate::services::{
+        scene::{fixtures::mock_create_scene, MockCreateScene},
+        subroutine::fixtures::MockSubroutineEntityService,
     };
 
     use super::*;
