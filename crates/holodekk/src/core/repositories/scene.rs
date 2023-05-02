@@ -94,43 +94,6 @@ impl<'a> PartialEq<SceneEntity> for ScenesQuery<'a> {
     }
 }
 
-// #[derive(Debug)]
-// pub struct ScenesWatcher {
-//     pub id: WatchId,
-//     pub tx: tokio::sync::mpsc::Sender<SceneEvent>,
-// }
-
-// impl ScenesWatcher {
-//     pub fn new(tx: tokio::sync::mpsc::Sender<SceneEvent>) -> Self {
-//         Self {
-//             id: WatchId::generate(),
-//             tx,
-//         }
-//     }
-
-//     pub async fn send_insert(&mut self, scene: &SceneEntity) {
-//         let event = SceneEvent::Insert {
-//             scene: scene.to_owned(),
-//         };
-//         self.tx.send(event).await.unwrap();
-//     }
-
-//     pub async fn send_update(&mut self, scene: &SceneEntity, orig: &SceneEntity) {
-//         let event = SceneEvent::Update {
-//             scene: scene.to_owned(),
-//             orig: orig.to_owned(),
-//         };
-//         self.tx.send(event).await.unwrap();
-//     }
-
-//     pub async fn send_delete(&mut self, value: &SceneEntity) {
-//         let event = SceneEvent::Delete {
-//             scene: value.to_owned(),
-//         };
-//         self.tx.send(event).await.unwrap();
-//     }
-// }
-
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait ScenesRepository: Send + Sync + 'static {

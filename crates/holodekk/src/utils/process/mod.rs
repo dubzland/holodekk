@@ -15,8 +15,8 @@ use nix::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::config::HolodekkPaths;
 use crate::errors::error_chain_fmt;
+use crate::HolodekkPaths;
 
 #[derive(thiserror::Error)]
 pub enum DaemonSyncError {

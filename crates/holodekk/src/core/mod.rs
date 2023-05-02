@@ -38,12 +38,13 @@ pub mod images;
 pub mod models;
 pub mod repositories;
 pub mod services;
+pub mod stores;
 // pub mod subroutine_definitions;
 
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::config::HolodekkPaths;
+use crate::HolodekkPaths;
 
 use entities::{SceneName, SubroutineEntity};
 
