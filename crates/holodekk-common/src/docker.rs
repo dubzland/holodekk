@@ -1,7 +1,7 @@
 use actix_web::web::Bytes;
 
-use bollard::Docker;
 use bollard::image::BuildImageOptions;
+use bollard::Docker;
 
 use tokio_stream::{Stream, StreamExt};
 
@@ -12,11 +12,15 @@ pub struct Client {
 impl Client {
     pub fn new() -> Self {
         Self {
-            docker: Docker::connect_with_socket_defaults().unwrap()
+            docker: Docker::connect_with_socket_defaults().unwrap(),
         }
     }
 
-    pub fn build(self, tag: &str, data: Bytes) -> impl Stream<Item = Result<Bytes, bollard::errors::Error>> {
+    pub fn build(
+        self,
+        tag: &str,
+        data: Bytes,
+    ) -> impl Stream<Item = Result<Bytes, bollard::errors::Error>> {
         let options = BuildImageOptions::<String> {
             dockerfile: "Dockerfile".to_string(),
             t: tag.to_string(),

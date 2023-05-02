@@ -105,8 +105,6 @@ where
 {
     let holodekk = Holodekk::start(config.clone(), repo.clone()).await?;
     let mut api_server = Server::start(config.holodekk_api_config(), repo.clone());
-    // let state = ApiState::new(repo.clone());
-    // let mut api_server = start_http_server(config.holodekk_api_config(), router(Arc::new(state)));
 
     let signal = Signals::new().await;
     match signal {
