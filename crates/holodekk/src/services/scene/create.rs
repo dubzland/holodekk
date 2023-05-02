@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use log::{trace, warn};
 
-use crate::core::services::{EntityServiceError, EntityServiceResult};
 use crate::entities::{SceneEntity, SceneEntityRepository, SceneEntityRepositoryQuery};
+use crate::services::{EntityServiceError, EntityServiceResult};
 
 use super::{CreateScene, CreateSceneInput, SceneEntityService};
 

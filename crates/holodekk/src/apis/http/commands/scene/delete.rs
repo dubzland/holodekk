@@ -8,7 +8,7 @@ use axum::{
 };
 
 use crate::apis::http::ApiState;
-use crate::core::services::{
+use crate::services::{
     scene::{DeleteScene, DeleteSceneInput},
     EntityServiceError,
 };

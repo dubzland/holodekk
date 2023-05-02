@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::core::services::{EntityServiceError, EntityServiceResult};
 use crate::entities::{
     EntityRepositoryError, SubroutineEntity, SubroutineEntityId, SubroutineEntityRepository,
 };
+use crate::services::{EntityServiceError, EntityServiceResult};
 
 use super::{GetSubroutine, GetSubroutineInput, SubroutineEntityService};
 

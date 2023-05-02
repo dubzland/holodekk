@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 
 use crate::apis::http::ApiState;
-use crate::core::services::{
+use crate::services::{
     scene::{FindScenes, FindScenesInput},
     EntityServiceError,
 };
@@ -35,11 +35,11 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::apis::http::MockApiState;
-    use crate::core::services::{
+    use crate::entities::{fixtures::mock_scene_entity, SceneEntity};
+    use crate::services::{
         scene::{fixtures::mock_find_scenes, MockFindScenes},
         subroutine::fixtures::MockSubroutineEntityService,
     };
-    use crate::entities::{fixtures::mock_scene_entity, SceneEntity};
 
     use super::*;
 

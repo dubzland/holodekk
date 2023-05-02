@@ -4,8 +4,8 @@ use axum::{response::IntoResponse, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 
 use holodekk::apis::http::{routers, ApiState};
-use holodekk::core::services::{scene::SceneEntityService, subroutine::SubroutineEntityService};
 use holodekk::entities::{SceneEntityRepository, SubroutineEntityRepository};
+use holodekk::services::{scene::SceneEntityService, subroutine::SubroutineEntityService};
 use holodekk::utils::{
     servers::{start_http_server, HttpServerHandle},
     ConnectionInfo,
