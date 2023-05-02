@@ -27,7 +27,9 @@ pub mod fixtures {
 
     #[fixture]
     pub fn mock_scene_entity() -> SceneEntity {
-        SceneEntity::new("test".into())
+        let mut scene = SceneEntity::new("test".into());
+        scene.created_at = Some(chrono::Utc::now().naive_utc());
+        scene
     }
 
     #[fixture]

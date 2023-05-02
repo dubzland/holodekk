@@ -32,3 +32,5 @@ pub mod commands {
     mod find_scenes;
     pub use find_scenes::*;
 }
+
+pub mod models;

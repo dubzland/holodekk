@@ -1,13 +1,28 @@
 use std::sync::Arc;
 
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{
+    extract::State,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
 
+use crate::apis::http::scene::models::{NewScene, Scene};
 use crate::apis::http::ApiState;
-use crate::models::NewScene;
+use crate::entities::SceneEntity;
 use crate::services::{
     scene::{CreateScene, CreateSceneInput},
     EntityServiceError,
 };
+
+struct CreateSceneResponse(SceneEntity);
+
+impl IntoResponse for CreateSceneResponse {
+    fn into_response(self) -> Response {
+        let scene = Scene::from(self.0);
+        (StatusCode::CREATED, Json(scene)).into_response()
+    }
+}
 
 pub async fn create_scene<A, E, U>(
     State(state): State<Arc<A>>,
@@ -24,7 +39,8 @@ where
             name: &new_scene.name,
         })
         .await?;
-    Ok((StatusCode::CREATED, Json(scene)))
+
+    Ok(CreateSceneResponse(scene))
 }
 
 #[cfg(test)]
