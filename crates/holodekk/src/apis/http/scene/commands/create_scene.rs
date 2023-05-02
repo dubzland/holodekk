@@ -1,33 +1,18 @@
 use std::sync::Arc;
 
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    Json,
-};
+use axum::{extract::State, Json};
 
 use crate::apis::http::scene::models::{NewScene, Scene};
-use crate::apis::http::ApiState;
-use crate::entities::SceneEntity;
+use crate::apis::http::{ApiState, CreateResponse};
 use crate::services::{
     scene::{CreateScene, CreateSceneInput},
     EntityServiceError,
 };
 
-struct CreateSceneResponse(SceneEntity);
-
-impl IntoResponse for CreateSceneResponse {
-    fn into_response(self) -> Response {
-        let scene = Scene::from(self.0);
-        (StatusCode::CREATED, Json(scene)).into_response()
-    }
-}
-
 pub async fn create_scene<A, E, U>(
     State(state): State<Arc<A>>,
     Json(new_scene): Json<NewScene>,
-) -> Result<impl IntoResponse, EntityServiceError>
+) -> Result<CreateResponse<Scene>, EntityServiceError>
 where
     A: ApiState<E, U>,
     E: CreateScene,
@@ -40,12 +25,17 @@ where
         })
         .await?;
 
-    Ok(CreateSceneResponse(scene))
+    Ok(CreateResponse(scene.into()))
 }
 
 #[cfg(test)]
 mod tests {
-    use axum::{body::Body, http::Request, routing::post, Router};
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+        routing::post,
+        Router,
+    };
     use rstest::*;
     use tower::ServiceExt;
 

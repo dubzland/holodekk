@@ -37,7 +37,10 @@ pub mod fixtures {
         mock_scene_entity: SceneEntity,
         mock_subroutine_image: SubroutineImage,
     ) -> SubroutineEntity {
-        SubroutineEntity::new(&mock_scene_entity.id, &mock_subroutine_image.id)
+        let mut subroutine =
+            SubroutineEntity::new(&mock_scene_entity.id, &mock_subroutine_image.id);
+        subroutine.created_at = Some(chrono::Utc::now().naive_utc());
+        subroutine
     }
 
     #[fixture]
