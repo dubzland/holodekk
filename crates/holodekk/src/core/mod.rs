@@ -32,7 +32,7 @@
 //! to be transparent to the rest of the core.
 //!
 // pub mod containers;
-pub mod images;
+// pub mod images;
 // pub mod models;
 // pub mod services;
 pub mod stores;

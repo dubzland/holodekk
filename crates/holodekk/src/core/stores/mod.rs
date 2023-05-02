@@ -1,8 +1,8 @@
 use bytes::Bytes;
 use futures::Stream;
 
-use crate::core::images::{SubroutineImage, SubroutineImageId};
 use crate::errors::error_chain_fmt;
+use crate::images::{SubroutineImage, SubroutineImageId};
 
 #[derive(thiserror::Error)]
 pub enum Error {}

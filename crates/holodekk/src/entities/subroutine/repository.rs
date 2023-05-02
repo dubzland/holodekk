@@ -3,9 +3,9 @@ use async_trait::async_trait;
 use mockall::{automock, predicate::*};
 use serde::{Deserialize, Serialize};
 
-use crate::core::images::SubroutineImageId;
 use crate::entities::repository::{EntityRepositoryQuery, EntityRepositoryResult};
 use crate::enums::SubroutineStatus;
+use crate::images::SubroutineImageId;
 
 use super::{SceneEntityId, SubroutineEntity, SubroutineEntityId};
 

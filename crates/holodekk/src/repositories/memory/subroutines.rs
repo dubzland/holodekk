@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 use timestamps::Timestamps;
 
-pub use crate::core::images::SubroutineImageId;
 use crate::entities::{
     EntityRepositoryError, EntityRepositoryQuery, EntityRepositoryResult, SubroutineEntity,
     SubroutineEntityId, SubroutineEntityRepository, SubroutineEntityRepositoryQuery,
 };
 pub use crate::enums::SubroutineStatus;
+pub use crate::images::SubroutineImageId;
 
 pub(self) use super::MemoryRepository;
 

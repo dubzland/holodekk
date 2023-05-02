@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 use log::trace;
 
-use crate::core::images::SubroutineImageId;
 use crate::entities::{
     SceneEntityId, SubroutineEntity, SubroutineEntityRepository, SubroutineEntityRepositoryQuery,
 };
+use crate::images::SubroutineImageId;
 
 use super::{EntityServiceResult, FindSubroutines, FindSubroutinesInput, SubroutineEntityService};
 
@@ -40,11 +40,11 @@ where
 mod tests {
     use std::sync::Arc;
 
-    use crate::core::images::ImageName;
     use crate::entities::{
         fixtures::{mock_subroutine_entity, mock_subroutine_entity_repository},
         MockSubroutineEntityRepository, SubroutineEntity,
     };
+    use crate::images::ImageName;
     use rstest::*;
 
     use super::*;
