@@ -32,7 +32,6 @@
 //! to be transparent to the rest of the core.
 //!
 // pub mod containers;
-pub mod entities;
 pub mod images;
 pub mod models;
 pub mod services;
@@ -44,7 +43,7 @@ use std::sync::Arc;
 
 use crate::HolodekkPaths;
 
-use entities::{SceneName, SubroutineEntity};
+use super::entities::{SceneName, SubroutineEntity};
 
 #[derive(Clone, Debug)]
 pub struct ScenePaths {

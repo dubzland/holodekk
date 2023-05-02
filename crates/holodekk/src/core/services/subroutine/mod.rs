@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::core::entities::{SubroutineEntity, SubroutineEntityRepository};
+use crate::entities::{SubroutineEntity, SubroutineEntityRepository};
 
 use super::EntityServiceResult;
 

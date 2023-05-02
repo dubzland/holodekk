@@ -2,9 +2,7 @@ use std::{collections::HashMap, sync::RwLock};
 
 use log::debug;
 
-use crate::core::entities::{
-    EntityRepositoryError, EntityRepositoryResult, SceneEntity, SceneEntityId,
-};
+use crate::entities::{EntityRepositoryError, EntityRepositoryResult, SceneEntity, SceneEntityId};
 
 #[derive(Debug)]
 pub struct ScenesMemoryStore {

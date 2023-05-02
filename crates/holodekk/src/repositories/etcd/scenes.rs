@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use etcd_client::GetOptions;
 use timestamps::Timestamps;
 
-use crate::core::entities::{
+use crate::entities::{
     EntityId, EntityRepositoryError, EntityRepositoryQuery, EntityRepositoryResult, SceneEntity,
     SceneEntityId, SceneEntityRepository, SceneEntityRepositoryEvent, SceneEntityRepositoryQuery,
     SceneName,

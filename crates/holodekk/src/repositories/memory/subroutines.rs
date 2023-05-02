@@ -1,13 +1,10 @@
 use async_trait::async_trait;
 use timestamps::Timestamps;
 
-pub use crate::core::{
-    entities::{
-        EntityRepositoryError, EntityRepositoryQuery, EntityRepositoryResult, SceneEntityId,
-        SubroutineEntity, SubroutineEntityId, SubroutineEntityRepository,
-        SubroutineEntityRepositoryQuery,
-    },
-    images::SubroutineImageId,
+pub use crate::core::images::SubroutineImageId;
+use crate::entities::{
+    EntityRepositoryError, EntityRepositoryQuery, EntityRepositoryResult, SubroutineEntity,
+    SubroutineEntityId, SubroutineEntityRepository, SubroutineEntityRepositoryQuery,
 };
 pub use crate::enums::SubroutineStatus;
 
@@ -93,13 +90,11 @@ mod tests {
 
     use rstest::*;
 
-    use crate::{
-        core::entities::{
-            fixtures::mock_subroutine_entity, EntityRepositoryError,
-            SubroutineEntityRepositoryQuery,
-        },
-        repositories::memory::MemoryDatabase,
+    use crate::entities::{
+        fixtures::mock_subroutine_entity, EntityRepositoryError, SceneEntityId,
+        SubroutineEntityRepositoryQuery,
     };
+    use crate::repositories::memory::MemoryDatabase;
 
     use super::*;
 

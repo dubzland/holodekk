@@ -1,10 +1,8 @@
 use async_trait::async_trait;
 use log::trace;
 
-use crate::core::{
-    entities::{EntityRepositoryError, SceneEntityId, SceneEntityRepository},
-    services::{EntityServiceError, EntityServiceResult},
-};
+use crate::core::services::{EntityServiceError, EntityServiceResult};
+use crate::entities::{EntityRepositoryError, SceneEntityId, SceneEntityRepository};
 
 use super::{DeleteScene, DeleteSceneInput, SceneEntityService};
 
@@ -38,7 +36,7 @@ mod tests {
     use mockall::predicate::*;
     use rstest::*;
 
-    use crate::core::entities::{
+    use crate::entities::{
         fixtures::{mock_scene_entity, mock_scene_entity_repository},
         EntityRepositoryError, MockSceneEntityRepository, SceneEntity,
     };

@@ -6,7 +6,7 @@ use clap::Parser;
 use log::debug;
 
 use holodekk::{
-    core::entities::EntityRepository,
+    entities::EntityRepository,
     repositories::{
         etcd::EtcdRepository,
         memory::{MemoryDatabase, MemoryRepository},

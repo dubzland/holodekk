@@ -11,8 +11,8 @@ use async_trait::async_trait;
 use log::debug;
 use tokio::sync::broadcast::{channel, Sender};
 
-use crate::core::entities::{
-    EntityRepository, EntityRepositoryWatchHandle, EntityRepositoryWatchId,
+use crate::entities::{
+    EntityRepository, EntityRepositoryResult, EntityRepositoryWatchHandle, EntityRepositoryWatchId,
     SceneEntityRepositoryEvent,
 };
 
@@ -76,7 +76,7 @@ impl EntityRepository for MemoryRepository {
 mod tests {
     use rstest::*;
 
-    use crate::core::entities::{
+    use crate::entities::{
         fixtures::{mock_scene_entity, mock_subroutine_entity},
         SceneEntity, SubroutineEntity,
     };

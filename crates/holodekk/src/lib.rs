@@ -53,6 +53,7 @@ impl HolodekkPaths {
 
 pub mod apis;
 pub mod core;
+pub mod entities;
 pub mod enums;
 pub mod errors;
 pub mod repositories;

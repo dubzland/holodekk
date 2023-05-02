@@ -46,15 +46,13 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::apis::http::MockApiState;
-    use crate::core::{
-        entities::{
-            fixtures::{mock_scene_entity, mock_subroutine_entity},
-            EntityId, SceneEntity, SubroutineEntity,
-        },
-        services::{
-            scene::{fixtures::mock_get_scene, MockGetScene},
-            subroutine::{fixtures::mock_find_subroutines, MockFindSubroutines},
-        },
+    use crate::core::services::{
+        scene::{fixtures::mock_get_scene, MockGetScene},
+        subroutine::{fixtures::mock_find_subroutines, MockFindSubroutines},
+    };
+    use crate::entities::{
+        fixtures::{mock_scene_entity, mock_subroutine_entity},
+        EntityId, SceneEntity, SubroutineEntity,
     };
 
     use super::*;

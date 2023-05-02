@@ -1,12 +1,11 @@
 use async_trait::async_trait;
 
 use crate::core::{
-    entities::{
-        SceneEntityId, SubroutineEntity, SubroutineEntityRepository,
-        SubroutineEntityRepositoryQuery,
-    },
     images::SubroutineImageId,
     services::{EntityServiceError, EntityServiceResult},
+};
+use crate::entities::{
+    SceneEntityId, SubroutineEntity, SubroutineEntityRepository, SubroutineEntityRepositoryQuery,
 };
 use crate::enums::SubroutineStatus;
 
@@ -50,12 +49,10 @@ mod tests {
     use rstest::*;
     use timestamps::Timestamps;
 
-    use crate::core::{
-        entities::{
-            fixtures::{mock_scene_entity, mock_subroutine_entity_repository},
-            MockSubroutineEntityRepository, SceneEntity, SubroutineEntityRepositoryQuery,
-        },
-        images::{fixtures::mock_subroutine_image, SubroutineImage},
+    use crate::core::images::{fixtures::mock_subroutine_image, SubroutineImage};
+    use crate::entities::{
+        fixtures::{mock_scene_entity, mock_subroutine_entity_repository},
+        MockSubroutineEntityRepository, SceneEntity, SubroutineEntityRepositoryQuery,
     };
 
     use super::*;

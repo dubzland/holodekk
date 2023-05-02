@@ -1,9 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use holodekk::core::{
-    entities::{SceneEntityId, SceneName},
-    ScenePaths,
-};
+use holodekk::core::ScenePaths;
+use holodekk::entities::{SceneEntityId, SceneName};
 use holodekk::HolodekkPaths;
 
 #[derive(Clone, Debug)]

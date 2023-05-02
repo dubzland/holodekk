@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
 
-use holodekk::core::entities::{SceneEntity, SceneEntityId, SceneName};
 use holodekk::core::ScenePaths;
+use holodekk::entities::{SceneEntity, SceneEntityId, SceneName};
 use holodekk::enums::SceneStatus;
 use holodekk::utils::{
     fs::ensure_directory,
