@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 
 use crate::apis::http::ApiState;
-use crate::core::models::NewScene;
+use crate::models::NewScene;
 use crate::services::{
     scene::{CreateScene, CreateSceneInput},
     EntityServiceError,

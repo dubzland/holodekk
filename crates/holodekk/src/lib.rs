@@ -56,6 +56,7 @@ pub mod core;
 pub mod entities;
 pub mod enums;
 pub mod errors;
+pub mod models;
 pub mod repositories;
 pub mod services;
 // pub mod stores;

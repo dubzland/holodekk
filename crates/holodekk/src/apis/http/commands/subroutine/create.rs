@@ -8,7 +8,7 @@ use axum::{
 };
 
 use crate::apis::http::ApiState;
-use crate::core::models::NewSubroutine;
+use crate::models::NewSubroutine;
 use crate::services::{
     subroutine::{CreateSubroutine, CreateSubroutineInput},
     EntityServiceError,
