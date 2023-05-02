@@ -1,8 +1,7 @@
 use std::{collections::HashMap, sync::RwLock};
 
 use crate::core::entities::{
-    repository::{Error, Result},
-    SubroutineEntity, SubroutineEntityId,
+    EntityRepositoryError, EntityRepositoryResult, SubroutineEntity, SubroutineEntityId,
 };
 
 #[derive(Debug)]
@@ -19,9 +18,9 @@ impl Default for SubroutinesMemoryStore {
 }
 
 impl SubroutinesMemoryStore {
-    pub fn add(&self, subroutine: SubroutineEntity) -> Result<()> {
+    pub fn add(&self, subroutine: SubroutineEntity) -> EntityRepositoryResult<()> {
         if self.records.read().unwrap().contains_key(&subroutine.id) {
-            Err(Error::Conflict(format!(
+            Err(EntityRepositoryError::Conflict(format!(
                 "Subroutine already exists with id {}",
                 subroutine.id
             )))
@@ -43,12 +42,12 @@ impl SubroutinesMemoryStore {
             .collect()
     }
 
-    pub fn delete(&self, id: &SubroutineEntityId) -> Result<()> {
+    pub fn delete(&self, id: &SubroutineEntityId) -> EntityRepositoryResult<()> {
         self.records.write().unwrap().remove(id);
         Ok(())
     }
 
-    pub fn exists(&self, id: &SubroutineEntityId) -> Result<bool> {
+    pub fn exists(&self, id: &SubroutineEntityId) -> EntityRepositoryResult<bool> {
         if self.records.read().unwrap().contains_key(id) {
             Ok(true)
         } else {
@@ -56,11 +55,11 @@ impl SubroutinesMemoryStore {
         }
     }
 
-    pub fn get(&self, id: &SubroutineEntityId) -> Result<SubroutineEntity> {
+    pub fn get(&self, id: &SubroutineEntityId) -> EntityRepositoryResult<SubroutineEntity> {
         if let Some(record) = self.records.read().unwrap().get(id) {
             Ok(record.to_owned())
         } else {
-            Err(Error::NotFound(id.to_owned()))
+            Err(EntityRepositoryError::NotFound(id.to_owned()))
         }
     }
 }

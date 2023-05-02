@@ -6,7 +6,7 @@ use clap::Parser;
 use log::debug;
 
 use holodekk::{
-    core::entities::repository::Repository,
+    core::entities::EntityRepository,
     repositories::{
         etcd::EtcdRepository,
         memory::{MemoryDatabase, MemoryRepository},
@@ -100,7 +100,7 @@ async fn start<R>(
     config: Arc<HolodekkdConfig>,
 ) -> std::result::Result<(), HolodekkError>
 where
-    R: Repository + 'static,
+    R: EntityRepository,
 {
     let holodekk = Holodekk::start(config.clone(), repo.clone()).await?;
     let mut api_server = Server::start(config.holodekk_api_config(), repo.clone());

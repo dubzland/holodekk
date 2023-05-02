@@ -4,14 +4,14 @@ use mockall::{automock, predicate::*};
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
-    entities::repository::{RepositoryQuery, Result},
+    entities::repository::{EntityRepositoryQuery, EntityRepositoryResult},
     enums::SceneStatus,
 };
 
 use super::{SceneEntity, SceneEntityId, SceneName};
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub enum SceneEvent {
+pub enum SceneEntityRepositoryEvent {
     Unknown,
     Insert {
         scene: SceneEntity,
@@ -26,12 +26,12 @@ pub enum SceneEvent {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct ScenesQuery<'a> {
+pub struct SceneEntityRepositoryQuery<'a> {
     name: Option<&'a str>,
     status: Option<&'a SceneStatus>,
 }
 
-impl<'a> ScenesQuery<'a> {
+impl<'a> SceneEntityRepositoryQuery<'a> {
     pub fn builder() -> Self {
         Self::default()
     }
@@ -62,7 +62,7 @@ impl<'a> ScenesQuery<'a> {
     }
 }
 
-impl<'a> From<&'a SceneEntity> for ScenesQuery<'a> {
+impl<'a> From<&'a SceneEntity> for SceneEntityRepositoryQuery<'a> {
     fn from(scene: &'a SceneEntity) -> Self {
         Self::builder()
             .name_eq(&scene.name)
@@ -71,7 +71,7 @@ impl<'a> From<&'a SceneEntity> for ScenesQuery<'a> {
     }
 }
 
-impl<'a> RepositoryQuery for ScenesQuery<'a> {
+impl<'a> EntityRepositoryQuery for SceneEntityRepositoryQuery<'a> {
     type Entity = SceneEntity;
 
     fn matches(&self, scene: &SceneEntity) -> bool {
@@ -83,13 +83,13 @@ impl<'a> RepositoryQuery for ScenesQuery<'a> {
     }
 }
 
-impl PartialEq<ScenesQuery<'_>> for SceneEntity {
-    fn eq(&self, other: &ScenesQuery) -> bool {
+impl PartialEq<SceneEntityRepositoryQuery<'_>> for SceneEntity {
+    fn eq(&self, other: &SceneEntityRepositoryQuery) -> bool {
         other.matches(self)
     }
 }
 
-impl<'a> PartialEq<SceneEntity> for ScenesQuery<'a> {
+impl<'a> PartialEq<SceneEntity> for SceneEntityRepositoryQuery<'a> {
     fn eq(&self, other: &SceneEntity) -> bool {
         self.matches(other)
     }
@@ -97,16 +97,22 @@ impl<'a> PartialEq<SceneEntity> for ScenesQuery<'a> {
 
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait ScenesRepository: Send + Sync + 'static {
-    async fn scenes_create(&self, scene: SceneEntity) -> Result<SceneEntity>;
-    async fn scenes_delete(&self, id: &SceneEntityId) -> Result<()>;
-    async fn scenes_exists<'a>(&self, query: ScenesQuery<'a>) -> Result<bool>;
-    async fn scenes_find<'a>(&self, query: ScenesQuery<'a>) -> Result<Vec<SceneEntity>>;
-    async fn scenes_get(&self, id: &SceneEntityId) -> Result<SceneEntity>;
+pub trait SceneEntityRepository: Send + Sync + 'static {
+    async fn scenes_create(&self, scene: SceneEntity) -> EntityRepositoryResult<SceneEntity>;
+    async fn scenes_delete(&self, id: &SceneEntityId) -> EntityRepositoryResult<()>;
+    async fn scenes_exists<'a>(
+        &self,
+        query: SceneEntityRepositoryQuery<'a>,
+    ) -> EntityRepositoryResult<bool>;
+    async fn scenes_find<'a>(
+        &self,
+        query: SceneEntityRepositoryQuery<'a>,
+    ) -> EntityRepositoryResult<Vec<SceneEntity>>;
+    async fn scenes_get(&self, id: &SceneEntityId) -> EntityRepositoryResult<SceneEntity>;
     async fn scenes_update(
         &self,
         id: &SceneEntityId,
         name: Option<SceneName>,
         status: Option<SceneStatus>,
-    ) -> Result<SceneEntity>;
+    ) -> EntityRepositoryResult<SceneEntity>;
 }

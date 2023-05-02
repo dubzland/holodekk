@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::core::entities::{SubroutineEntity, SubroutinesRepository};
+use crate::core::entities::{SubroutineEntity, SubroutineEntityRepository};
 
 use super::Result;
 
@@ -96,14 +96,14 @@ impl<T> SubroutinesServiceMethods for T where
 #[derive(Debug)]
 pub struct SubroutinesService<R>
 where
-    R: SubroutinesRepository,
+    R: SubroutineEntityRepository,
 {
     repo: Arc<R>,
 }
 
 impl<R> SubroutinesService<R>
 where
-    R: SubroutinesRepository,
+    R: SubroutineEntityRepository,
 {
     pub fn new(repo: Arc<R>) -> Self {
         Self { repo }

@@ -8,8 +8,8 @@ use tokio::task::JoinHandle;
 
 use holodekk::core::{
     entities::{
-        repository::{Repository, WatchHandle},
-        SceneEntity, SceneEvent, SceneName,
+        EntityRepository, EntityRepositoryWatchHandle, SceneEntity, SceneEntityRepositoryEvent,
+        SceneName,
     },
     enums::SceneStatus,
     services::scene::{FindScenes, ScenesFindInput, ScenesService},
@@ -44,7 +44,7 @@ pub struct HolodekkHandle<R> {
 
 impl<R> HolodekkHandle<R>
 where
-    R: Repository,
+    R: EntityRepository,
 {
     pub async fn stop(mut self) {
         let sender = self.sender.take().unwrap();
@@ -56,19 +56,19 @@ where
 
 pub struct Holodekk<R>
 where
-    R: Repository,
+    R: EntityRepository,
 {
     pub scenes: HashMap<SceneName, SceneHandle>,
     pub receiver: Receiver<HolodekkMessage>,
     pub event_sender: Sender<HolodekkEvent>,
-    pub scene_watcher: WatchHandle<SceneEvent>,
+    pub scene_watcher: EntityRepositoryWatchHandle<SceneEntityRepositoryEvent>,
     pub config: Arc<HolodekkdConfig>,
     pub repo: Arc<R>,
 }
 
 impl<R> Holodekk<R>
 where
-    R: Repository,
+    R: EntityRepository,
 {
     pub async fn start(
         config: Arc<HolodekkdConfig>,
@@ -114,13 +114,13 @@ where
                 Some(event) = self.scene_watcher.event() => {
                     trace!("Scene update from repo: {:?}", event);
                     match event {
-                        SceneEvent::Unknown => {},
-                        SceneEvent::Insert { scene } => {
+                        SceneEntityRepositoryEvent::Unknown => {},
+                        SceneEntityRepositoryEvent::Insert { scene } => {
                             trace!("I want to start a scene: {:?}", scene);
                             self.create_scene(&scene).await.unwrap();
                         }
-                        SceneEvent::Update { .. } => {}
-                        SceneEvent::Delete { scene } => {
+                        SceneEntityRepositoryEvent::Update { .. } => {}
+                        SceneEntityRepositoryEvent::Delete { scene } => {
                             self.destroy_scene(&scene).await.unwrap();
                         }
                     }
@@ -152,7 +152,7 @@ pub async fn initialize_scenes<R>(
     repo: Arc<R>,
 ) -> Result<HashMap<SceneName, SceneHandle>, HolodekkError>
 where
-    R: Repository,
+    R: EntityRepository,
 {
     let mut scenes = HashMap::new();
 

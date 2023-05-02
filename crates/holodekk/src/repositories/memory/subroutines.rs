@@ -3,9 +3,9 @@ use timestamps::Timestamps;
 
 pub use crate::core::{
     entities::{
-        repository::{Error, RepositoryQuery, Result},
-        SceneEntityId, SubroutineEntity, SubroutineEntityId, SubroutinesQuery,
-        SubroutinesRepository,
+        EntityRepositoryError, EntityRepositoryQuery, EntityRepositoryResult, SceneEntityId,
+        SubroutineEntity, SubroutineEntityId, SubroutineEntityRepository,
+        SubroutineEntityRepositoryQuery,
     },
     enums::SubroutineStatus,
     images::SubroutineImageId,
@@ -14,19 +14,19 @@ pub use crate::core::{
 pub(self) use super::MemoryRepository;
 
 #[async_trait]
-impl SubroutinesRepository for MemoryRepository {
+impl SubroutineEntityRepository for MemoryRepository {
     async fn subroutines_create(
         &self,
         mut subroutine: SubroutineEntity,
-    ) -> Result<SubroutineEntity> {
+    ) -> EntityRepositoryResult<SubroutineEntity> {
         match self.subroutines_get(&subroutine.id).await {
-            Err(Error::NotFound(_)) => {
+            Err(EntityRepositoryError::NotFound(_)) => {
                 subroutine.created();
                 subroutine.updated();
                 self.db.subroutines().add(subroutine.clone())?;
                 Ok(subroutine)
             }
-            Ok(_) => Err(Error::Conflict(format!(
+            Ok(_) => Err(EntityRepositoryError::Conflict(format!(
                 "Subroutine already exists with id {}",
                 subroutine.id
             ))),
@@ -34,23 +34,28 @@ impl SubroutinesRepository for MemoryRepository {
         }
     }
 
-    async fn subroutines_delete(&self, id: &SubroutineEntityId) -> Result<()> {
+    async fn subroutines_delete(&self, id: &SubroutineEntityId) -> EntityRepositoryResult<()> {
         if self.db.subroutines().exists(id)? {
             self.db.subroutines().delete(id)?;
             Ok(())
         } else {
-            Err(Error::NotFound(id.to_string().try_into().unwrap()))
+            Err(EntityRepositoryError::NotFound(
+                id.to_string().try_into().unwrap(),
+            ))
         }
     }
 
-    async fn subroutines_exists<'a>(&self, query: SubroutinesQuery<'a>) -> Result<bool> {
+    async fn subroutines_exists<'a>(
+        &self,
+        query: SubroutineEntityRepositoryQuery<'a>,
+    ) -> EntityRepositoryResult<bool> {
         Ok(self.db.subroutines().all().iter().any(|s| query.matches(s)))
     }
 
     async fn subroutines_find<'a>(
         &self,
-        query: SubroutinesQuery<'a>,
-    ) -> Result<Vec<SubroutineEntity>> {
+        query: SubroutineEntityRepositoryQuery<'a>,
+    ) -> EntityRepositoryResult<Vec<SubroutineEntity>> {
         Ok(self
             .db
             .subroutines()
@@ -60,7 +65,10 @@ impl SubroutinesRepository for MemoryRepository {
             .collect())
     }
 
-    async fn subroutines_get(&self, id: &SubroutineEntityId) -> Result<SubroutineEntity> {
+    async fn subroutines_get(
+        &self,
+        id: &SubroutineEntityId,
+    ) -> EntityRepositoryResult<SubroutineEntity> {
         let subroutine = self.db.subroutines().get(id)?;
         Ok(subroutine)
     }
@@ -69,7 +77,7 @@ impl SubroutinesRepository for MemoryRepository {
         &self,
         id: &SubroutineEntityId,
         status: Option<SubroutineStatus>,
-    ) -> Result<SubroutineEntity> {
+    ) -> EntityRepositoryResult<SubroutineEntity> {
         let mut subroutine = self.subroutines_get(id).await?;
         if let Some(status) = status {
             subroutine.status = status;
@@ -86,7 +94,10 @@ mod tests {
     use rstest::*;
 
     use crate::{
-        core::entities::{fixtures::mock_subroutine_entity, repository::Error, SubroutinesQuery},
+        core::entities::{
+            fixtures::mock_subroutine_entity, EntityRepositoryError,
+            SubroutineEntityRepositoryQuery,
+        },
         repositories::memory::MemoryDatabase,
     };
 
@@ -102,13 +113,16 @@ mod tests {
     async fn create_fails_when_subroutine_already_exists(
         db: Arc<MemoryDatabase>,
         mock_subroutine_entity: SubroutineEntity,
-    ) -> Result<()> {
+    ) -> EntityRepositoryResult<()> {
         db.subroutines().add(mock_subroutine_entity.clone())?;
         let repo = MemoryRepository::new(db.clone());
 
         let result = repo.subroutines_create(mock_subroutine_entity).await;
 
-        assert!(matches!(result.unwrap_err(), Error::Conflict(..)));
+        assert!(matches!(
+            result.unwrap_err(),
+            EntityRepositoryError::Conflict(..)
+        ));
 
         Ok(())
     }
@@ -118,7 +132,7 @@ mod tests {
     async fn create_succeeds(
         db: Arc<MemoryDatabase>,
         mock_subroutine_entity: SubroutineEntity,
-    ) -> Result<()> {
+    ) -> EntityRepositoryResult<()> {
         let repo = MemoryRepository::new(db.clone());
 
         let result = repo.subroutines_create(mock_subroutine_entity).await;
@@ -132,7 +146,7 @@ mod tests {
     async fn create_stores_subroutine(
         db: Arc<MemoryDatabase>,
         mock_subroutine_entity: SubroutineEntity,
-    ) -> Result<()> {
+    ) -> EntityRepositoryResult<()> {
         let repo = MemoryRepository::new(db.clone());
 
         repo.subroutines_create(mock_subroutine_entity.clone())
@@ -145,13 +159,18 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn delete_fails_when_subroutine_does_not_exist(db: Arc<MemoryDatabase>) -> Result<()> {
+    async fn delete_fails_when_subroutine_does_not_exist(
+        db: Arc<MemoryDatabase>,
+    ) -> EntityRepositoryResult<()> {
         let repo = MemoryRepository::new(db.clone());
         let res = repo
             .subroutines_delete(&SubroutineEntityId::generate())
             .await;
         assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), Error::NotFound(..)));
+        assert!(matches!(
+            res.unwrap_err(),
+            EntityRepositoryError::NotFound(..)
+        ));
         Ok(())
     }
 
@@ -160,7 +179,7 @@ mod tests {
     async fn delete_removes_the_record(
         db: Arc<MemoryDatabase>,
         mock_subroutine_entity: SubroutineEntity,
-    ) -> Result<()> {
+    ) -> EntityRepositoryResult<()> {
         db.subroutines().add(mock_subroutine_entity.clone())?;
         let repo = MemoryRepository::new(db.clone());
         repo.subroutines_delete(&mock_subroutine_entity.id).await?;
@@ -173,9 +192,9 @@ mod tests {
     #[tokio::test]
     async fn exists_returns_false_for_nonexistent_subroutine(
         db: Arc<MemoryDatabase>,
-    ) -> Result<()> {
+    ) -> EntityRepositoryResult<()> {
         let repo = MemoryRepository::new(db.clone());
-        let query = SubroutinesQuery::default();
+        let query = SubroutineEntityRepositoryQuery::default();
         let exists = repo.subroutines_exists(query).await?;
         assert!(!exists);
         Ok(())
@@ -186,10 +205,10 @@ mod tests {
     async fn exists_returns_true_for_existing_subroutine(
         db: Arc<MemoryDatabase>,
         mock_subroutine_entity: SubroutineEntity,
-    ) -> Result<()> {
+    ) -> EntityRepositoryResult<()> {
         db.subroutines().add(mock_subroutine_entity.clone())?;
         let repo = MemoryRepository::new(db.clone());
-        let query = SubroutinesQuery::builder()
+        let query = SubroutineEntityRepositoryQuery::builder()
             .for_scene_entity(&mock_subroutine_entity.scene_entity_id)
             .for_subroutine_image(&mock_subroutine_entity.subroutine_image_id)
             .build();
@@ -200,10 +219,14 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn find_retrieves_nothing_when_no_records(db: Arc<MemoryDatabase>) -> Result<()> {
+    async fn find_retrieves_nothing_when_no_records(
+        db: Arc<MemoryDatabase>,
+    ) -> EntityRepositoryResult<()> {
         let repo = MemoryRepository::new(db.clone());
 
-        let instances = repo.subroutines_find(SubroutinesQuery::default()).await?;
+        let instances = repo
+            .subroutines_find(SubroutineEntityRepositoryQuery::default())
+            .await?;
         assert!(instances.is_empty());
         Ok(())
     }
@@ -213,12 +236,12 @@ mod tests {
     async fn find_retrieves_nothing_when_no_matches(
         db: Arc<MemoryDatabase>,
         mock_subroutine_entity: SubroutineEntity,
-    ) -> Result<()> {
+    ) -> EntityRepositoryResult<()> {
         db.subroutines().add(mock_subroutine_entity.clone())?;
         let repo = MemoryRepository::new(db.clone());
         let invalid_id = SceneEntityId::generate();
 
-        let query = SubroutinesQuery::builder()
+        let query = SubroutineEntityRepositoryQuery::builder()
             .for_scene_entity(&invalid_id)
             .build();
         let instances = repo.subroutines_find(query).await?;
@@ -231,10 +254,10 @@ mod tests {
     async fn find_retrieves_matches(
         db: Arc<MemoryDatabase>,
         mock_subroutine_entity: SubroutineEntity,
-    ) -> Result<()> {
+    ) -> EntityRepositoryResult<()> {
         db.subroutines().add(mock_subroutine_entity.clone())?;
         let repo = MemoryRepository::new(db.clone());
-        let query = SubroutinesQuery::builder()
+        let query = SubroutineEntityRepositoryQuery::builder()
             .for_scene_entity(&mock_subroutine_entity.scene_entity_id)
             .for_subroutine_image(&mock_subroutine_entity.subroutine_image_id)
             .build();
@@ -247,13 +270,18 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn get_fails_when_the_instance_does_not_exist(db: Arc<MemoryDatabase>) -> Result<()> {
+    async fn get_fails_when_the_instance_does_not_exist(
+        db: Arc<MemoryDatabase>,
+    ) -> EntityRepositoryResult<()> {
         let repo = MemoryRepository::new(db.clone());
         let invalid_id = SubroutineEntityId::generate();
 
         let res = repo.subroutines_get(&invalid_id).await;
         assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), Error::NotFound(..)));
+        assert!(matches!(
+            res.unwrap_err(),
+            EntityRepositoryError::NotFound(..)
+        ));
         Ok(())
     }
 
@@ -262,7 +290,7 @@ mod tests {
     async fn get_retrieves_subroutine(
         db: Arc<MemoryDatabase>,
         mock_subroutine_entity: SubroutineEntity,
-    ) -> Result<()> {
+    ) -> EntityRepositoryResult<()> {
         db.subroutines().add(mock_subroutine_entity.clone())?;
         let repo = MemoryRepository::new(db.clone());
 

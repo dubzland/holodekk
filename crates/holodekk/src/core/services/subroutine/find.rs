@@ -2,7 +2,10 @@ use async_trait::async_trait;
 use log::trace;
 
 use crate::core::{
-    entities::{SceneEntityId, SubroutineEntity, SubroutinesQuery, SubroutinesRepository},
+    entities::{
+        SceneEntityId, SubroutineEntity, SubroutineEntityRepository,
+        SubroutineEntityRepositoryQuery,
+    },
     images::SubroutineImageId,
 };
 
@@ -11,12 +14,12 @@ use super::{FindSubroutines, Result, SubroutinesFindInput, SubroutinesService};
 #[async_trait]
 impl<R> FindSubroutines for SubroutinesService<R>
 where
-    R: SubroutinesRepository,
+    R: SubroutineEntityRepository,
 {
     async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> Result<Vec<SubroutineEntity>> {
         trace!("SubroutinesService::find({:?})", input);
 
-        let mut query = SubroutinesQuery::builder();
+        let mut query = SubroutineEntityRepositoryQuery::builder();
         let scene_id: SceneEntityId;
         let image_id: SubroutineImageId;
         if let Some(scene_entity_id) = input.scene_entity_id {
@@ -39,8 +42,8 @@ mod tests {
 
     use crate::core::{
         entities::{
-            fixtures::{mock_subroutine_entity, mock_subroutines_repository},
-            MockSubroutinesRepository, SubroutineEntity,
+            fixtures::{mock_subroutine_entity, mock_subroutine_entity_repository},
+            MockSubroutineEntityRepository, SubroutineEntity,
         },
         images::ImageName,
     };
@@ -49,7 +52,7 @@ mod tests {
     use super::*;
 
     async fn execute(
-        repo: MockSubroutinesRepository,
+        repo: MockSubroutineEntityRepository,
         scene: &str,
         image: &str,
     ) -> Result<Vec<SubroutineEntity>> {
@@ -62,16 +65,16 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn executes_query(mut mock_subroutines_repository: MockSubroutinesRepository) {
+    async fn executes_query(mut mock_subroutine_entity_repository: MockSubroutineEntityRepository) {
         let scene_entity_id = SceneEntityId::generate();
         let subroutine_image_id = SubroutineImageId::generate(&ImageName::from("test"));
 
         {
             let scene_entity_id = scene_entity_id.clone();
             let subroutine_image_id = subroutine_image_id.clone();
-            mock_subroutines_repository
+            mock_subroutine_entity_repository
                 .expect_subroutines_find()
-                .withf(move |query: &SubroutinesQuery| {
+                .withf(move |query: &SubroutineEntityRepositoryQuery| {
                     query.scene_entity_id == Some(&scene_entity_id)
                         && query.subroutine_image_id == Some(&subroutine_image_id)
                 })
@@ -79,7 +82,7 @@ mod tests {
         }
 
         execute(
-            mock_subroutines_repository,
+            mock_subroutine_entity_repository,
             &scene_entity_id,
             &subroutine_image_id,
         )
@@ -90,7 +93,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_results_of_query(
-        mut mock_subroutines_repository: MockSubroutinesRepository,
+        mut mock_subroutine_entity_repository: MockSubroutineEntityRepository,
         mock_subroutine_entity: SubroutineEntity,
     ) {
         let scene_entity_id = mock_subroutine_entity.scene_entity_id.clone();
@@ -98,13 +101,13 @@ mod tests {
 
         {
             let mock_subroutine_entity = mock_subroutine_entity.clone();
-            mock_subroutines_repository
+            mock_subroutine_entity_repository
                 .expect_subroutines_find()
                 .return_once(move |_| Ok(vec![mock_subroutine_entity]));
         }
 
         let subroutines = execute(
-            mock_subroutines_repository,
+            mock_subroutine_entity_repository,
             &scene_entity_id,
             &subroutine_image_id,
         )

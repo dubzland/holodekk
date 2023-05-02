@@ -1,5 +1,5 @@
 use crate::core::{
-    entities::{repository, EntityId, EntityIdError},
+    entities::{EntityId, EntityIdError, EntityRepositoryError},
     images::ImageIdError,
 };
 
@@ -14,7 +14,7 @@ pub enum Error {
     #[error("Entity already exists")]
     NotUnique(String),
     #[error("Repository error occurred")]
-    Repository(#[from] repository::Error),
+    Repository(#[from] EntityRepositoryError),
     #[error(transparent)]
     Unexpected(#[from] anyhow::Error),
 }
