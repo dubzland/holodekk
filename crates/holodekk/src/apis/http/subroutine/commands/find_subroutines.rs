@@ -13,7 +13,7 @@ use crate::services::{
     EntityServiceError,
 };
 
-pub async fn find<A, E, U>(
+pub async fn find_subroutines<A, E, U>(
     State(state): State<Arc<A>>,
     Path(scene): Path<String>,
 ) -> Result<impl IntoResponse, EntityServiceError>
@@ -67,7 +67,7 @@ mod tests {
             .expect_subroutine_entity_service()
             .return_once(move || Arc::new(mock_find));
         Router::new()
-            .route("/:scene/subroutines/", get(find))
+            .route("/:scene/subroutines/", get(find_subroutines))
             .with_state(Arc::new(state))
     }
 

@@ -8,7 +8,7 @@ use crate::services::{
     EntityServiceError,
 };
 
-pub async fn find<A, E, U>(
+pub async fn find_scenes<A, E, U>(
     State(state): State<Arc<A>>,
 ) -> Result<impl IntoResponse, EntityServiceError>
 where
@@ -49,7 +49,7 @@ mod tests {
             .expect_scene_entity_service()
             .return_once(move || Arc::new(mock_find));
         Router::new()
-            .route("/", get(find))
+            .route("/", get(find_scenes))
             .with_state(Arc::new(state))
     }
 

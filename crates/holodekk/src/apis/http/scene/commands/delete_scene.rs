@@ -13,7 +13,7 @@ use crate::services::{
     EntityServiceError,
 };
 
-pub async fn delete<A, E, U>(
+pub async fn delete_scene<A, E, U>(
     State(state): State<Arc<A>>,
     Path(scene): Path<String>,
 ) -> Result<impl IntoResponse, EntityServiceError>

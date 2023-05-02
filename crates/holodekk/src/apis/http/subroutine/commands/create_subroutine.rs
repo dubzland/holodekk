@@ -14,7 +14,7 @@ use crate::services::{
     EntityServiceError,
 };
 
-pub async fn create<A, E, U>(
+pub async fn create_subroutine<A, E, U>(
     Path(scene): Path<String>,
     State(state): State<Arc<A>>,
     Json(new_subroutine): Json<NewSubroutine>,
@@ -59,7 +59,7 @@ mod tests {
             .expect_subroutine_entity_service()
             .return_once(move || Arc::new(mock_create));
         Router::new()
-            .route("/:scene/subroutines", post(create))
+            .route("/:scene/subroutines", post(create_subroutine))
             .with_state(Arc::new(state))
     }
 

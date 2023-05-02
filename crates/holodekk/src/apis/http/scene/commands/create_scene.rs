@@ -9,7 +9,7 @@ use crate::services::{
     EntityServiceError,
 };
 
-pub async fn create<A, E, U>(
+pub async fn create_scene<A, E, U>(
     State(state): State<Arc<A>>,
     Json(new_scene): Json<NewScene>,
 ) -> Result<impl IntoResponse, EntityServiceError>
@@ -48,7 +48,7 @@ mod tests {
             .expect_scene_entity_service()
             .return_once(move || Arc::new(mock_create));
         Router::new()
-            .route("/", post(create))
+            .route("/", post(create_scene))
             .with_state(Arc::new(state))
     }
 
