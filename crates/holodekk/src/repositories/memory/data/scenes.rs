@@ -2,9 +2,9 @@ use std::{collections::HashMap, sync::RwLock};
 
 use log::debug;
 
-use crate::core::{
-    entities::{SceneEntity, SceneEntityId},
-    repositories::{Error, Result},
+use crate::core::entities::{
+    repository::{Error, Result},
+    SceneEntity, SceneEntityId,
 };
 
 #[derive(Debug)]

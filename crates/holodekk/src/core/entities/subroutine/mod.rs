@@ -1,3 +1,6 @@
+mod repository;
+pub use repository::*;
+
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use timestamps::Timestamps;

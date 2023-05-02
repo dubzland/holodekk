@@ -3,9 +3,11 @@ use etcd_client::GetOptions;
 use timestamps::Timestamps;
 
 use crate::core::{
-    entities::{EntityId, SceneEntity, SceneEntityId, SceneName},
+    entities::{
+        repository::{Error, RepositoryQuery, Result},
+        EntityId, SceneEntity, SceneEntityId, SceneEvent, SceneName, ScenesQuery, ScenesRepository,
+    },
     enums::SceneStatus,
-    repositories::{Error, RepositoryQuery, Result, SceneEvent, ScenesQuery, ScenesRepository},
 };
 
 use super::{etcd_scene_key, EtcdRepository};

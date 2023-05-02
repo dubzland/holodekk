@@ -2,8 +2,7 @@ use async_trait::async_trait;
 use log::trace;
 
 use crate::core::{
-    entities::{SceneEntity, SceneEntityId},
-    repositories::{self, ScenesRepository},
+    entities::{repository, SceneEntity, SceneEntityId, ScenesRepository},
     services::{Error, Result},
 };
 
@@ -20,7 +19,7 @@ where
         let id: SceneEntityId = input.id.parse()?;
 
         let scene = self.repo.scenes_get(&id).await.map_err(|err| match err {
-            repositories::Error::NotFound(id) => Error::NotFound(id),
+            repository::Error::NotFound(id) => Error::NotFound(id),
             _ => Error::from(err),
         })?;
 
@@ -36,8 +35,10 @@ mod tests {
     use rstest::*;
 
     use crate::core::{
-        entities::{fixtures::mock_scene_entity, SceneEntity},
-        repositories::{fixtures::mock_scenes_repository, MockScenesRepository},
+        entities::{
+            fixtures::{mock_scene_entity, mock_scenes_repository},
+            repository, MockScenesRepository, SceneEntity,
+        },
         services::scene::Result,
     };
 
@@ -56,7 +57,7 @@ mod tests {
 
         mock_scenes_repository
             .expect_scenes_get()
-            .return_once(move |id| Err(repositories::Error::NotFound(id.to_owned())));
+            .return_once(move |id| Err(repository::Error::NotFound(id.to_owned())));
 
         let result = execute(mock_scenes_repository, &mock_id.to_string()).await;
 

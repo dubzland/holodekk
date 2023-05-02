@@ -4,10 +4,11 @@ use mockall::{automock, predicate::*};
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
-    entities::{SceneEntity, SceneEntityId, SceneName},
+    entities::repository::{RepositoryQuery, Result},
     enums::SceneStatus,
-    repositories::{RepositoryQuery, Result},
 };
+
+use super::{SceneEntity, SceneEntityId, SceneName};
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum SceneEvent {

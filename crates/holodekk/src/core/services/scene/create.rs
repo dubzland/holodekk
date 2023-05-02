@@ -2,8 +2,7 @@ use async_trait::async_trait;
 use log::{trace, warn};
 
 use crate::core::{
-    entities::SceneEntity,
-    repositories::{ScenesQuery, ScenesRepository},
+    entities::{SceneEntity, ScenesQuery, ScenesRepository},
     services::{Error, Result},
 };
 
@@ -43,9 +42,11 @@ mod tests {
     use rstest::*;
 
     use crate::core::{
-        entities::{fixtures::mock_scene_entity, SceneEntity},
+        entities::{
+            fixtures::{mock_scene_entity, mock_scenes_repository},
+            MockScenesRepository, SceneEntity,
+        },
         enums::SceneStatus,
-        repositories::{fixtures::mock_scenes_repository, MockScenesRepository},
     };
 
     use super::*;

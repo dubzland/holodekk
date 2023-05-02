@@ -1,5 +1,4 @@
 use std::fs;
-// use std::net::Ipv4Addr;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -7,7 +6,7 @@ use clap::Parser;
 use log::debug;
 
 use holodekk::{
-    core::repositories::Repository,
+    core::entities::repository::Repository,
     repositories::{
         etcd::EtcdRepository,
         memory::{MemoryDatabase, MemoryRepository},

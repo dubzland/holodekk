@@ -7,9 +7,11 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
 
 use holodekk::core::{
-    entities::{SceneEntity, SceneName},
+    entities::{
+        repository::{Repository, WatchHandle},
+        SceneEntity, SceneEvent, SceneName,
+    },
     enums::SceneStatus,
-    repositories::{Repository, SceneEvent, WatchHandle},
     services::scene::{FindScenes, ScenesFindInput, ScenesService},
     ScenePaths,
 };

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use holodekk::apis::http::{routers, ApiState};
 use holodekk::core::{
-    repositories::{ScenesRepository, SubroutinesRepository},
+    entities::{ScenesRepository, SubroutinesRepository},
     services::{scene::ScenesService, subroutine::SubroutinesService},
 };
 use holodekk::utils::{

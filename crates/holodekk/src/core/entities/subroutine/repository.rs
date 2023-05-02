@@ -4,11 +4,12 @@ use mockall::{automock, predicate::*};
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
-    entities::{SceneEntityId, SubroutineEntity, SubroutineEntityId},
+    entities::repository::{RepositoryQuery, Result},
     enums::SubroutineStatus,
     images::SubroutineImageId,
-    repositories::{RepositoryQuery, Result},
 };
+
+use super::{SceneEntityId, SubroutineEntity, SubroutineEntityId};
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum SubroutineEvent {

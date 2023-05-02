@@ -3,9 +3,11 @@ use log::warn;
 use timestamps::Timestamps;
 
 use crate::core::{
-    entities::{SceneEntity, SceneEntityId, SceneName},
+    entities::{
+        repository::{RepositoryQuery, Result},
+        SceneEntity, SceneEntityId, SceneEvent, SceneName, ScenesQuery, ScenesRepository,
+    },
     enums::SceneStatus,
-    repositories::{RepositoryQuery, Result, SceneEvent, ScenesQuery, ScenesRepository},
 };
 
 use super::MemoryRepository;
@@ -100,9 +102,10 @@ mod tests {
 
     use rstest::*;
 
-    use crate::core::{
-        entities::{fixtures::mock_scene_entity, SceneEntity},
-        repositories::{Error, Result},
+    use crate::core::entities::{
+        fixtures::mock_scene_entity,
+        repository::{Error, Result},
+        SceneEntity,
     };
     use crate::repositories::memory::MemoryDatabase;
 

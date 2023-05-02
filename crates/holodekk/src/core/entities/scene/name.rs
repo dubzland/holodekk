@@ -1,14 +1,6 @@
 use std::ops::Deref;
 
-use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
-use timestamps::Timestamps;
-
-use crate::core::enums::SceneStatus;
-
-use super::EntityId;
-
-pub type SceneEntityId = EntityId;
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct SceneName(String);
@@ -58,35 +50,5 @@ where
 {
     fn as_ref(&self) -> &T {
         self.deref().as_ref()
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Timestamps)]
-pub struct SceneEntity {
-    pub id: SceneEntityId,
-    pub name: SceneName,
-    pub status: SceneStatus,
-    pub created_at: Option<NaiveDateTime>,
-    pub updated_at: Option<NaiveDateTime>,
-}
-
-impl Default for SceneEntity {
-    fn default() -> Self {
-        Self {
-            id: SceneEntityId::generate(),
-            name: "".into(),
-            status: SceneStatus::Unknown,
-            created_at: None,
-            updated_at: None,
-        }
-    }
-}
-
-impl SceneEntity {
-    pub fn new(name: SceneName) -> Self {
-        Self {
-            name,
-            ..Default::default()
-        }
     }
 }

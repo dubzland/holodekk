@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 
 use crate::core::{
-    entities::{SubroutineEntity, SubroutineEntityId},
-    repositories::{self, SubroutinesRepository},
+    entities::{repository, SubroutineEntity, SubroutineEntityId, SubroutinesRepository},
     services::{Error, Result},
 };
 
@@ -17,7 +16,7 @@ where
         let id: SubroutineEntityId = input.id.parse()?;
 
         let subroutine = self.repo.subroutines_get(&id).await.map_err(|err| {
-            if matches!(err, repositories::Error::NotFound(..)) {
+            if matches!(err, repository::Error::NotFound(..)) {
                 Error::NotFound(id)
             } else {
                 Error::from(err)
@@ -34,9 +33,9 @@ mod tests {
     use mockall::predicate::eq;
     use rstest::*;
 
-    use crate::core::{
-        entities::fixtures::mock_subroutine_entity,
-        repositories::{fixtures::mock_subroutines_repository, MockSubroutinesRepository},
+    use crate::core::entities::{
+        fixtures::{mock_subroutine_entity, mock_subroutines_repository},
+        repository, MockSubroutinesRepository,
     };
 
     use super::*;
@@ -59,7 +58,7 @@ mod tests {
             mock_subroutines_repository
                 .expect_subroutines_get()
                 .with(eq(sub_id))
-                .return_once(|id| Err(repositories::Error::NotFound(id.to_owned())));
+                .return_once(|id| Err(repository::Error::NotFound(id.to_owned())));
         }
 
         assert!(matches!(

@@ -11,7 +11,10 @@ use async_trait::async_trait;
 use log::debug;
 use tokio::sync::broadcast::{channel, Sender};
 
-use crate::core::repositories::{Error, Repository, SceneEvent, WatchHandle, WatchId};
+use crate::core::entities::{
+    repository::{Error, Repository, WatchHandle, WatchId},
+    SceneEvent,
+};
 
 #[derive(Debug)]
 pub struct MemoryRepository {

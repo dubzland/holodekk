@@ -1,8 +1,8 @@
 use std::{collections::HashMap, sync::RwLock};
 
-use crate::core::{
-    entities::{SubroutineEntity, SubroutineEntityId},
-    repositories::{Error, Result},
+use crate::core::entities::{
+    repository::{Error, Result},
+    SubroutineEntity, SubroutineEntityId,
 };
 
 #[derive(Debug)]

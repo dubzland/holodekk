@@ -3,11 +3,12 @@ use etcd_client::GetOptions;
 use timestamps::Timestamps;
 
 use crate::core::{
-    entities::{EntityId, SubroutineEntity, SubroutineEntityId},
-    enums::SubroutineStatus,
-    repositories::{
-        Error, RepositoryQuery, Result, SubroutineEvent, SubroutinesQuery, SubroutinesRepository,
+    entities::{
+        repository::{Error, RepositoryQuery, Result},
+        EntityId, SubroutineEntity, SubroutineEntityId, SubroutineEvent, SubroutinesQuery,
+        SubroutinesRepository,
     },
+    enums::SubroutineStatus,
 };
 
 use super::{etcd_subroutine_key, EtcdRepository};

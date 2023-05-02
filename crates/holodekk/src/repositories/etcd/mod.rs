@@ -10,9 +10,9 @@ use etcd_client::{Client, Event, WatchStream, Watcher};
 use log::{debug, error, warn};
 use tokio::sync::broadcast::{channel, Sender};
 
-use crate::core::{
-    entities::EntityId,
-    repositories::{Error, Repository, Result, SceneEvent, WatchHandle, WatchId},
+use crate::core::entities::{
+    repository::{Error, Repository, Result, WatchHandle, WatchId},
+    EntityId, SceneEvent,
 };
 
 pub struct EtcdWatchHandle<T> {

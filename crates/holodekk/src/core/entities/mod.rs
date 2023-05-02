@@ -1,83 +1,88 @@
+mod id;
+pub use id::*;
 mod scene;
 pub use scene::*;
 mod subroutine;
 pub use subroutine::*;
 
-use std::convert::TryFrom;
-use std::ops::Deref;
-use std::str::FromStr;
+pub mod repository {
 
-use lazy_static::lazy_static;
-use rand::RngCore;
-use regex::Regex;
-use serde::{Deserialize, Serialize};
+    use async_trait::async_trait;
+    use log::warn;
+    use tokio::sync::broadcast::{error::RecvError, Receiver};
 
-pub fn generate_id() -> String {
-    let mut bytes: [u8; 32] = [0; 32];
-    rand::thread_rng().fill_bytes(&mut bytes);
-    hex::encode(bytes)
-}
+    use crate::errors::error_chain_fmt;
 
-lazy_static! {
-    static ref ENTITY_ID_RE: Regex = Regex::new(r"^[0-9a-fA-F]{64}$").unwrap();
-}
+    use super::{EntityId, SceneEvent};
 
-#[derive(thiserror::Error, Debug)]
-pub enum EntityIdError {
-    #[error("Invalid EntityId format")]
-    Format(String),
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-pub struct EntityId(String);
-
-impl EntityId {
-    pub fn generate() -> Self {
-        Self(generate_id())
+    #[derive(thiserror::Error)]
+    pub enum Error {
+        #[error("Error initializing repository: {0}")]
+        Initialization(String),
+        #[error("General repository error: {0}")]
+        General(String),
+        #[error("Record not found: {0}")]
+        NotFound(EntityId),
+        #[error("Entity conflict: {0}")]
+        Conflict(String),
+        #[error("Failed to setup subscription: {0}")]
+        Subscribe(String),
+        #[error("Etcd communication error")]
+        Etcd(#[from] etcd_client::Error),
+        #[error("Serialization error")]
+        Serialization(#[from] serde_json::Error),
     }
-}
 
-impl FromStr for EntityId {
-    type Err = EntityIdError;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        if ENTITY_ID_RE.is_match(s) {
-            Ok(EntityId(s.to_string()))
-        } else {
-            Err(EntityIdError::Format(s.to_string()))
+    impl std::fmt::Debug for Error {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            error_chain_fmt(self, f)
         }
     }
-}
 
-impl TryFrom<String> for EntityId {
-    type Error = EntityIdError;
+    pub type Result<T> = std::result::Result<T, Error>;
 
-    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
-        Self::from_str(&value)
+    pub trait RepositoryQuery: Send + Sized + Sync {
+        type Entity: Sized;
+
+        fn matches(&self, record: &Self::Entity) -> bool;
     }
-}
 
-impl std::fmt::Display for EntityId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+    pub type WatchId = EntityId;
+
+    pub enum WatchError {}
+
+    pub struct WatchHandle<T> {
+        pub id: WatchId,
+        pub rx: Receiver<T>,
     }
-}
 
-impl std::ops::Deref for EntityId {
-    type Target = str;
+    impl<T> WatchHandle<T>
+    where
+        T: Clone,
+    {
+        pub fn new(id: WatchId, rx: Receiver<T>) -> Self {
+            Self { id, rx }
+        }
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+        pub async fn event(&mut self) -> Option<T> {
+            match self.rx.recv().await {
+                Ok(msg) => Some(msg),
+                Err(RecvError::Closed) => None,
+                Err(err) => {
+                    warn!("Error receiving watch event: {}", err);
+                    None
+                }
+            }
+        }
     }
-}
 
-impl<T> AsRef<T> for EntityId
-where
-    T: ?Sized,
-    <EntityId as Deref>::Target: AsRef<T>,
-{
-    fn as_ref(&self) -> &T {
-        self.deref().as_ref()
+    #[async_trait]
+    pub trait Repository:
+        super::scene::ScenesRepository + super::subroutine::SubroutinesRepository + 'static
+    {
+        async fn init(&self) -> Result<()>;
+        async fn shutdown(&self);
+        async fn subscribe_scenes(&self) -> Result<WatchHandle<SceneEvent>>;
     }
 }
 
@@ -85,6 +90,16 @@ where
 pub mod fixtures {
     use rstest::*;
 
+    use async_trait::async_trait;
+    use mockall::mock;
+
+    use super::repository::Result;
+    use super::{
+        MockScenesRepository, MockSubroutinesRepository, ScenesQuery, ScenesRepository,
+        SubroutinesQuery, SubroutinesRepository,
+    };
+
+    use crate::core::enums::{SceneStatus, SubroutineStatus};
     use crate::core::images::{fixtures::mock_subroutine_image, SubroutineImage};
 
     use super::*;
@@ -100,5 +115,54 @@ pub mod fixtures {
         mock_subroutine_image: SubroutineImage,
     ) -> SubroutineEntity {
         SubroutineEntity::new(&mock_scene_entity.id, &mock_subroutine_image.id)
+    }
+
+    #[fixture]
+    pub fn mock_scenes_repository() -> MockScenesRepository {
+        MockScenesRepository::default()
+    }
+
+    #[fixture]
+    pub fn mock_subroutines_repository() -> MockSubroutinesRepository {
+        MockSubroutinesRepository::default()
+    }
+
+    mock! {
+        pub Repository {}
+
+        #[async_trait]
+        impl ScenesRepository for Repository {
+            async fn scenes_create(
+                &self,
+                scene: SceneEntity,
+            ) -> Result<SceneEntity>;
+            async fn scenes_delete(&self, id: &SceneEntityId) -> Result<()>;
+            async fn scenes_exists<'a>(&self, query: ScenesQuery<'a>) -> Result<bool>;
+            async fn scenes_find<'a>(&self, query: ScenesQuery<'a>)
+                -> Result<Vec<SceneEntity>>;
+            async fn scenes_get(&self, id: &SceneEntityId) -> Result<SceneEntity>;
+            async fn scenes_update(&self, id: &SceneEntityId, name: Option<SceneName>, status: Option<SceneStatus>) -> Result<SceneEntity>;
+        }
+
+        #[async_trait]
+        impl SubroutinesRepository for Repository {
+            async fn subroutines_create(
+                &self,
+                subroutine: SubroutineEntity,
+            ) -> Result<SubroutineEntity>;
+            async fn subroutines_delete(&self, id: &SubroutineEntityId) -> Result<()>;
+            async fn subroutines_exists<'a>(&self, query: SubroutinesQuery<'a>) -> Result<bool>;
+            async fn subroutines_find<'a>(
+                &self,
+                query: SubroutinesQuery<'a>,
+            ) -> Result<Vec<SubroutineEntity>>;
+            async fn subroutines_get(&self, id: &SubroutineEntityId) -> Result<SubroutineEntity>;
+            async fn subroutines_update(&self, id: &SubroutineEntityId, status: Option<SubroutineStatus>) -> Result<SubroutineEntity>;
+        }
+    }
+
+    #[fixture]
+    pub(crate) fn mock_repository() -> MockRepository {
+        MockRepository::default()
     }
 }

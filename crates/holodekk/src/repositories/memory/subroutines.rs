@@ -2,10 +2,13 @@ use async_trait::async_trait;
 use timestamps::Timestamps;
 
 pub use crate::core::{
-    entities::{SceneEntityId, SubroutineEntity, SubroutineEntityId},
+    entities::{
+        repository::{Error, RepositoryQuery, Result},
+        SceneEntityId, SubroutineEntity, SubroutineEntityId, SubroutinesQuery,
+        SubroutinesRepository,
+    },
     enums::SubroutineStatus,
     images::SubroutineImageId,
-    repositories::{Error, RepositoryQuery, Result, SubroutinesQuery, SubroutinesRepository},
 };
 
 pub(self) use super::MemoryRepository;
@@ -83,10 +86,7 @@ mod tests {
     use rstest::*;
 
     use crate::{
-        core::{
-            entities::fixtures::mock_subroutine_entity,
-            repositories::{Error, SubroutinesQuery},
-        },
+        core::entities::{fixtures::mock_subroutine_entity, repository::Error, SubroutinesQuery},
         repositories::memory::MemoryDatabase,
     };
 
