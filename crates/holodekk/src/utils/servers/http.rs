@@ -19,6 +19,7 @@ use tower::BoxError;
 
 use crate::utils::{fs::cleanup, ConnectionInfo};
 
+#[derive(Debug)]
 pub struct HttpServerHandle {
     shutdown_tx: RwLock<Option<tokio::sync::oneshot::Sender<()>>>,
     task_handle: RwLock<Option<tokio::task::JoinHandle<std::result::Result<(), hyper::Error>>>>,

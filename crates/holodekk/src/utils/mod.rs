@@ -2,6 +2,7 @@ pub mod fs;
 pub mod libsee;
 pub mod logger;
 pub mod pipes;
+pub mod process;
 pub mod servers;
 pub mod signals;
 pub mod streams;
@@ -10,14 +11,7 @@ use std::fmt;
 use std::net::Ipv4Addr;
 use std::path::{Path, PathBuf};
 
-use rand::RngCore;
 use serde::{Deserialize, Serialize};
-
-pub fn generate_id() -> String {
-    let mut bytes: [u8; 32] = [0; 32];
-    rand::thread_rng().fill_bytes(&mut bytes);
-    hex::encode(bytes)
-}
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConnectionInfoError {

@@ -1,5 +1,5 @@
-mod projectors;
-use projectors::*;
+mod scenes;
+use scenes::*;
 mod subroutines;
 use subroutines::*;
 
@@ -7,14 +7,14 @@ use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct MemoryDatabase {
-    projectors: Arc<ProjectorsMemoryStore>,
+    scenes: Arc<ScenesMemoryStore>,
     subroutines: Arc<SubroutinesMemoryStore>,
 }
 
 impl Default for MemoryDatabase {
     fn default() -> Self {
         Self {
-            projectors: Arc::new(ProjectorsMemoryStore::default()),
+            scenes: Arc::new(ScenesMemoryStore::default()),
             subroutines: Arc::new(SubroutinesMemoryStore::default()),
         }
     }
@@ -25,8 +25,8 @@ impl MemoryDatabase {
         Default::default()
     }
 
-    pub fn projectors(&self) -> Arc<ProjectorsMemoryStore> {
-        self.projectors.clone()
+    pub fn scenes(&self) -> Arc<ScenesMemoryStore> {
+        self.scenes.clone()
     }
 
     pub fn subroutines(&self) -> Arc<SubroutinesMemoryStore> {

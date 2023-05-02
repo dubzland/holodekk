@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use holodekk::config::HolodekkConfig;
 use holodekk::repositories::RepositoryKind;
+use holodekk_common::config::HolodekkConfig;
 
 #[derive(Clone, Debug)]
 pub struct SubroutineConfig {

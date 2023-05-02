@@ -32,6 +32,103 @@
 //! to be transparent to the rest of the core.
 //!
 // pub mod containers;
-pub mod projectors;
-pub mod subroutine_definitions;
-pub mod subroutines;
+pub mod entities;
+pub mod enums;
+pub mod images;
+pub mod models;
+pub mod repositories;
+pub mod services;
+pub mod stores;
+// pub mod subroutine_definitions;
+
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use crate::HolodekkPaths;
+
+use entities::{SceneName, SubroutineEntity};
+
+#[derive(Clone, Debug)]
+pub struct ScenePaths {
+    root: PathBuf,
+    pidfile: PathBuf,
+    socket: PathBuf,
+}
+
+impl ScenePaths {
+    pub fn build(paths: &HolodekkPaths, name: &SceneName) -> Self {
+        let mut root = paths.scenes_root().clone();
+        root.push(name);
+
+        let mut pidfile = root.clone();
+        pidfile.push("uhura.pid");
+
+        let mut socket = root.clone();
+        socket.push("uhura.sock");
+
+        Self {
+            root,
+            pidfile,
+            socket,
+        }
+    }
+
+    pub fn root(&self) -> &PathBuf {
+        &self.root
+    }
+
+    pub fn pidfile(&self) -> &PathBuf {
+        &self.pidfile
+    }
+
+    pub fn socket(&self) -> &PathBuf {
+        &self.socket
+    }
+}
+
+#[derive(Debug)]
+pub struct SubroutinePaths {
+    root: PathBuf,
+    pidfile: PathBuf,
+    logfile: PathBuf,
+    socket: PathBuf,
+}
+
+impl SubroutinePaths {
+    pub fn build(paths: Arc<HolodekkPaths>, subroutine: &SubroutineEntity) -> Self {
+        let mut root = paths.subroutines_root().clone();
+        root.push(subroutine.id.clone());
+
+        let mut pidfile = root.clone();
+        pidfile.push("subroutine.pid");
+
+        let mut logfile = root.clone();
+        logfile.push("subroutine.log");
+
+        let mut socket = root.clone();
+        socket.push("log.sock");
+
+        Self {
+            root,
+            pidfile,
+            logfile,
+            socket,
+        }
+    }
+
+    pub fn root(&self) -> &PathBuf {
+        &self.root
+    }
+
+    pub fn pidfile(&self) -> &PathBuf {
+        &self.pidfile
+    }
+
+    pub fn logfile(&self) -> &PathBuf {
+        &self.logfile
+    }
+
+    pub fn socket(&self) -> &PathBuf {
+        &self.socket
+    }
+}
