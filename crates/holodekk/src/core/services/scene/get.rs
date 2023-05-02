@@ -3,24 +3,24 @@ use log::trace;
 
 use crate::core::{
     entities::{EntityRepositoryError, SceneEntity, SceneEntityId, SceneEntityRepository},
-    services::{Error, Result},
+    services::{EntityServiceError, EntityServiceResult},
 };
 
-use super::{GetScene, ScenesGetInput, ScenesService};
+use super::{GetScene, GetSceneInput, SceneEntityService};
 
 #[async_trait]
-impl<R> GetScene for ScenesService<R>
+impl<R> GetScene for SceneEntityService<R>
 where
     R: SceneEntityRepository,
 {
-    async fn get<'a>(&self, input: &'a ScenesGetInput<'a>) -> Result<SceneEntity> {
-        trace!("ScenesService#get({:?}", input);
+    async fn get<'a>(&self, input: &'a GetSceneInput<'a>) -> EntityServiceResult<SceneEntity> {
+        trace!("SceneEntityService#get({:?}", input);
 
         let id: SceneEntityId = input.id.parse()?;
 
         let scene = self.repo.scenes_get(&id).await.map_err(|err| match err {
-            EntityRepositoryError::NotFound(id) => Error::NotFound(id),
-            _ => Error::from(err),
+            EntityRepositoryError::NotFound(id) => EntityServiceError::NotFound(id),
+            _ => EntityServiceError::from(err),
         })?;
 
         Ok(scene)
@@ -34,20 +34,20 @@ mod tests {
     use mockall::predicate::*;
     use rstest::*;
 
-    use crate::core::{
-        entities::{
-            fixtures::{mock_scene_entity, mock_scene_entity_repository},
-            EntityRepositoryError, MockSceneEntityRepository, SceneEntity,
-        },
-        services::scene::Result,
+    use crate::core::entities::{
+        fixtures::{mock_scene_entity, mock_scene_entity_repository},
+        EntityRepositoryError, MockSceneEntityRepository, SceneEntity,
     };
 
     use super::*;
 
-    async fn execute(repo: MockSceneEntityRepository, id: &str) -> Result<SceneEntity> {
-        let service = ScenesService::new(Arc::new(repo));
+    async fn execute(
+        repo: MockSceneEntityRepository,
+        id: &str,
+    ) -> EntityServiceResult<SceneEntity> {
+        let service = SceneEntityService::new(Arc::new(repo));
 
-        service.get(&ScenesGetInput::new(id)).await
+        service.get(&GetSceneInput::new(id)).await
     }
 
     #[rstest]
@@ -63,7 +63,10 @@ mod tests {
 
         let result = execute(mock_scene_entity_repository, &mock_id.to_string()).await;
 
-        assert!(matches!(result.unwrap_err(), Error::NotFound(..)));
+        assert!(matches!(
+            result.unwrap_err(),
+            EntityServiceError::NotFound(..)
+        ));
     }
 
     #[rstest]

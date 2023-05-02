@@ -6,23 +6,23 @@ use crate::apis::http::ApiState;
 use crate::core::{
     models::NewScene,
     services::{
-        scene::{CreateScene, ScenesCreateInput},
-        Error,
+        scene::{CreateScene, CreateSceneInput},
+        EntityServiceError,
     },
 };
 
 pub async fn create<A, E, U>(
     State(state): State<Arc<A>>,
     Json(new_scene): Json<NewScene>,
-) -> Result<impl IntoResponse, Error>
+) -> Result<impl IntoResponse, EntityServiceError>
 where
     A: ApiState<E, U>,
     E: CreateScene,
     U: Send + Sync + 'static,
 {
     let scene = state
-        .scenes_service()
-        .create(&ScenesCreateInput {
+        .scene_entity_service()
+        .create(&CreateSceneInput {
             name: &new_scene.name,
         })
         .await?;
@@ -40,17 +40,16 @@ mod tests {
         entities::{fixtures::mock_scene_entity, SceneEntity},
         services::{
             scene::{fixtures::mock_create_scene, MockCreateScene},
-            subroutine::fixtures::MockSubroutinesService,
-            Error,
+            subroutine::fixtures::MockSubroutineEntityService,
         },
     };
 
     use super::*;
 
     fn mock_app(mock_create: MockCreateScene) -> Router {
-        let mut state = MockApiState::<MockCreateScene, MockSubroutinesService>::default();
+        let mut state = MockApiState::<MockCreateScene, MockSubroutineEntityService>::default();
         state
-            .expect_scenes_service()
+            .expect_scene_entity_service()
             .return_once(move || Arc::new(mock_create));
         Router::new()
             .route("/", post(create))
@@ -82,7 +81,7 @@ mod tests {
     async fn responds_with_conflict_when_scene_exists(mut mock_create_scene: MockCreateScene) {
         mock_create_scene
             .expect_create()
-            .return_once(move |input| Err(Error::NotUnique(input.name.to_string())));
+            .return_once(move |input| Err(EntityServiceError::NotUnique(input.name.to_string())));
 
         let response = make_request(mock_create_scene).await.unwrap();
 

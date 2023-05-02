@@ -3,33 +3,36 @@ use log::{trace, warn};
 
 use crate::core::{
     entities::{SceneEntity, SceneEntityRepository, SceneEntityRepositoryQuery},
-    services::{Error, Result},
+    services::{EntityServiceError, EntityServiceResult},
 };
 
-use super::{CreateScene, ScenesCreateInput, ScenesService};
+use super::{CreateScene, CreateSceneInput, SceneEntityService};
 
-impl From<&ScenesCreateInput<'_>> for SceneEntity {
-    fn from(input: &ScenesCreateInput<'_>) -> SceneEntity {
+impl From<&CreateSceneInput<'_>> for SceneEntity {
+    fn from(input: &CreateSceneInput<'_>) -> SceneEntity {
         SceneEntity::new(input.name.into())
     }
 }
 
 #[async_trait]
-impl<R> CreateScene for ScenesService<R>
+impl<R> CreateScene for SceneEntityService<R>
 where
     R: SceneEntityRepository,
 {
-    async fn create<'a>(&self, input: &'a ScenesCreateInput<'a>) -> Result<SceneEntity> {
-        trace!("ScenesService#create({:?})", input);
+    async fn create<'a>(
+        &self,
+        input: &'a CreateSceneInput<'a>,
+    ) -> EntityServiceResult<SceneEntity> {
+        trace!("SceneEntityService#create({:?})", input);
 
         // ensure a scene does not exist for this name
         let query = SceneEntityRepositoryQuery::builder()
-            .name_eq(&input.name)
+            .name_eq(input.name)
             .build();
 
         if self.repo.scenes_exists(query).await? {
             warn!("scene already exists for name: {}", input.name);
-            Err(Error::NotUnique(input.name.into()))
+            Err(EntityServiceError::NotUnique(input.name.into()))
         } else {
             let scene = self.repo.scenes_create(input.into()).await?;
             Ok(scene)
@@ -62,14 +65,15 @@ mod tests {
             .expect_scenes_exists()
             .return_once(move |_| Ok(true));
 
-        let service = ScenesService::new(Arc::new(mock_scene_entity_repository));
+        let service = SceneEntityService::new(Arc::new(mock_scene_entity_repository));
 
-        let res = service
-            .create(&ScenesCreateInput { name: "existing" })
-            .await;
+        let res = service.create(&CreateSceneInput { name: "existing" }).await;
 
         assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), Error::NotUnique(..)));
+        assert!(matches!(
+            res.unwrap_err(),
+            EntityServiceError::NotUnique(..)
+        ));
     }
 
     #[rstest]
@@ -98,10 +102,10 @@ mod tests {
                 .return_once(move |_| Ok(entity.clone()));
         }
 
-        let service = ScenesService::new(Arc::new(mock_scene_entity_repository));
+        let service = SceneEntityService::new(Arc::new(mock_scene_entity_repository));
 
         service
-            .create(&ScenesCreateInput {
+            .create(&CreateSceneInput {
                 name: &mock_scene_entity.name,
             })
             .await

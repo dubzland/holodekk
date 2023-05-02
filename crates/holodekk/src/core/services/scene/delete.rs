@@ -3,25 +3,25 @@ use log::trace;
 
 use crate::core::{
     entities::{EntityRepositoryError, SceneEntityId, SceneEntityRepository},
-    services::{Error, Result},
+    services::{EntityServiceError, EntityServiceResult},
 };
 
-use super::{DeleteScene, ScenesDeleteInput, ScenesService};
+use super::{DeleteScene, DeleteSceneInput, SceneEntityService};
 
 #[async_trait]
-impl<R> DeleteScene for ScenesService<R>
+impl<R> DeleteScene for SceneEntityService<R>
 where
     R: SceneEntityRepository,
 {
-    async fn delete<'a>(&self, input: &'a ScenesDeleteInput<'a>) -> Result<()> {
-        trace!("ScenesService#delete({:?}", input);
+    async fn delete<'a>(&self, input: &'a DeleteSceneInput<'a>) -> EntityServiceResult<()> {
+        trace!("SceneEntityService#delete({:?}", input);
 
         let id: SceneEntityId = input.id.parse()?;
 
         // ensure the scene exists
         let scene = self.repo.scenes_get(&id).await.map_err(|err| match err {
-            EntityRepositoryError::NotFound(id) => Error::NotFound(id),
-            _ => Error::from(err),
+            EntityRepositoryError::NotFound(id) => EntityServiceError::NotFound(id),
+            _ => EntityServiceError::from(err),
         })?;
 
         // remove scene from the repository
@@ -38,20 +38,17 @@ mod tests {
     use mockall::predicate::*;
     use rstest::*;
 
-    use crate::core::{
-        entities::{
-            fixtures::{mock_scene_entity, mock_scene_entity_repository},
-            EntityRepositoryError, MockSceneEntityRepository, SceneEntity,
-        },
-        services::scene::Result,
+    use crate::core::entities::{
+        fixtures::{mock_scene_entity, mock_scene_entity_repository},
+        EntityRepositoryError, MockSceneEntityRepository, SceneEntity,
     };
 
     use super::*;
 
-    async fn execute(repo: MockSceneEntityRepository, id: &str) -> Result<()> {
-        let service = ScenesService::new(Arc::new(repo));
+    async fn execute(repo: MockSceneEntityRepository, id: &str) -> EntityServiceResult<()> {
+        let service = SceneEntityService::new(Arc::new(repo));
 
-        service.delete(&ScenesDeleteInput::new(id)).await
+        service.delete(&DeleteSceneInput::new(id)).await
     }
 
     #[rstest]
@@ -69,7 +66,7 @@ mod tests {
 
         let res = execute(mock_scene_entity_repository, &mock_id).await;
 
-        assert!(matches!(res.unwrap_err(), Error::NotFound(..)));
+        assert!(matches!(res.unwrap_err(), EntityServiceError::NotFound(..)));
     }
 
     #[rstest]

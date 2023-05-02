@@ -7,17 +7,20 @@ use crate::core::{
     },
     enums::SubroutineStatus,
     images::SubroutineImageId,
-    services::{Error, Result},
+    services::{EntityServiceError, EntityServiceResult},
 };
 
-use super::{CreateSubroutine, SubroutinesCreateInput, SubroutinesService};
+use super::{CreateSubroutine, CreateSubroutineInput, SubroutineEntityService};
 
 #[async_trait]
-impl<R> CreateSubroutine for SubroutinesService<R>
+impl<R> CreateSubroutine for SubroutineEntityService<R>
 where
     R: SubroutineEntityRepository,
 {
-    async fn create<'a>(&self, input: &'a SubroutinesCreateInput<'a>) -> Result<SubroutineEntity> {
+    async fn create<'a>(
+        &self,
+        input: &'a CreateSubroutineInput<'a>,
+    ) -> EntityServiceResult<SubroutineEntity> {
         let scene_entity_id: SceneEntityId = input.scene_entity_id.parse()?;
         let subroutine_image_id: SubroutineImageId = input.subroutine_image_id.parse()?;
 
@@ -27,7 +30,7 @@ where
             .build();
 
         if self.repo.subroutines_exists(query).await? {
-            Err(Error::NotUnique(format!(
+            Err(EntityServiceError::NotUnique(format!(
                 "Scene already exists: {} - {}",
                 scene_entity_id, subroutine_image_id
             )))
@@ -61,11 +64,11 @@ mod tests {
         repo: MockSubroutineEntityRepository,
         scene: &str,
         image: &str,
-    ) -> Result<SubroutineEntity> {
-        let service = SubroutinesService::new(Arc::new(repo));
+    ) -> EntityServiceResult<SubroutineEntity> {
+        let service = SubroutineEntityService::new(Arc::new(repo));
 
         service
-            .create(&SubroutinesCreateInput::new(scene, image))
+            .create(&CreateSubroutineInput::new(scene, image))
             .await
     }
 
@@ -98,7 +101,10 @@ mod tests {
         .await;
 
         assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), Error::NotUnique(..)));
+        assert!(matches!(
+            res.unwrap_err(),
+            EntityServiceError::NotUnique(..)
+        ));
     }
 
     #[rstest]

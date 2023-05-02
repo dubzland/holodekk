@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::core::entities::{SceneEntity, SceneEntityRepository};
 
-use super::Result;
+use super::EntityServiceResult;
 
 use async_trait::async_trait;
 #[cfg(test)]
@@ -11,92 +11,96 @@ use mockall::automock;
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait CreateScene: Send + Sync + 'static {
-    async fn create<'a>(&self, input: &'a ScenesCreateInput<'a>) -> Result<SceneEntity>;
+    async fn create<'a>(&self, input: &'a CreateSceneInput<'a>)
+        -> EntityServiceResult<SceneEntity>;
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait DeleteScene: Send + Sync + 'static {
-    async fn delete<'a>(&self, input: &'a ScenesDeleteInput<'a>) -> Result<()>;
+    async fn delete<'a>(&self, input: &'a DeleteSceneInput<'a>) -> EntityServiceResult<()>;
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait FindScenes: Send + Sync + 'static {
-    async fn find<'a>(&self, input: &'a ScenesFindInput<'a>) -> Result<Vec<SceneEntity>>;
+    async fn find<'a>(
+        &self,
+        input: &'a FindScenesInput<'a>,
+    ) -> EntityServiceResult<Vec<SceneEntity>>;
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait GetScene: Send + Sync + 'static {
-    async fn get<'a>(&self, input: &'a ScenesGetInput<'a>) -> Result<SceneEntity>;
+    async fn get<'a>(&self, input: &'a GetSceneInput<'a>) -> EntityServiceResult<SceneEntity>;
 }
 
 #[derive(Clone, Debug)]
-pub struct ScenesCreateInput<'c> {
+pub struct CreateSceneInput<'c> {
     pub name: &'c str,
 }
 
-impl<'c> ScenesCreateInput<'c> {
+impl<'c> CreateSceneInput<'c> {
     pub fn new(name: &'c str) -> Self {
         Self { name }
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ScenesDeleteInput<'d> {
+pub struct DeleteSceneInput<'d> {
     pub id: &'d str,
 }
 
-impl<'d> ScenesDeleteInput<'d> {
+impl<'d> DeleteSceneInput<'d> {
     pub fn new(id: &'d str) -> Self {
         Self { id }
     }
 }
 
 #[derive(Clone, Default, Debug, PartialEq)]
-pub struct ScenesFindInput<'f> {
+pub struct FindScenesInput<'f> {
     pub name: Option<&'f str>,
 }
 
-impl<'f> ScenesFindInput<'f> {
+impl<'f> FindScenesInput<'f> {
     pub fn new(name: Option<&'f str>) -> Self {
         Self { name }
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct ScenesGetInput<'g> {
+pub struct GetSceneInput<'g> {
     pub id: &'g str,
 }
 
-impl<'g> ScenesGetInput<'g> {
+impl<'g> GetSceneInput<'g> {
     pub fn new(id: &'g str) -> Self {
         Self { id }
     }
 }
 
-pub trait ScenesServiceMethods:
+pub trait SceneEntityServiceMethods:
     // CreateScene + DeleteScene + FindScenes + GetScene + Send + Sync + 'static
     CreateScene + DeleteScene + FindScenes + GetScene
 {
 }
 
-impl<T> ScenesServiceMethods for T where
+impl<T> SceneEntityServiceMethods for T where
     // T: CreateScene + DeleteScene + FindScenes + GetScene + Send + Sync + 'static
     T: CreateScene + DeleteScene + FindScenes + GetScene
 {
 }
 
 #[derive(Debug)]
-pub struct ScenesService<R>
+pub struct SceneEntityService<R>
 where
     R: SceneEntityRepository,
 {
     repo: Arc<R>,
 }
 
-impl<R> ScenesService<R>
+impl<R> SceneEntityService<R>
 where
     R: SceneEntityRepository,
 {
@@ -118,25 +122,25 @@ pub mod fixtures {
     use super::*;
 
     mock! {
-        pub ScenesService {}
+        pub SceneEntityService {}
         #[async_trait]
-        impl CreateScene for ScenesService {
-            async fn create<'a>(&self, input: &'a ScenesCreateInput<'a>) -> Result<SceneEntity>;
+        impl CreateScene for SceneEntityService {
+            async fn create<'a>(&self, input: &'a CreateSceneInput<'a>) -> EntityServiceResult<SceneEntity>;
         }
 
         #[async_trait]
-        impl DeleteScene for ScenesService {
-            async fn delete<'a>(&self, input: &'a ScenesDeleteInput<'a>) -> Result<()>;
+        impl DeleteScene for SceneEntityService {
+            async fn delete<'a>(&self, input: &'a DeleteSceneInput<'a>) -> EntityServiceResult<()>;
         }
 
         #[async_trait]
-        impl FindScenes for ScenesService {
-            async fn find<'a>(&self, input: &'a ScenesFindInput<'a>) -> Result<Vec<SceneEntity>>;
+        impl FindScenes for SceneEntityService {
+            async fn find<'a>(&self, input: &'a FindScenesInput<'a>) -> EntityServiceResult<Vec<SceneEntity>>;
         }
 
         #[async_trait]
-        impl GetScene for ScenesService {
-            async fn get<'a>(&self, input: &'a ScenesGetInput<'a>) -> Result<SceneEntity>;
+        impl GetScene for SceneEntityService {
+            async fn get<'a>(&self, input: &'a GetSceneInput<'a>) -> EntityServiceResult<SceneEntity>;
         }
     }
 
@@ -161,7 +165,7 @@ pub mod fixtures {
     }
 
     #[fixture]
-    pub fn mock_scene_service() -> MockScenesService {
-        MockScenesService::default()
+    pub fn mock_scene_service() -> MockSceneEntityService {
+        MockSceneEntityService::default()
     }
 }

@@ -11,8 +11,8 @@ use crate::apis::http::ApiState;
 use crate::core::{
     models::NewSubroutine,
     services::{
-        subroutine::{CreateSubroutine, SubroutinesCreateInput},
-        Error,
+        subroutine::{CreateSubroutine, CreateSubroutineInput},
+        EntityServiceError,
     },
 };
 
@@ -20,15 +20,15 @@ pub async fn create<A, E, U>(
     Path(scene): Path<String>,
     State(state): State<Arc<A>>,
     Json(new_subroutine): Json<NewSubroutine>,
-) -> Result<impl IntoResponse, Error>
+) -> Result<impl IntoResponse, EntityServiceError>
 where
     A: ApiState<E, U>,
     E: Send + Sync + 'static,
     U: CreateSubroutine,
 {
     let subroutine = state
-        .subroutines_service()
-        .create(&SubroutinesCreateInput::new(
+        .subroutine_entity_service()
+        .create(&CreateSubroutineInput::new(
             &scene,
             &new_subroutine.subroutine_image_id,
         ))
@@ -50,7 +50,7 @@ mod tests {
         },
         images::{fixtures::mock_subroutine_image, SubroutineImage},
         services::{
-            scene::fixtures::MockScenesService,
+            scene::fixtures::MockSceneEntityService,
             subroutine::{fixtures::mock_create_subroutine, MockCreateSubroutine},
         },
     };
@@ -58,9 +58,9 @@ mod tests {
     use super::*;
 
     fn mock_app(mock_create: MockCreateSubroutine) -> Router {
-        let mut state = MockApiState::<MockScenesService, MockCreateSubroutine>::default();
+        let mut state = MockApiState::<MockSceneEntityService, MockCreateSubroutine>::default();
         state
-            .expect_subroutines_service()
+            .expect_subroutine_entity_service()
             .return_once(move || Arc::new(mock_create));
         Router::new()
             .route("/:scene/subroutines", post(create))
@@ -98,7 +98,7 @@ mod tests {
     ) {
         mock_create_subroutine
             .expect_create()
-            .return_once(move |_| Err(Error::NotUnique("Already exists".into())));
+            .return_once(move |_| Err(EntityServiceError::NotUnique("Already exists".into())));
 
         let response = make_request(
             mock_create_subroutine,

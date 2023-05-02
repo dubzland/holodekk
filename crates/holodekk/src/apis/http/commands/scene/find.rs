@@ -4,19 +4,21 @@ use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 
 use crate::apis::http::ApiState;
 use crate::core::services::{
-    scene::{FindScenes, ScenesFindInput},
-    Error,
+    scene::{FindScenes, FindScenesInput},
+    EntityServiceError,
 };
 
-pub async fn find<A, E, U>(State(state): State<Arc<A>>) -> Result<impl IntoResponse, Error>
+pub async fn find<A, E, U>(
+    State(state): State<Arc<A>>,
+) -> Result<impl IntoResponse, EntityServiceError>
 where
     A: ApiState<E, U>,
     E: FindScenes,
     U: Send + Sync + 'static,
 {
     let scenes = state
-        .scenes_service()
-        .find(&ScenesFindInput::default())
+        .scene_entity_service()
+        .find(&FindScenesInput::default())
         .await?;
     Ok((StatusCode::OK, Json(scenes)))
 }
@@ -37,16 +39,16 @@ mod tests {
         entities::{fixtures::mock_scene_entity, SceneEntity},
         services::{
             scene::{fixtures::mock_find_scenes, MockFindScenes},
-            subroutine::fixtures::MockSubroutinesService,
+            subroutine::fixtures::MockSubroutineEntityService,
         },
     };
 
     use super::*;
 
     fn mock_app(mock_find: MockFindScenes) -> Router {
-        let mut state = MockApiState::<MockFindScenes, MockSubroutinesService>::default();
+        let mut state = MockApiState::<MockFindScenes, MockSubroutineEntityService>::default();
         state
-            .expect_scenes_service()
+            .expect_scene_entity_service()
             .return_once(move || Arc::new(mock_find));
         Router::new()
             .route("/", get(find))

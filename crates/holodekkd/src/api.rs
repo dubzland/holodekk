@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use holodekk::apis::http::{routers, ApiState};
 use holodekk::core::{
     entities::{SceneEntityRepository, SubroutineEntityRepository},
-    services::{scene::ScenesService, subroutine::SubroutinesService},
+    services::{scene::SceneEntityService, subroutine::SubroutineEntityService},
 };
 use holodekk::utils::{
     servers::{start_http_server, HttpServerHandle},
@@ -18,8 +18,8 @@ where
     R: SceneEntityRepository + SubroutineEntityRepository,
 {
     repo: Arc<R>,
-    scenes_service: Arc<ScenesService<R>>,
-    subroutines_service: Arc<SubroutinesService<R>>,
+    scene_entity_service: Arc<SceneEntityService<R>>,
+    subroutine_entity_service: Arc<SubroutineEntityService<R>>,
 }
 
 impl<R> HolodekkdApiState<R>
@@ -27,12 +27,12 @@ where
     R: SceneEntityRepository + SubroutineEntityRepository,
 {
     pub fn new(repo: Arc<R>) -> Self {
-        let scenes_service = Arc::new(ScenesService::new(repo.clone()));
-        let subroutines_service = Arc::new(SubroutinesService::new(repo.clone()));
+        let scene_entity_service = Arc::new(SceneEntityService::new(repo.clone()));
+        let subroutine_entity_service = Arc::new(SubroutineEntityService::new(repo.clone()));
         Self {
             repo,
-            scenes_service,
-            subroutines_service,
+            scene_entity_service,
+            subroutine_entity_service,
         }
     }
 
@@ -41,16 +41,16 @@ where
     }
 }
 
-impl<R> ApiState<ScenesService<R>, SubroutinesService<R>> for HolodekkdApiState<R>
+impl<R> ApiState<SceneEntityService<R>, SubroutineEntityService<R>> for HolodekkdApiState<R>
 where
     R: SceneEntityRepository + SubroutineEntityRepository,
 {
-    fn scenes_service(&self) -> Arc<ScenesService<R>> {
-        self.scenes_service.clone()
+    fn scene_entity_service(&self) -> Arc<SceneEntityService<R>> {
+        self.scene_entity_service.clone()
     }
 
-    fn subroutines_service(&self) -> Arc<SubroutinesService<R>> {
-        self.subroutines_service.clone()
+    fn subroutine_entity_service(&self) -> Arc<SubroutineEntityService<R>> {
+        self.subroutine_entity_service.clone()
     }
 }
 

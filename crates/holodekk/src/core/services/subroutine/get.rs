@@ -4,24 +4,27 @@ use crate::core::{
     entities::{
         EntityRepositoryError, SubroutineEntity, SubroutineEntityId, SubroutineEntityRepository,
     },
-    services::{Error, Result},
+    services::{EntityServiceError, EntityServiceResult},
 };
 
-use super::{GetSubroutine, SubroutinesGetInput, SubroutinesService};
+use super::{GetSubroutine, GetSubroutineInput, SubroutineEntityService};
 
 #[async_trait]
-impl<R> GetSubroutine for SubroutinesService<R>
+impl<R> GetSubroutine for SubroutineEntityService<R>
 where
     R: SubroutineEntityRepository,
 {
-    async fn get<'a>(&self, input: &'a SubroutinesGetInput<'a>) -> Result<SubroutineEntity> {
+    async fn get<'a>(
+        &self,
+        input: &'a GetSubroutineInput<'a>,
+    ) -> EntityServiceResult<SubroutineEntity> {
         let id: SubroutineEntityId = input.id.parse()?;
 
         let subroutine = self.repo.subroutines_get(&id).await.map_err(|err| {
             if matches!(err, EntityRepositoryError::NotFound(..)) {
-                Error::NotFound(id)
+                EntityServiceError::NotFound(id)
             } else {
-                Error::from(err)
+                EntityServiceError::from(err)
             }
         })?;
         Ok(subroutine)
@@ -42,10 +45,13 @@ mod tests {
 
     use super::*;
 
-    async fn execute(repo: MockSubroutineEntityRepository, id: &str) -> Result<SubroutineEntity> {
-        let service = SubroutinesService::new(Arc::new(repo));
+    async fn execute(
+        repo: MockSubroutineEntityRepository,
+        id: &str,
+    ) -> EntityServiceResult<SubroutineEntity> {
+        let service = SubroutineEntityService::new(Arc::new(repo));
 
-        service.get(&SubroutinesGetInput::new(id)).await
+        service.get(&GetSubroutineInput::new(id)).await
     }
 
     #[rstest]
@@ -67,7 +73,7 @@ mod tests {
             execute(mock_subroutine_entity_repository, &id)
                 .await
                 .unwrap_err(),
-            Error::NotFound(..)
+            EntityServiceError::NotFound(..)
         ));
     }
 

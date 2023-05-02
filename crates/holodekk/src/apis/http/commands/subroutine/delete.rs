@@ -8,28 +8,28 @@ use axum::{
 
 use crate::apis::http::ApiState;
 use crate::core::services::{
-    scene::{GetScene, ScenesGetInput},
-    subroutine::{DeleteSubroutine, SubroutinesDeleteInput},
-    Error,
+    scene::{GetScene, GetSceneInput},
+    subroutine::{DeleteSubroutine, DeleteSubroutineInput},
+    EntityServiceError,
 };
 
 pub async fn delete<A, E, U>(
     State(state): State<Arc<A>>,
     Path((scene, subroutine)): Path<(String, String)>,
-) -> Result<impl IntoResponse, Error>
+) -> Result<impl IntoResponse, EntityServiceError>
 where
     A: ApiState<E, U>,
     E: GetScene,
     U: DeleteSubroutine,
 {
     state
-        .scenes_service()
-        .get(&ScenesGetInput::new(&scene))
+        .scene_entity_service()
+        .get(&GetSceneInput::new(&scene))
         .await?;
 
     state
-        .subroutines_service()
-        .delete(&SubroutinesDeleteInput::new(&subroutine))
+        .subroutine_entity_service()
+        .delete(&DeleteSubroutineInput::new(&subroutine))
         .await?;
     Ok((StatusCode::NO_CONTENT, ""))
 }
@@ -58,10 +58,10 @@ mod tests {
         let mut state = MockApiState::default();
 
         state
-            .expect_scenes_service()
+            .expect_scene_entity_service()
             .return_once(move || Arc::new(mock_get));
         state
-            .expect_subroutines_service()
+            .expect_subroutine_entity_service()
             .return_once(move || Arc::new(mock_delete));
         Router::new()
             .route("/:scene/subroutines/:subroutine", http_delete(delete))
@@ -93,7 +93,7 @@ mod tests {
     ) {
         mock_get_scene.expect_get().return_once(|input| {
             let id: EntityId = input.id.parse().unwrap();
-            Err(Error::NotFound(id))
+            Err(EntityServiceError::NotFound(id))
         });
 
         let response = make_request(
@@ -124,7 +124,9 @@ mod tests {
             let entity = mock_subroutine_entity.clone();
             mock_delete_subroutine
                 .expect_delete()
-                .return_once(move |_| Err(Error::NotFound(entity.id.parse().unwrap())));
+                .return_once(move |_| {
+                    Err(EntityServiceError::NotFound(entity.id.parse().unwrap()))
+                });
         }
 
         let response = make_request(
