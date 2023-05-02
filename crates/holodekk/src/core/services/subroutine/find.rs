@@ -9,14 +9,17 @@ use crate::core::{
     images::SubroutineImageId,
 };
 
-use super::{FindSubroutines, Result, SubroutinesFindInput, SubroutinesService};
+use super::{EntityServiceResult, FindSubroutines, SubroutinesFindInput, SubroutinesService};
 
 #[async_trait]
 impl<R> FindSubroutines for SubroutinesService<R>
 where
     R: SubroutineEntityRepository,
 {
-    async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> Result<Vec<SubroutineEntity>> {
+    async fn find<'a>(
+        &self,
+        input: &'a SubroutinesFindInput<'a>,
+    ) -> EntityServiceResult<Vec<SubroutineEntity>> {
         trace!("SubroutinesService::find({:?})", input);
 
         let mut query = SubroutineEntityRepositoryQuery::builder();
@@ -55,7 +58,7 @@ mod tests {
         repo: MockSubroutineEntityRepository,
         scene: &str,
         image: &str,
-    ) -> Result<Vec<SubroutineEntity>> {
+    ) -> EntityServiceResult<Vec<SubroutineEntity>> {
         let service = SubroutinesService::new(Arc::new(repo));
 
         service

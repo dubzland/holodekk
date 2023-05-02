@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::core::entities::{SubroutineEntity, SubroutineEntityRepository};
 
-use super::Result;
+use super::EntityServiceResult;
 
 use async_trait::async_trait;
 #[cfg(test)]
@@ -11,25 +11,34 @@ use mockall::automock;
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait CreateSubroutine: Send + Sync + 'static {
-    async fn create<'c>(&self, input: &'c SubroutinesCreateInput<'c>) -> Result<SubroutineEntity>;
+    async fn create<'c>(
+        &self,
+        input: &'c SubroutinesCreateInput<'c>,
+    ) -> EntityServiceResult<SubroutineEntity>;
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait DeleteSubroutine: Send + Sync + 'static {
-    async fn delete<'c>(&self, input: &'c SubroutinesDeleteInput<'c>) -> Result<()>;
+    async fn delete<'c>(&self, input: &'c SubroutinesDeleteInput<'c>) -> EntityServiceResult<()>;
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait FindSubroutines: Send + Sync + 'static {
-    async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> Result<Vec<SubroutineEntity>>;
+    async fn find<'a>(
+        &self,
+        input: &'a SubroutinesFindInput<'a>,
+    ) -> EntityServiceResult<Vec<SubroutineEntity>>;
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait GetSubroutine: Send + Sync + 'static {
-    async fn get<'c>(&self, input: &'c SubroutinesGetInput<'c>) -> Result<SubroutineEntity>;
+    async fn get<'c>(
+        &self,
+        input: &'c SubroutinesGetInput<'c>,
+    ) -> EntityServiceResult<SubroutineEntity>;
 }
 
 #[derive(Clone, Debug)]
@@ -126,22 +135,22 @@ pub mod fixtures {
         pub SubroutinesService {}
         #[async_trait]
         impl CreateSubroutine for SubroutinesService {
-            async fn create<'a>(&self, input: &'a SubroutinesCreateInput<'a>) -> Result<SubroutineEntity>;
+            async fn create<'a>(&self, input: &'a SubroutinesCreateInput<'a>) -> EntityServiceResult<SubroutineEntity>;
         }
 
         #[async_trait]
         impl DeleteSubroutine for SubroutinesService {
-            async fn delete<'a>(&self, input: &'a SubroutinesDeleteInput<'a>) -> Result<()>;
+            async fn delete<'a>(&self, input: &'a SubroutinesDeleteInput<'a>) -> EntityServiceResult<()>;
         }
 
         #[async_trait]
         impl FindSubroutines for SubroutinesService {
-            async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> Result<Vec<SubroutineEntity>>;
+            async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> EntityServiceResult<Vec<SubroutineEntity>>;
         }
 
         #[async_trait]
         impl GetSubroutine for SubroutinesService {
-            async fn get<'a>(&self, input: &'a SubroutinesGetInput<'a>) -> Result<SubroutineEntity>;
+            async fn get<'a>(&self, input: &'a SubroutinesGetInput<'a>) -> EntityServiceResult<SubroutineEntity>;
         }
     }
 

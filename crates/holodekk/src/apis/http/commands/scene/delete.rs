@@ -9,22 +9,22 @@ use axum::{
 
 use crate::apis::http::ApiState;
 use crate::core::services::{
-    scene::{DeleteScene, ScenesDeleteInput},
-    Error,
+    scene::{DeleteScene, DeleteSceneInput},
+    EntityServiceError,
 };
 
 pub async fn delete<A, E, U>(
     State(state): State<Arc<A>>,
     Path(scene): Path<String>,
-) -> Result<impl IntoResponse, Error>
+) -> Result<impl IntoResponse, EntityServiceError>
 where
     A: ApiState<E, U>,
     E: DeleteScene,
     U: Send + Sync + 'static,
 {
     state
-        .scenes_service()
-        .delete(&ScenesDeleteInput::new(&scene))
+        .scene_entity_service()
+        .delete(&DeleteSceneInput::new(&scene))
         .await?;
     Ok((StatusCode::NO_CONTENT, Json(())))
 }

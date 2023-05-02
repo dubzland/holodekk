@@ -8,23 +8,23 @@ use axum::{
 
 use crate::apis::http::ApiState;
 use crate::core::services::{
-    scene::{GetScene, ScenesGetInput},
+    scene::{GetScene, GetSceneInput},
     subroutine::{FindSubroutines, SubroutinesFindInput},
-    Error,
+    EntityServiceError,
 };
 
 pub async fn find<A, E, U>(
     State(state): State<Arc<A>>,
     Path(scene): Path<String>,
-) -> Result<impl IntoResponse, Error>
+) -> Result<impl IntoResponse, EntityServiceError>
 where
     A: ApiState<E, U>,
     E: GetScene,
     U: FindSubroutines,
 {
     let scene = state
-        .scenes_service()
-        .get(&ScenesGetInput::new(&scene))
+        .scene_entity_service()
+        .get(&GetSceneInput::new(&scene))
         .await?;
 
     let subroutines = state
@@ -63,7 +63,7 @@ mod tests {
         let mut state = MockApiState::default();
 
         state
-            .expect_scenes_service()
+            .expect_scene_entity_service()
             .return_once(move || Arc::new(mock_get_scene));
         state
             .expect_subroutines_service()
@@ -97,7 +97,7 @@ mod tests {
     ) {
         mock_get_scene.expect_get().return_once(move |input| {
             let id: EntityId = input.id.parse().unwrap();
-            Err(Error::NotFound(id))
+            Err(EntityServiceError::NotFound(id))
         });
 
         let response = make_request(mock_get_scene, mock_find_subroutines, mock_scene_entity)

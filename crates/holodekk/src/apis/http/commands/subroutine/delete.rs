@@ -8,23 +8,23 @@ use axum::{
 
 use crate::apis::http::ApiState;
 use crate::core::services::{
-    scene::{GetScene, ScenesGetInput},
+    scene::{GetScene, GetSceneInput},
     subroutine::{DeleteSubroutine, SubroutinesDeleteInput},
-    Error,
+    EntityServiceError,
 };
 
 pub async fn delete<A, E, U>(
     State(state): State<Arc<A>>,
     Path((scene, subroutine)): Path<(String, String)>,
-) -> Result<impl IntoResponse, Error>
+) -> Result<impl IntoResponse, EntityServiceError>
 where
     A: ApiState<E, U>,
     E: GetScene,
     U: DeleteSubroutine,
 {
     state
-        .scenes_service()
-        .get(&ScenesGetInput::new(&scene))
+        .scene_entity_service()
+        .get(&GetSceneInput::new(&scene))
         .await?;
 
     state
@@ -58,7 +58,7 @@ mod tests {
         let mut state = MockApiState::default();
 
         state
-            .expect_scenes_service()
+            .expect_scene_entity_service()
             .return_once(move || Arc::new(mock_get));
         state
             .expect_subroutines_service()
@@ -93,7 +93,7 @@ mod tests {
     ) {
         mock_get_scene.expect_get().return_once(|input| {
             let id: EntityId = input.id.parse().unwrap();
-            Err(Error::NotFound(id))
+            Err(EntityServiceError::NotFound(id))
         });
 
         let response = make_request(
@@ -124,7 +124,9 @@ mod tests {
             let entity = mock_subroutine_entity.clone();
             mock_delete_subroutine
                 .expect_delete()
-                .return_once(move |_| Err(Error::NotFound(entity.id.parse().unwrap())));
+                .return_once(move |_| {
+                    Err(EntityServiceError::NotFound(entity.id.parse().unwrap()))
+                });
         }
 
         let response = make_request(

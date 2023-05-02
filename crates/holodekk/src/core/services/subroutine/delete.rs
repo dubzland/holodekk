@@ -3,7 +3,7 @@ use log::trace;
 
 use crate::core::{
     entities::{EntityRepositoryError, SubroutineEntityId, SubroutineEntityRepository},
-    services::{Error, Result},
+    services::{EntityServiceError, EntityServiceResult},
 };
 
 use super::{DeleteSubroutine, SubroutinesDeleteInput, SubroutinesService};
@@ -13,7 +13,7 @@ impl<R> DeleteSubroutine for SubroutinesService<R>
 where
     R: SubroutineEntityRepository,
 {
-    async fn delete<'a>(&self, input: &'a SubroutinesDeleteInput<'a>) -> Result<()>
+    async fn delete<'a>(&self, input: &'a SubroutinesDeleteInput<'a>) -> EntityServiceResult<()>
     where
         R: SubroutineEntityRepository,
     {
@@ -27,8 +27,8 @@ where
             .subroutines_get(&id)
             .await
             .map_err(|err| match err {
-                EntityRepositoryError::NotFound(id) => Error::NotFound(id),
-                _ => Error::from(err),
+                EntityRepositoryError::NotFound(id) => EntityServiceError::NotFound(id),
+                _ => EntityServiceError::from(err),
             })?;
 
         // remove subroutine from the repository
@@ -52,7 +52,7 @@ mod tests {
 
     use super::*;
 
-    async fn execute(repo: MockSubroutineEntityRepository, id: &str) -> Result<()> {
+    async fn execute(repo: MockSubroutineEntityRepository, id: &str) -> EntityServiceResult<()> {
         let service = SubroutinesService::new(Arc::new(repo));
 
         service.delete(&SubroutinesDeleteInput::new(id)).await
@@ -74,7 +74,7 @@ mod tests {
         let res = execute(mock_subroutine_entity_repository, &mock_id).await;
 
         assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), Error::NotFound(..)));
+        assert!(matches!(res.unwrap_err(), EntityServiceError::NotFound(..)));
     }
 
     #[rstest]

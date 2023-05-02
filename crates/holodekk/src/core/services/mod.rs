@@ -4,7 +4,7 @@ use crate::core::{
 };
 
 #[derive(thiserror::Error, Debug)]
-pub enum Error {
+pub enum EntityServiceError {
     #[error("Invalid Entity ID: {0}")]
     InvalidEntityId(#[from] EntityIdError),
     #[error("Invalid Image ID: {0}")]
@@ -19,7 +19,7 @@ pub enum Error {
     Unexpected(#[from] anyhow::Error),
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type EntityServiceResult<T> = std::result::Result<T, EntityServiceError>;
 
 pub mod scene;
 pub mod subroutine;

@@ -3,15 +3,18 @@ use log::trace;
 
 use crate::core::entities::{SceneEntity, SceneEntityRepository, SceneEntityRepositoryQuery};
 
-use super::{FindScenes, Result, ScenesFindInput, ScenesService};
+use super::{EntityServiceResult, FindScenes, FindScenesInput, SceneEntityService};
 
 #[async_trait]
-impl<R> FindScenes for ScenesService<R>
+impl<R> FindScenes for SceneEntityService<R>
 where
     R: SceneEntityRepository,
 {
-    async fn find<'a>(&self, input: &'a ScenesFindInput<'a>) -> Result<Vec<SceneEntity>> {
-        trace!("ScenesService#delete({:?})", input);
+    async fn find<'a>(
+        &self,
+        input: &'a FindScenesInput<'a>,
+    ) -> EntityServiceResult<Vec<SceneEntity>> {
+        trace!("SceneEntityService#delete({:?})", input);
 
         let query = SceneEntityRepositoryQuery::default();
 
@@ -33,10 +36,10 @@ mod tests {
 
     use super::*;
 
-    async fn execute(repo: MockSceneEntityRepository) -> Result<Vec<SceneEntity>> {
-        let service = ScenesService::new(Arc::new(repo));
+    async fn execute(repo: MockSceneEntityRepository) -> EntityServiceResult<Vec<SceneEntity>> {
+        let service = SceneEntityService::new(Arc::new(repo));
 
-        service.find(&ScenesFindInput::default()).await
+        service.find(&FindScenesInput::default()).await
     }
 
     #[rstest]

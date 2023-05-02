@@ -12,7 +12,7 @@ use holodekk::core::{
         SceneName,
     },
     enums::SceneStatus,
-    services::scene::{FindScenes, ScenesFindInput, ScenesService},
+    services::scene::{FindScenes, FindScenesInput, SceneEntityService},
     ScenePaths,
 };
 use holodekk::utils::process::terminate_daemon;
@@ -156,11 +156,11 @@ where
 {
     let mut scenes = HashMap::new();
 
-    let scenes_service = ScenesService::new(repo.clone());
+    let scenes_service = SceneEntityService::new(repo.clone());
 
     // get the list of scenes from repository
     let mut repo_scenes = scenes_service
-        .find(&ScenesFindInput::default())
+        .find(&FindScenesInput::default())
         .await
         .map_err(|err| HolodekkError::Initialization(format!("{:?}", err)))?;
 

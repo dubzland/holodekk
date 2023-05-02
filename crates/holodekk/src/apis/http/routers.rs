@@ -5,7 +5,9 @@ use axum::{
     Router,
 };
 
-use crate::core::services::{scene::ScenesServiceMethods, subroutine::SubroutinesServiceMethods};
+use crate::core::services::{
+    scene::SceneEntityServiceMethods, subroutine::SubroutinesServiceMethods,
+};
 
 use super::{commands, ApiState};
 
@@ -23,7 +25,7 @@ where
 pub fn scenes<A, E, U>(state: Arc<A>) -> Router
 where
     A: ApiState<E, U>,
-    E: ScenesServiceMethods,
+    E: SceneEntityServiceMethods,
     U: SubroutinesServiceMethods,
 {
     Router::new()

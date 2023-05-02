@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use holodekk::apis::http::{routers, ApiState};
 use holodekk::core::{
     entities::{SceneEntityRepository, SubroutineEntityRepository},
-    services::{scene::ScenesService, subroutine::SubroutinesService},
+    services::{scene::SceneEntityService, subroutine::SubroutinesService},
 };
 use holodekk::utils::{
     servers::{start_http_server, HttpServerHandle},
@@ -18,7 +18,7 @@ where
     R: SceneEntityRepository + SubroutineEntityRepository,
 {
     repo: Arc<R>,
-    scenes_service: Arc<ScenesService<R>>,
+    scene_entity_service: Arc<SceneEntityService<R>>,
     subroutines_service: Arc<SubroutinesService<R>>,
 }
 
@@ -27,11 +27,11 @@ where
     R: SceneEntityRepository + SubroutineEntityRepository,
 {
     pub fn new(repo: Arc<R>) -> Self {
-        let scenes_service = Arc::new(ScenesService::new(repo.clone()));
+        let scene_entity_service = Arc::new(SceneEntityService::new(repo.clone()));
         let subroutines_service = Arc::new(SubroutinesService::new(repo.clone()));
         Self {
             repo,
-            scenes_service,
+            scene_entity_service,
             subroutines_service,
         }
     }
@@ -41,12 +41,12 @@ where
     }
 }
 
-impl<R> ApiState<ScenesService<R>, SubroutinesService<R>> for HolodekkdApiState<R>
+impl<R> ApiState<SceneEntityService<R>, SubroutinesService<R>> for HolodekkdApiState<R>
 where
     R: SceneEntityRepository + SubroutineEntityRepository,
 {
-    fn scenes_service(&self) -> Arc<ScenesService<R>> {
-        self.scenes_service.clone()
+    fn scene_entity_service(&self) -> Arc<SceneEntityService<R>> {
+        self.scene_entity_service.clone()
     }
 
     fn subroutines_service(&self) -> Arc<SubroutinesService<R>> {

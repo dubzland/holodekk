@@ -4,7 +4,7 @@ use crate::core::{
     entities::{
         EntityRepositoryError, SubroutineEntity, SubroutineEntityId, SubroutineEntityRepository,
     },
-    services::{Error, Result},
+    services::{EntityServiceError, EntityServiceResult},
 };
 
 use super::{GetSubroutine, SubroutinesGetInput, SubroutinesService};
@@ -14,14 +14,17 @@ impl<R> GetSubroutine for SubroutinesService<R>
 where
     R: SubroutineEntityRepository,
 {
-    async fn get<'a>(&self, input: &'a SubroutinesGetInput<'a>) -> Result<SubroutineEntity> {
+    async fn get<'a>(
+        &self,
+        input: &'a SubroutinesGetInput<'a>,
+    ) -> EntityServiceResult<SubroutineEntity> {
         let id: SubroutineEntityId = input.id.parse()?;
 
         let subroutine = self.repo.subroutines_get(&id).await.map_err(|err| {
             if matches!(err, EntityRepositoryError::NotFound(..)) {
-                Error::NotFound(id)
+                EntityServiceError::NotFound(id)
             } else {
-                Error::from(err)
+                EntityServiceError::from(err)
             }
         })?;
         Ok(subroutine)
@@ -42,7 +45,10 @@ mod tests {
 
     use super::*;
 
-    async fn execute(repo: MockSubroutineEntityRepository, id: &str) -> Result<SubroutineEntity> {
+    async fn execute(
+        repo: MockSubroutineEntityRepository,
+        id: &str,
+    ) -> EntityServiceResult<SubroutineEntity> {
         let service = SubroutinesService::new(Arc::new(repo));
 
         service.get(&SubroutinesGetInput::new(id)).await
@@ -67,7 +73,7 @@ mod tests {
             execute(mock_subroutine_entity_repository, &id)
                 .await
                 .unwrap_err(),
-            Error::NotFound(..)
+            EntityServiceError::NotFound(..)
         ));
     }
 
