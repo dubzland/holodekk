@@ -1,22 +1,18 @@
 use std::sync::Arc;
 
-use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-    response::IntoResponse,
-};
+use axum::extract::{Path, State};
 
-use crate::apis::http::ApiState;
+use crate::apis::http::{ApiState, DeleteResponse};
 use crate::services::{
     scene::{GetScene, GetSceneInput},
     subroutine::{DeleteSubroutine, DeleteSubroutineInput},
     EntityServiceError,
 };
 
-pub async fn delete<A, E, U>(
+pub async fn delete_subroutine<A, E, U>(
     State(state): State<Arc<A>>,
     Path((scene, subroutine)): Path<(String, String)>,
-) -> Result<impl IntoResponse, EntityServiceError>
+) -> Result<DeleteResponse, EntityServiceError>
 where
     A: ApiState<E, U>,
     E: GetScene,
@@ -31,12 +27,17 @@ where
         .subroutine_entity_service()
         .delete(&DeleteSubroutineInput::new(&subroutine))
         .await?;
-    Ok((StatusCode::NO_CONTENT, ""))
+    Ok(DeleteResponse)
 }
 
 #[cfg(test)]
 mod tests {
-    use axum::{body::Body, http::Request, routing::delete as http_delete, Router};
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+        routing::delete,
+        Router,
+    };
     use rstest::*;
     use tower::ServiceExt;
 
@@ -62,7 +63,7 @@ mod tests {
             .expect_subroutine_entity_service()
             .return_once(move || Arc::new(mock_delete));
         Router::new()
-            .route("/:scene/subroutines/:subroutine", http_delete(delete))
+            .route("/:scene/subroutines/:subroutine", delete(delete_subroutine))
             .with_state(Arc::new(state))
     }
 

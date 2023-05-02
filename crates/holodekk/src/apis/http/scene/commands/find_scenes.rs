@@ -1,16 +1,17 @@
 use std::sync::Arc;
 
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::extract::State;
 
-use crate::apis::http::ApiState;
+use crate::apis::http::scene::models::Scene;
+use crate::apis::http::{ApiState, GetResponse};
 use crate::services::{
     scene::{FindScenes, FindScenesInput},
     EntityServiceError,
 };
 
-pub async fn find<A, E, U>(
+pub async fn find_scenes<A, E, U>(
     State(state): State<Arc<A>>,
-) -> Result<impl IntoResponse, EntityServiceError>
+) -> Result<GetResponse<Vec<Scene>>, EntityServiceError>
 where
     A: ApiState<E, U>,
     E: FindScenes,
@@ -20,7 +21,8 @@ where
         .scene_entity_service()
         .find(&FindScenesInput::default())
         .await?;
-    Ok((StatusCode::OK, Json(scenes)))
+
+    Ok(GetResponse(scenes.into_iter().map(Into::into).collect()))
 }
 
 #[cfg(test)]
@@ -49,7 +51,7 @@ mod tests {
             .expect_scene_entity_service()
             .return_once(move || Arc::new(mock_find));
         Router::new()
-            .route("/", get(find))
+            .route("/", get(find_scenes))
             .with_state(Arc::new(state))
     }
 

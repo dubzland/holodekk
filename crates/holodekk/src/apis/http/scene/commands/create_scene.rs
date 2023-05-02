@@ -1,18 +1,18 @@
 use std::sync::Arc;
 
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{extract::State, Json};
 
-use crate::apis::http::ApiState;
-use crate::models::NewScene;
+use crate::apis::http::scene::models::{NewScene, Scene};
+use crate::apis::http::{ApiState, CreateResponse};
 use crate::services::{
     scene::{CreateScene, CreateSceneInput},
     EntityServiceError,
 };
 
-pub async fn create<A, E, U>(
+pub async fn create_scene<A, E, U>(
     State(state): State<Arc<A>>,
     Json(new_scene): Json<NewScene>,
-) -> Result<impl IntoResponse, EntityServiceError>
+) -> Result<CreateResponse<Scene>, EntityServiceError>
 where
     A: ApiState<E, U>,
     E: CreateScene,
@@ -24,12 +24,18 @@ where
             name: &new_scene.name,
         })
         .await?;
-    Ok((StatusCode::CREATED, Json(scene)))
+
+    Ok(CreateResponse(scene.into()))
 }
 
 #[cfg(test)]
 mod tests {
-    use axum::{body::Body, http::Request, routing::post, Router};
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+        routing::post,
+        Router,
+    };
     use rstest::*;
     use tower::ServiceExt;
 
@@ -48,7 +54,7 @@ mod tests {
             .expect_scene_entity_service()
             .return_once(move || Arc::new(mock_create));
         Router::new()
-            .route("/", post(create))
+            .route("/", post(create_scene))
             .with_state(Arc::new(state))
     }
 

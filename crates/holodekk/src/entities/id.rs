@@ -52,6 +52,12 @@ impl TryFrom<String> for EntityId {
     }
 }
 
+impl Into<String> for EntityId {
+    fn into(self) -> String {
+        self.0
+    }
+}
+
 impl std::fmt::Display for EntityId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)

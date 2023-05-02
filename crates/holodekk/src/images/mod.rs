@@ -100,6 +100,12 @@ impl TryFrom<String> for ImageId {
     }
 }
 
+impl Into<String> for ImageId {
+    fn into(self) -> String {
+        self.0
+    }
+}
+
 impl std::fmt::Display for ImageId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
