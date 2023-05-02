@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{extract::State, Json};
 
-use crate::apis::http::scene::models::{NewScene, Scene};
+use crate::apis::http::entity::scene::models::{NewScene, Scene};
 use crate::apis::http::{ApiState, CreateResponse};
 use crate::services::{
     scene::{CreateScene, CreateSceneInput},
