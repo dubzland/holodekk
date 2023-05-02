@@ -6,18 +6,18 @@ use crate::core::{
     services::{EntityServiceError, EntityServiceResult},
 };
 
-use super::{DeleteSubroutine, SubroutinesDeleteInput, SubroutinesService};
+use super::{DeleteSubroutine, DeleteSubroutineInput, SubroutineEntityService};
 
 #[async_trait]
-impl<R> DeleteSubroutine for SubroutinesService<R>
+impl<R> DeleteSubroutine for SubroutineEntityService<R>
 where
     R: SubroutineEntityRepository,
 {
-    async fn delete<'a>(&self, input: &'a SubroutinesDeleteInput<'a>) -> EntityServiceResult<()>
+    async fn delete<'a>(&self, input: &'a DeleteSubroutineInput<'a>) -> EntityServiceResult<()>
     where
         R: SubroutineEntityRepository,
     {
-        trace!("SubroutinesService#delete({:?})", input);
+        trace!("SubroutineEntityService#delete({:?})", input);
 
         let id: SubroutineEntityId = input.id.parse()?;
 
@@ -53,9 +53,9 @@ mod tests {
     use super::*;
 
     async fn execute(repo: MockSubroutineEntityRepository, id: &str) -> EntityServiceResult<()> {
-        let service = SubroutinesService::new(Arc::new(repo));
+        let service = SubroutineEntityService::new(Arc::new(repo));
 
-        service.delete(&SubroutinesDeleteInput::new(id)).await
+        service.delete(&DeleteSubroutineInput::new(id)).await
     }
 
     #[rstest]

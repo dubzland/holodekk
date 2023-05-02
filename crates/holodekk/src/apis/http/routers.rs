@@ -6,7 +6,7 @@ use axum::{
 };
 
 use crate::core::services::{
-    scene::SceneEntityServiceMethods, subroutine::SubroutinesServiceMethods,
+    scene::SceneEntityServiceMethods, subroutine::SubroutineEntityServiceMethods,
 };
 
 use super::{commands, ApiState};
@@ -15,7 +15,7 @@ pub fn subroutines<A, E, U>(state: Arc<A>) -> Router<Arc<A>>
 where
     A: ApiState<E, U>,
     E: Send + Sync + 'static,
-    U: SubroutinesServiceMethods,
+    U: SubroutineEntityServiceMethods,
 {
     Router::new()
         .route("/", post(commands::subroutine::create))
@@ -26,7 +26,7 @@ pub fn scenes<A, E, U>(state: Arc<A>) -> Router
 where
     A: ApiState<E, U>,
     E: SceneEntityServiceMethods,
-    U: SubroutinesServiceMethods,
+    U: SubroutineEntityServiceMethods,
 {
     Router::new()
         .route(

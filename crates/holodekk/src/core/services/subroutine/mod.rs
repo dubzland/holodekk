@@ -13,14 +13,14 @@ use mockall::automock;
 pub trait CreateSubroutine: Send + Sync + 'static {
     async fn create<'c>(
         &self,
-        input: &'c SubroutinesCreateInput<'c>,
+        input: &'c CreateSubroutineInput<'c>,
     ) -> EntityServiceResult<SubroutineEntity>;
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait DeleteSubroutine: Send + Sync + 'static {
-    async fn delete<'c>(&self, input: &'c SubroutinesDeleteInput<'c>) -> EntityServiceResult<()>;
+    async fn delete<'c>(&self, input: &'c DeleteSubroutineInput<'c>) -> EntityServiceResult<()>;
 }
 
 #[cfg_attr(test, automock)]
@@ -28,7 +28,7 @@ pub trait DeleteSubroutine: Send + Sync + 'static {
 pub trait FindSubroutines: Send + Sync + 'static {
     async fn find<'a>(
         &self,
-        input: &'a SubroutinesFindInput<'a>,
+        input: &'a FindSubroutinesInput<'a>,
     ) -> EntityServiceResult<Vec<SubroutineEntity>>;
 }
 
@@ -37,17 +37,17 @@ pub trait FindSubroutines: Send + Sync + 'static {
 pub trait GetSubroutine: Send + Sync + 'static {
     async fn get<'c>(
         &self,
-        input: &'c SubroutinesGetInput<'c>,
+        input: &'c GetSubroutineInput<'c>,
     ) -> EntityServiceResult<SubroutineEntity>;
 }
 
 #[derive(Clone, Debug)]
-pub struct SubroutinesCreateInput<'c> {
+pub struct CreateSubroutineInput<'c> {
     pub scene_entity_id: &'c str,
     pub subroutine_image_id: &'c str,
 }
 
-impl<'c> SubroutinesCreateInput<'c> {
+impl<'c> CreateSubroutineInput<'c> {
     pub fn new(scene_entity_id: &'c str, subroutine_image_id: &'c str) -> Self {
         Self {
             scene_entity_id,
@@ -57,23 +57,23 @@ impl<'c> SubroutinesCreateInput<'c> {
 }
 
 #[derive(Clone, Debug)]
-pub struct SubroutinesDeleteInput<'c> {
+pub struct DeleteSubroutineInput<'c> {
     pub id: &'c str,
 }
 
-impl<'c> SubroutinesDeleteInput<'c> {
+impl<'c> DeleteSubroutineInput<'c> {
     pub fn new(id: &'c str) -> Self {
         Self { id }
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct SubroutinesFindInput<'f> {
+pub struct FindSubroutinesInput<'f> {
     pub scene_entity_id: Option<&'f str>,
     pub subroutine_image_id: Option<&'f str>,
 }
 
-impl<'f> SubroutinesFindInput<'f> {
+impl<'f> FindSubroutinesInput<'f> {
     pub fn new(scene_entity_id: Option<&'f str>, subroutine_image_id: Option<&'f str>) -> Self {
         Self {
             scene_entity_id,
@@ -83,34 +83,34 @@ impl<'f> SubroutinesFindInput<'f> {
 }
 
 #[derive(Clone, Debug)]
-pub struct SubroutinesGetInput<'c> {
+pub struct GetSubroutineInput<'c> {
     pub id: &'c str,
 }
 
-impl<'c> SubroutinesGetInput<'c> {
+impl<'c> GetSubroutineInput<'c> {
     pub fn new(id: &'c str) -> Self {
         Self { id }
     }
 }
 
-pub trait SubroutinesServiceMethods:
+pub trait SubroutineEntityServiceMethods:
     CreateSubroutine + DeleteSubroutine + FindSubroutines + GetSubroutine
 {
 }
-impl<T> SubroutinesServiceMethods for T where
+impl<T> SubroutineEntityServiceMethods for T where
     T: CreateSubroutine + DeleteSubroutine + FindSubroutines + GetSubroutine
 {
 }
 
 #[derive(Debug)]
-pub struct SubroutinesService<R>
+pub struct SubroutineEntityService<R>
 where
     R: SubroutineEntityRepository,
 {
     repo: Arc<R>,
 }
 
-impl<R> SubroutinesService<R>
+impl<R> SubroutineEntityService<R>
 where
     R: SubroutineEntityRepository,
 {
@@ -132,25 +132,25 @@ pub mod fixtures {
     use super::*;
 
     mock! {
-        pub SubroutinesService {}
+        pub SubroutineEntityService {}
         #[async_trait]
-        impl CreateSubroutine for SubroutinesService {
-            async fn create<'a>(&self, input: &'a SubroutinesCreateInput<'a>) -> EntityServiceResult<SubroutineEntity>;
+        impl CreateSubroutine for SubroutineEntityService {
+            async fn create<'a>(&self, input: &'a CreateSubroutineInput<'a>) -> EntityServiceResult<SubroutineEntity>;
         }
 
         #[async_trait]
-        impl DeleteSubroutine for SubroutinesService {
-            async fn delete<'a>(&self, input: &'a SubroutinesDeleteInput<'a>) -> EntityServiceResult<()>;
+        impl DeleteSubroutine for SubroutineEntityService {
+            async fn delete<'a>(&self, input: &'a DeleteSubroutineInput<'a>) -> EntityServiceResult<()>;
         }
 
         #[async_trait]
-        impl FindSubroutines for SubroutinesService {
-            async fn find<'a>(&self, input: &'a SubroutinesFindInput<'a>) -> EntityServiceResult<Vec<SubroutineEntity>>;
+        impl FindSubroutines for SubroutineEntityService {
+            async fn find<'a>(&self, input: &'a FindSubroutinesInput<'a>) -> EntityServiceResult<Vec<SubroutineEntity>>;
         }
 
         #[async_trait]
-        impl GetSubroutine for SubroutinesService {
-            async fn get<'a>(&self, input: &'a SubroutinesGetInput<'a>) -> EntityServiceResult<SubroutineEntity>;
+        impl GetSubroutine for SubroutineEntityService {
+            async fn get<'a>(&self, input: &'a GetSubroutineInput<'a>) -> EntityServiceResult<SubroutineEntity>;
         }
     }
 
@@ -170,7 +170,12 @@ pub mod fixtures {
     }
 
     #[fixture]
-    pub fn mock_subroutine_service() -> MockSubroutinesService {
-        MockSubroutinesService::default()
+    pub fn mock_get_subroutine() -> MockGetSubroutine {
+        MockGetSubroutine::default()
+    }
+
+    #[fixture]
+    pub fn mock_subroutine_service() -> MockSubroutineEntityService {
+        MockSubroutineEntityService::default()
     }
 }

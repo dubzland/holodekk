@@ -7,16 +7,16 @@ use crate::core::{
     services::{EntityServiceError, EntityServiceResult},
 };
 
-use super::{GetSubroutine, SubroutinesGetInput, SubroutinesService};
+use super::{GetSubroutine, GetSubroutineInput, SubroutineEntityService};
 
 #[async_trait]
-impl<R> GetSubroutine for SubroutinesService<R>
+impl<R> GetSubroutine for SubroutineEntityService<R>
 where
     R: SubroutineEntityRepository,
 {
     async fn get<'a>(
         &self,
-        input: &'a SubroutinesGetInput<'a>,
+        input: &'a GetSubroutineInput<'a>,
     ) -> EntityServiceResult<SubroutineEntity> {
         let id: SubroutineEntityId = input.id.parse()?;
 
@@ -49,9 +49,9 @@ mod tests {
         repo: MockSubroutineEntityRepository,
         id: &str,
     ) -> EntityServiceResult<SubroutineEntity> {
-        let service = SubroutinesService::new(Arc::new(repo));
+        let service = SubroutineEntityService::new(Arc::new(repo));
 
-        service.get(&SubroutinesGetInput::new(id)).await
+        service.get(&GetSubroutineInput::new(id)).await
     }
 
     #[rstest]

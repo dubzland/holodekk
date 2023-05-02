@@ -17,7 +17,7 @@ where
     S2: Send + Sync + 'static,
 {
     fn scene_entity_service(&self) -> Arc<S1>;
-    fn subroutines_service(&self) -> Arc<S2>;
+    fn subroutine_entity_service(&self) -> Arc<S2>;
 }
 
 impl IntoResponse for EntityServiceError {

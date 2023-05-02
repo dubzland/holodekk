@@ -11,7 +11,7 @@ use crate::apis::http::ApiState;
 use crate::core::{
     models::NewSubroutine,
     services::{
-        subroutine::{CreateSubroutine, SubroutinesCreateInput},
+        subroutine::{CreateSubroutine, CreateSubroutineInput},
         EntityServiceError,
     },
 };
@@ -27,8 +27,8 @@ where
     U: CreateSubroutine,
 {
     let subroutine = state
-        .subroutines_service()
-        .create(&SubroutinesCreateInput::new(
+        .subroutine_entity_service()
+        .create(&CreateSubroutineInput::new(
             &scene,
             &new_subroutine.subroutine_image_id,
         ))
@@ -60,7 +60,7 @@ mod tests {
     fn mock_app(mock_create: MockCreateSubroutine) -> Router {
         let mut state = MockApiState::<MockSceneEntityService, MockCreateSubroutine>::default();
         state
-            .expect_subroutines_service()
+            .expect_subroutine_entity_service()
             .return_once(move || Arc::new(mock_create));
         Router::new()
             .route("/:scene/subroutines", post(create))

@@ -9,7 +9,7 @@ use axum::{
 use crate::apis::http::ApiState;
 use crate::core::services::{
     scene::{GetScene, GetSceneInput},
-    subroutine::{DeleteSubroutine, SubroutinesDeleteInput},
+    subroutine::{DeleteSubroutine, DeleteSubroutineInput},
     EntityServiceError,
 };
 
@@ -28,8 +28,8 @@ where
         .await?;
 
     state
-        .subroutines_service()
-        .delete(&SubroutinesDeleteInput::new(&subroutine))
+        .subroutine_entity_service()
+        .delete(&DeleteSubroutineInput::new(&subroutine))
         .await?;
     Ok((StatusCode::NO_CONTENT, ""))
 }
@@ -61,7 +61,7 @@ mod tests {
             .expect_scene_entity_service()
             .return_once(move || Arc::new(mock_get));
         state
-            .expect_subroutines_service()
+            .expect_subroutine_entity_service()
             .return_once(move || Arc::new(mock_delete));
         Router::new()
             .route("/:scene/subroutines/:subroutine", http_delete(delete))

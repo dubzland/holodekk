@@ -9,7 +9,7 @@ use axum::{
 use crate::apis::http::ApiState;
 use crate::core::services::{
     scene::{GetScene, GetSceneInput},
-    subroutine::{FindSubroutines, SubroutinesFindInput},
+    subroutine::{FindSubroutines, FindSubroutinesInput},
     EntityServiceError,
 };
 
@@ -28,8 +28,8 @@ where
         .await?;
 
     let subroutines = state
-        .subroutines_service()
-        .find(&SubroutinesFindInput::new(Some(&scene.id), None))
+        .subroutine_entity_service()
+        .find(&FindSubroutinesInput::new(Some(&scene.id), None))
         .await?;
     Ok(Json(subroutines))
 }
@@ -66,7 +66,7 @@ mod tests {
             .expect_scene_entity_service()
             .return_once(move || Arc::new(mock_get_scene));
         state
-            .expect_subroutines_service()
+            .expect_subroutine_entity_service()
             .return_once(move || Arc::new(mock_find));
         Router::new()
             .route("/:scene/subroutines/", get(find))

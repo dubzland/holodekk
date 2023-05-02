@@ -39,14 +39,14 @@ mod tests {
         entities::{fixtures::mock_scene_entity, SceneEntity},
         services::{
             scene::{fixtures::mock_find_scenes, MockFindScenes},
-            subroutine::fixtures::MockSubroutinesService,
+            subroutine::fixtures::MockSubroutineEntityService,
         },
     };
 
     use super::*;
 
     fn mock_app(mock_find: MockFindScenes) -> Router {
-        let mut state = MockApiState::<MockFindScenes, MockSubroutinesService>::default();
+        let mut state = MockApiState::<MockFindScenes, MockSubroutineEntityService>::default();
         state
             .expect_scene_entity_service()
             .return_once(move || Arc::new(mock_find));

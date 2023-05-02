@@ -10,16 +10,16 @@ use crate::core::{
     services::{EntityServiceError, EntityServiceResult},
 };
 
-use super::{CreateSubroutine, SubroutinesCreateInput, SubroutinesService};
+use super::{CreateSubroutine, CreateSubroutineInput, SubroutineEntityService};
 
 #[async_trait]
-impl<R> CreateSubroutine for SubroutinesService<R>
+impl<R> CreateSubroutine for SubroutineEntityService<R>
 where
     R: SubroutineEntityRepository,
 {
     async fn create<'a>(
         &self,
-        input: &'a SubroutinesCreateInput<'a>,
+        input: &'a CreateSubroutineInput<'a>,
     ) -> EntityServiceResult<SubroutineEntity> {
         let scene_entity_id: SceneEntityId = input.scene_entity_id.parse()?;
         let subroutine_image_id: SubroutineImageId = input.subroutine_image_id.parse()?;
@@ -65,10 +65,10 @@ mod tests {
         scene: &str,
         image: &str,
     ) -> EntityServiceResult<SubroutineEntity> {
-        let service = SubroutinesService::new(Arc::new(repo));
+        let service = SubroutineEntityService::new(Arc::new(repo));
 
         service
-            .create(&SubroutinesCreateInput::new(scene, image))
+            .create(&CreateSubroutineInput::new(scene, image))
             .await
     }
 
