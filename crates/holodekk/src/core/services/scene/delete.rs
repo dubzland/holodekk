@@ -2,8 +2,7 @@ use async_trait::async_trait;
 use log::trace;
 
 use crate::core::{
-    entities::SceneEntityId,
-    repositories::{self, ScenesRepository},
+    entities::{EntityRepositoryError, SceneEntityId, SceneEntityRepository},
     services::{Error, Result},
 };
 
@@ -12,7 +11,7 @@ use super::{DeleteScene, ScenesDeleteInput, ScenesService};
 #[async_trait]
 impl<R> DeleteScene for ScenesService<R>
 where
-    R: ScenesRepository,
+    R: SceneEntityRepository,
 {
     async fn delete<'a>(&self, input: &'a ScenesDeleteInput<'a>) -> Result<()> {
         trace!("ScenesService#delete({:?}", input);
@@ -21,7 +20,7 @@ where
 
         // ensure the scene exists
         let scene = self.repo.scenes_get(&id).await.map_err(|err| match err {
-            repositories::Error::NotFound(id) => Error::NotFound(id),
+            EntityRepositoryError::NotFound(id) => Error::NotFound(id),
             _ => Error::from(err),
         })?;
 
@@ -40,14 +39,16 @@ mod tests {
     use rstest::*;
 
     use crate::core::{
-        entities::{fixtures::mock_scene_entity, SceneEntity},
-        repositories::{fixtures::mock_scenes_repository, MockScenesRepository},
+        entities::{
+            fixtures::{mock_scene_entity, mock_scene_entity_repository},
+            EntityRepositoryError, MockSceneEntityRepository, SceneEntity,
+        },
         services::scene::Result,
     };
 
     use super::*;
 
-    async fn execute(repo: MockScenesRepository, id: &str) -> Result<()> {
+    async fn execute(repo: MockSceneEntityRepository, id: &str) -> Result<()> {
         let service = ScenesService::new(Arc::new(repo));
 
         service.delete(&ScenesDeleteInput::new(id)).await
@@ -56,17 +57,17 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_error_for_non_existent_scene(
-        mut mock_scenes_repository: MockScenesRepository,
+        mut mock_scene_entity_repository: MockSceneEntityRepository,
     ) {
         let mock_id = SceneEntityId::generate();
 
         // scene does not exist
-        mock_scenes_repository
+        mock_scene_entity_repository
             .expect_scenes_get()
             .with(eq(mock_id.clone()))
-            .return_once(move |id| Err(repositories::Error::NotFound(id.clone())));
+            .return_once(move |id| Err(EntityRepositoryError::NotFound(id.clone())));
 
-        let res = execute(mock_scenes_repository, &mock_id).await;
+        let res = execute(mock_scene_entity_repository, &mock_id).await;
 
         assert!(matches!(res.unwrap_err(), Error::NotFound(..)));
     }
@@ -74,22 +75,24 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn removes_entry_in_repository(
-        mut mock_scenes_repository: MockScenesRepository,
+        mut mock_scene_entity_repository: MockSceneEntityRepository,
         mock_scene_entity: SceneEntity,
     ) {
         // scene exists
-        let scenes_get_result = Ok(mock_scene_entity.clone());
-        mock_scenes_repository
-            .expect_scenes_get()
-            .return_once(move |_| scenes_get_result);
+        {
+            let entity = mock_scene_entity.clone();
+            mock_scene_entity_repository
+                .expect_scenes_get()
+                .return_once(move |_| Ok(entity));
+        }
 
         // expect deletion
-        mock_scenes_repository
+        mock_scene_entity_repository
             .expect_scenes_delete()
             .with(eq(mock_scene_entity.id.clone()))
             .return_once(move |_| Ok(()));
 
-        execute(mock_scenes_repository, &mock_scene_entity.id)
+        execute(mock_scene_entity_repository, &mock_scene_entity.id)
             .await
             .unwrap();
     }
@@ -97,21 +100,21 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn returns_ok(
-        mut mock_scenes_repository: MockScenesRepository,
+        mut mock_scene_entity_repository: MockSceneEntityRepository,
         mock_scene_entity: SceneEntity,
     ) {
         {
             let entity = mock_scene_entity.clone();
-            mock_scenes_repository
+            mock_scene_entity_repository
                 .expect_scenes_get()
                 .return_once(move |_| Ok(entity));
         }
 
-        mock_scenes_repository
+        mock_scene_entity_repository
             .expect_scenes_delete()
             .return_once(move |_| Ok(()));
 
-        let result = execute(mock_scenes_repository, &mock_scene_entity.id).await;
+        let result = execute(mock_scene_entity_repository, &mock_scene_entity.id).await;
 
         assert!(result.is_ok());
     }

@@ -2,9 +2,8 @@ use std::{collections::HashMap, sync::RwLock};
 
 use log::debug;
 
-use crate::core::{
-    entities::{SceneEntity, SceneEntityId},
-    repositories::{Error, Result},
+use crate::core::entities::{
+    EntityRepositoryError, EntityRepositoryResult, SceneEntity, SceneEntityId,
 };
 
 #[derive(Debug)]
@@ -21,9 +20,9 @@ impl Default for ScenesMemoryStore {
 }
 
 impl ScenesMemoryStore {
-    pub fn add(&self, scene: SceneEntity) -> Result<()> {
+    pub fn add(&self, scene: SceneEntity) -> EntityRepositoryResult<()> {
         if self.records.read().unwrap().contains_key(&scene.id) {
-            Err(Error::Conflict(format!(
+            Err(EntityRepositoryError::Conflict(format!(
                 "Scene already exists with id {}",
                 scene.id
             )))
@@ -47,28 +46,28 @@ impl ScenesMemoryStore {
         scenes
     }
 
-    pub fn delete(&self, id: &SceneEntityId) -> Result<()> {
+    pub fn delete(&self, id: &SceneEntityId) -> EntityRepositoryResult<()> {
         debug!("deleting scene with id {}", id);
         if self.records.write().unwrap().remove(id).is_some() {
             Ok(())
         } else {
-            Err(Error::NotFound(id.to_owned()))
+            Err(EntityRepositoryError::NotFound(id.to_owned()))
         }
     }
 
-    pub fn exists(&self, id: &SceneEntityId) -> Result<bool> {
+    pub fn exists(&self, id: &SceneEntityId) -> EntityRepositoryResult<bool> {
         Ok(self.records.read().unwrap().contains_key(id))
     }
 
-    pub fn get(&self, id: &SceneEntityId) -> Result<SceneEntity> {
+    pub fn get(&self, id: &SceneEntityId) -> EntityRepositoryResult<SceneEntity> {
         if let Some(record) = self.records.read().unwrap().get(id) {
             Ok(record.to_owned())
         } else {
-            Err(Error::NotFound(id.to_owned()))
+            Err(EntityRepositoryError::NotFound(id.to_owned()))
         }
     }
 
-    pub fn update(&self, scene: SceneEntity) -> Result<SceneEntity> {
+    pub fn update(&self, scene: SceneEntity) -> EntityRepositoryResult<SceneEntity> {
         self.add(scene.clone())?;
         Ok(scene)
     }

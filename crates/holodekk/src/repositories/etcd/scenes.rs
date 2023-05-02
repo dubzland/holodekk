@@ -3,14 +3,17 @@ use etcd_client::GetOptions;
 use timestamps::Timestamps;
 
 use crate::core::{
-    entities::{EntityId, SceneEntity, SceneEntityId, SceneName},
+    entities::{
+        EntityId, EntityRepositoryError, EntityRepositoryQuery, EntityRepositoryResult,
+        SceneEntity, SceneEntityId, SceneEntityRepository, SceneEntityRepositoryEvent,
+        SceneEntityRepositoryQuery, SceneName,
+    },
     enums::SceneStatus,
-    repositories::{Error, RepositoryQuery, Result, SceneEvent, ScenesQuery, ScenesRepository},
 };
 
 use super::{etcd_scene_key, EtcdRepository};
 
-impl From<etcd_client::Event> for SceneEvent {
+impl From<etcd_client::Event> for SceneEntityRepositoryEvent {
     fn from(event: etcd_client::Event) -> Self {
         if let Some(kv) = event.kv() {
             match event.event_type() {
@@ -42,10 +45,10 @@ impl From<etcd_client::Event> for SceneEvent {
 }
 
 #[async_trait]
-impl ScenesRepository for EtcdRepository {
-    async fn scenes_create(&self, mut scene: SceneEntity) -> Result<SceneEntity> {
+impl SceneEntityRepository for EtcdRepository {
+    async fn scenes_create(&self, mut scene: SceneEntity) -> EntityRepositoryResult<SceneEntity> {
         match self.scenes_get(&scene.id).await {
-            Err(Error::NotFound(_)) => {
+            Err(EntityRepositoryError::NotFound(_)) => {
                 scene.created();
                 scene.updated();
                 let serialized = serde_json::to_string(&scene)?;
@@ -54,7 +57,7 @@ impl ScenesRepository for EtcdRepository {
                 client.put(key, serialized, None).await?;
                 Ok(scene)
             }
-            Ok(_) => Err(Error::Conflict(format!(
+            Ok(_) => Err(EntityRepositoryError::Conflict(format!(
                 "Scene already exists with id {}",
                 scene.id
             ))),
@@ -62,21 +65,24 @@ impl ScenesRepository for EtcdRepository {
         }
     }
 
-    async fn scenes_delete(&self, id: &EntityId) -> Result<()> {
+    async fn scenes_delete(&self, id: &EntityId) -> EntityRepositoryResult<()> {
         let mut client = self.client.read().unwrap().clone().unwrap();
         let key = etcd_scene_key(Some(id));
         let result = client
             .get(key.clone(), Some(GetOptions::new().with_count_only()))
             .await?;
         if result.count() == 0 {
-            Err(Error::NotFound(id.to_owned()))
+            Err(EntityRepositoryError::NotFound(id.to_owned()))
         } else {
             client.delete(key, None).await?;
             Ok(())
         }
     }
 
-    async fn scenes_exists<'a>(&self, query: ScenesQuery<'a>) -> Result<bool> {
+    async fn scenes_exists<'a>(
+        &self,
+        query: SceneEntityRepositoryQuery<'a>,
+    ) -> EntityRepositoryResult<bool> {
         let mut client = self.client.read().unwrap().clone().unwrap();
         let key = etcd_scene_key(None);
         let result = client
@@ -99,7 +105,10 @@ impl ScenesRepository for EtcdRepository {
         Ok(exists)
     }
 
-    async fn scenes_find<'a>(&self, query: ScenesQuery<'a>) -> Result<Vec<SceneEntity>> {
+    async fn scenes_find<'a>(
+        &self,
+        query: SceneEntityRepositoryQuery<'a>,
+    ) -> EntityRepositoryResult<Vec<SceneEntity>> {
         let mut client = self.client.read().unwrap().clone().unwrap();
         let key = etcd_scene_key(None);
         let result = client
@@ -124,18 +133,18 @@ impl ScenesRepository for EtcdRepository {
         Ok(scenes)
     }
 
-    async fn scenes_get(&self, id: &EntityId) -> Result<SceneEntity> {
+    async fn scenes_get(&self, id: &EntityId) -> EntityRepositoryResult<SceneEntity> {
         let mut client = self.client.read().unwrap().clone().unwrap();
         let key = etcd_scene_key(Some(id));
         let result = client.get(key, None).await?;
 
         if result.count() != 1 {
-            Err(Error::NotFound(id.to_owned()))
+            Err(EntityRepositoryError::NotFound(id.to_owned()))
         } else if let Some(kv) = result.kvs().first() {
             let scene: SceneEntity = serde_json::from_slice(kv.value())?;
             Ok(scene)
         } else {
-            Err(Error::NotFound(id.to_owned()))
+            Err(EntityRepositoryError::NotFound(id.to_owned()))
         }
     }
 
@@ -144,7 +153,7 @@ impl ScenesRepository for EtcdRepository {
         id: &SceneEntityId,
         name: Option<SceneName>,
         status: Option<SceneStatus>,
-    ) -> Result<SceneEntity> {
+    ) -> EntityRepositoryResult<SceneEntity> {
         let mut client = self.client.read().unwrap().clone().unwrap();
         let key = etcd_scene_key(Some(id));
         let result = client.get(key.clone(), None).await?;
@@ -163,11 +172,11 @@ impl ScenesRepository for EtcdRepository {
                 .await?;
             Ok(scene)
         } else {
-            Err(Error::NotFound(id.to_owned()))
+            Err(EntityRepositoryError::NotFound(id.to_owned()))
         }
     }
 
-    // async fn scenes_watch(&self) -> Result<WatchHandle<SceneEvent>> {
+    // async fn scenes_watch(&self) -> EntityRepositoryResult<WatchHandle<SceneEvent>> {
     //     let mut client = self.client.clone();
     //     let options = etcd_client::WatchOptions::new()
     //         .with_prefix()
@@ -245,7 +254,7 @@ impl ScenesRepository for EtcdRepository {
 
 //     #[rstest]
 //     #[tokio::test]
-//     async fn create_succeeds(mock_scene: SceneEntity) -> Result<()> {
+//     async fn create_succeeds(mock_scene: SceneEntity) -> EntityRepositoryResult<()> {
 //         let client = test_client().await;
 //         let repo = EtcdRepository::new(client);
 //         let result = repo
@@ -258,7 +267,7 @@ impl ScenesRepository for EtcdRepository {
 
 //     #[rstest]
 //     #[tokio::test]
-//     async fn create_returns_the_scene(mock_scene: SceneEntity) -> Result<()> {
+//     async fn create_returns_the_scene(mock_scene: SceneEntity) -> EntityRepositoryResult<()> {
 //         let client = test_client().await;
 //         let repo = EtcdRepository::new(client);
 //         let new_scene = repo

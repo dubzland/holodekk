@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use holodekk::apis::http::{routers, ApiState};
 use holodekk::core::{
-    repositories::{ScenesRepository, SubroutinesRepository},
+    entities::{SceneEntityRepository, SubroutineEntityRepository},
     services::{scene::ScenesService, subroutine::SubroutinesService},
 };
 use holodekk::utils::{
@@ -15,7 +15,7 @@ use holodekk::utils::{
 
 pub struct HolodekkdApiState<R>
 where
-    R: ScenesRepository + SubroutinesRepository,
+    R: SceneEntityRepository + SubroutineEntityRepository,
 {
     repo: Arc<R>,
     scenes_service: Arc<ScenesService<R>>,
@@ -24,7 +24,7 @@ where
 
 impl<R> HolodekkdApiState<R>
 where
-    R: ScenesRepository + SubroutinesRepository,
+    R: SceneEntityRepository + SubroutineEntityRepository,
 {
     pub fn new(repo: Arc<R>) -> Self {
         let scenes_service = Arc::new(ScenesService::new(repo.clone()));
@@ -43,7 +43,7 @@ where
 
 impl<R> ApiState<ScenesService<R>, SubroutinesService<R>> for HolodekkdApiState<R>
 where
-    R: ScenesRepository + SubroutinesRepository,
+    R: SceneEntityRepository + SubroutineEntityRepository,
 {
     fn scenes_service(&self) -> Arc<ScenesService<R>> {
         self.scenes_service.clone()
@@ -56,7 +56,7 @@ where
 
 pub fn router<R>(api_state: Arc<HolodekkdApiState<R>>) -> axum::Router
 where
-    R: ScenesRepository + SubroutinesRepository,
+    R: SceneEntityRepository + SubroutineEntityRepository,
 {
     Router::new()
         .route("/health", get(health))
@@ -74,7 +74,7 @@ impl Server {
 
     pub fn start<R>(config: &ConnectionInfo, repo: Arc<R>) -> Self
     where
-        R: ScenesRepository + SubroutinesRepository,
+        R: SceneEntityRepository + SubroutineEntityRepository,
     {
         let state = HolodekkdApiState::new(repo);
         let handle = start_http_server(config, router(Arc::new(state)));

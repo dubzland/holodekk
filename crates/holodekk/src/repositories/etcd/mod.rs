@@ -10,9 +10,9 @@ use etcd_client::{Client, Event, WatchStream, Watcher};
 use log::{debug, error, warn};
 use tokio::sync::broadcast::{channel, Sender};
 
-use crate::core::{
-    entities::EntityId,
-    repositories::{Error, Repository, Result, SceneEvent, WatchHandle, WatchId},
+use crate::core::entities::{
+    EntityId, EntityRepository, EntityRepositoryError, EntityRepositoryResult,
+    EntityRepositoryWatchHandle, EntityRepositoryWatchId, SceneEntityRepositoryEvent,
 };
 
 pub struct EtcdWatchHandle<T> {
@@ -84,7 +84,7 @@ pub fn etcd_subroutine_key(partial: Option<&EntityId>) -> String {
 pub struct EtcdRepository {
     hosts: &'static [&'static str],
     client: RwLock<Option<Client>>,
-    scene_watcher: RwLock<Option<EtcdWatchHandle<SceneEvent>>>,
+    scene_watcher: RwLock<Option<EtcdWatchHandle<SceneEntityRepositoryEvent>>>,
 }
 
 impl EtcdRepository {
@@ -98,8 +98,8 @@ impl EtcdRepository {
 }
 
 #[async_trait]
-impl Repository for EtcdRepository {
-    async fn init(&self) -> std::result::Result<(), Error> {
+impl EntityRepository for EtcdRepository {
+    async fn init(&self) -> EntityRepositoryResult<()> {
         match Client::connect(self.hosts, None).await {
             Ok(client) => {
                 self.client.write().unwrap().replace(client);
@@ -108,7 +108,7 @@ impl Repository for EtcdRepository {
             Err(err) => {
                 let msg = format!("Failed to connect to etcd: {}", err);
                 warn!("{}", msg);
-                Err(Error::Initialization(msg))
+                Err(EntityRepositoryError::Initialization(msg))
             }
         }
     }
@@ -121,7 +121,9 @@ impl Repository for EtcdRepository {
         }
     }
 
-    async fn subscribe_scenes(&self) -> Result<WatchHandle<SceneEvent>> {
+    async fn subscribe_scenes(
+        &self,
+    ) -> EntityRepositoryResult<EntityRepositoryWatchHandle<SceneEntityRepositoryEvent>> {
         let have_watcher = self.scene_watcher.read().unwrap().is_some();
         if !have_watcher {
             let mut client = self.client.write().unwrap().clone().unwrap();
@@ -136,12 +138,12 @@ impl Repository for EtcdRepository {
                 }
                 Err(err) => {
                     error!("Failed to setup etcd watcher: {}", err);
-                    return Err(Error::Subscribe(err.to_string()));
+                    return Err(EntityRepositoryError::Subscribe(err.to_string()));
                 }
             };
         }
 
-        let id = WatchId::generate();
+        let id = EntityRepositoryWatchId::generate();
         let rx = self
             .scene_watcher
             .read()
@@ -150,7 +152,7 @@ impl Repository for EtcdRepository {
             .unwrap()
             .tx
             .subscribe();
-        let handle = WatchHandle::new(id, rx);
+        let handle = EntityRepositoryWatchHandle::new(id, rx);
         Ok(handle)
     }
 }

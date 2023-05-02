@@ -1,90 +1,26 @@
+mod id;
+pub use id::*;
 mod scene;
 pub use scene::*;
 mod subroutine;
 pub use subroutine::*;
-
-use std::convert::TryFrom;
-use std::ops::Deref;
-use std::str::FromStr;
-
-use lazy_static::lazy_static;
-use rand::RngCore;
-use regex::Regex;
-use serde::{Deserialize, Serialize};
-
-pub fn generate_id() -> String {
-    let mut bytes: [u8; 32] = [0; 32];
-    rand::thread_rng().fill_bytes(&mut bytes);
-    hex::encode(bytes)
-}
-
-lazy_static! {
-    static ref ENTITY_ID_RE: Regex = Regex::new(r"^[0-9a-fA-F]{64}$").unwrap();
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum EntityIdError {
-    #[error("Invalid EntityId format")]
-    Format(String),
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-pub struct EntityId(String);
-
-impl EntityId {
-    pub fn generate() -> Self {
-        Self(generate_id())
-    }
-}
-
-impl FromStr for EntityId {
-    type Err = EntityIdError;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        if ENTITY_ID_RE.is_match(s) {
-            Ok(EntityId(s.to_string()))
-        } else {
-            Err(EntityIdError::Format(s.to_string()))
-        }
-    }
-}
-
-impl TryFrom<String> for EntityId {
-    type Error = EntityIdError;
-
-    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
-        Self::from_str(&value)
-    }
-}
-
-impl std::fmt::Display for EntityId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl std::ops::Deref for EntityId {
-    type Target = str;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<T> AsRef<T> for EntityId
-where
-    T: ?Sized,
-    <EntityId as Deref>::Target: AsRef<T>,
-{
-    fn as_ref(&self) -> &T {
-        self.deref().as_ref()
-    }
-}
+mod repository;
+pub use repository::*;
 
 #[cfg(test)]
 pub mod fixtures {
     use rstest::*;
 
+    use async_trait::async_trait;
+    use mockall::mock;
+
+    use super::repository::EntityRepositoryResult;
+    use super::{
+        MockSceneEntityRepository, MockSubroutineEntityRepository, SceneEntityRepository,
+        SceneEntityRepositoryQuery, SubroutineEntityRepository, SubroutineEntityRepositoryQuery,
+    };
+
+    use crate::core::enums::{SceneStatus, SubroutineStatus};
     use crate::core::images::{fixtures::mock_subroutine_image, SubroutineImage};
 
     use super::*;
@@ -100,5 +36,54 @@ pub mod fixtures {
         mock_subroutine_image: SubroutineImage,
     ) -> SubroutineEntity {
         SubroutineEntity::new(&mock_scene_entity.id, &mock_subroutine_image.id)
+    }
+
+    #[fixture]
+    pub fn mock_scene_entity_repository() -> MockSceneEntityRepository {
+        MockSceneEntityRepository::default()
+    }
+
+    #[fixture]
+    pub fn mock_subroutine_entity_repository() -> MockSubroutineEntityRepository {
+        MockSubroutineEntityRepository::default()
+    }
+
+    mock! {
+        pub EntityRepository {}
+
+        #[async_trait]
+        impl SceneEntityRepository for EntityRepository {
+            async fn scenes_create(
+                &self,
+                scene: SceneEntity,
+            ) -> EntityRepositoryResult<SceneEntity>;
+            async fn scenes_delete(&self, id: &SceneEntityId) -> EntityRepositoryResult<()>;
+            async fn scenes_exists<'a>(&self, query: SceneEntityRepositoryQuery<'a>) -> EntityRepositoryResult<bool>;
+            async fn scenes_find<'a>(&self, query: SceneEntityRepositoryQuery<'a>)
+                -> EntityRepositoryResult<Vec<SceneEntity>>;
+            async fn scenes_get(&self, id: &SceneEntityId) -> EntityRepositoryResult<SceneEntity>;
+            async fn scenes_update(&self, id: &SceneEntityId, name: Option<SceneName>, status: Option<SceneStatus>) -> EntityRepositoryResult<SceneEntity>;
+        }
+
+        #[async_trait]
+        impl SubroutineEntityRepository for EntityRepository {
+            async fn subroutines_create(
+                &self,
+                subroutine: SubroutineEntity,
+            ) -> EntityRepositoryResult<SubroutineEntity>;
+            async fn subroutines_delete(&self, id: &SubroutineEntityId) -> EntityRepositoryResult<()>;
+            async fn subroutines_exists<'a>(&self, query: SubroutineEntityRepositoryQuery<'a>) -> EntityRepositoryResult<bool>;
+            async fn subroutines_find<'a>(
+                &self,
+                query: SubroutineEntityRepositoryQuery<'a>,
+            ) -> EntityRepositoryResult<Vec<SubroutineEntity>>;
+            async fn subroutines_get(&self, id: &SubroutineEntityId) -> EntityRepositoryResult<SubroutineEntity>;
+            async fn subroutines_update(&self, id: &SubroutineEntityId, status: Option<SubroutineStatus>) -> EntityRepositoryResult<SubroutineEntity>;
+        }
+    }
+
+    #[fixture]
+    pub(crate) fn mock_entity_repository() -> MockEntityRepository {
+        MockEntityRepository::default()
     }
 }

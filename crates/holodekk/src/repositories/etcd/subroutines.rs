@@ -3,16 +3,17 @@ use etcd_client::GetOptions;
 use timestamps::Timestamps;
 
 use crate::core::{
-    entities::{EntityId, SubroutineEntity, SubroutineEntityId},
-    enums::SubroutineStatus,
-    repositories::{
-        Error, RepositoryQuery, Result, SubroutineEvent, SubroutinesQuery, SubroutinesRepository,
+    entities::{
+        EntityId, EntityRepositoryError, EntityRepositoryQuery, EntityRepositoryResult,
+        SubroutineEntity, SubroutineEntityId, SubroutineEntityRepository,
+        SubroutineEntityRepositoryEvent, SubroutineEntityRepositoryQuery,
     },
+    enums::SubroutineStatus,
 };
 
 use super::{etcd_subroutine_key, EtcdRepository};
 
-impl From<etcd_client::Event> for SubroutineEvent {
+impl From<etcd_client::Event> for SubroutineEntityRepositoryEvent {
     fn from(event: etcd_client::Event) -> Self {
         if let Some(kv) = event.kv() {
             match event.event_type() {
@@ -46,13 +47,13 @@ impl From<etcd_client::Event> for SubroutineEvent {
 }
 
 #[async_trait]
-impl SubroutinesRepository for EtcdRepository {
+impl SubroutineEntityRepository for EtcdRepository {
     async fn subroutines_create(
         &self,
         mut subroutine: SubroutineEntity,
-    ) -> Result<SubroutineEntity> {
+    ) -> EntityRepositoryResult<SubroutineEntity> {
         match self.subroutines_get(&subroutine.id).await {
-            Err(Error::NotFound(_)) => {
+            Err(EntityRepositoryError::NotFound(_)) => {
                 subroutine.created();
                 subroutine.updated();
                 let serialized = serde_json::to_string(&subroutine)?;
@@ -61,7 +62,7 @@ impl SubroutinesRepository for EtcdRepository {
                 client.put(key, serialized, None).await?;
                 Ok(subroutine)
             }
-            Ok(_) => Err(Error::Conflict(format!(
+            Ok(_) => Err(EntityRepositoryError::Conflict(format!(
                 "Subroutine already exists with id {}",
                 subroutine.id
             ))),
@@ -69,21 +70,24 @@ impl SubroutinesRepository for EtcdRepository {
         }
     }
 
-    async fn subroutines_delete(&self, id: &EntityId) -> Result<()> {
+    async fn subroutines_delete(&self, id: &EntityId) -> EntityRepositoryResult<()> {
         let mut client = self.client.read().unwrap().clone().unwrap();
         let key = etcd_subroutine_key(Some(id));
         let result = client
             .get(key.clone(), Some(GetOptions::new().with_count_only()))
             .await?;
         if result.count() == 0 {
-            Err(Error::NotFound(id.to_owned()))
+            Err(EntityRepositoryError::NotFound(id.to_owned()))
         } else {
             client.delete(key, None).await?;
             Ok(())
         }
     }
 
-    async fn subroutines_exists<'a>(&self, query: SubroutinesQuery<'a>) -> Result<bool> {
+    async fn subroutines_exists<'a>(
+        &self,
+        query: SubroutineEntityRepositoryQuery<'a>,
+    ) -> EntityRepositoryResult<bool> {
         let mut client = self.client.read().unwrap().clone().unwrap();
         let key = etcd_subroutine_key(None);
         let result = client
@@ -106,8 +110,8 @@ impl SubroutinesRepository for EtcdRepository {
 
     async fn subroutines_find<'a>(
         &self,
-        query: SubroutinesQuery<'a>,
-    ) -> Result<Vec<SubroutineEntity>> {
+        query: SubroutineEntityRepositoryQuery<'a>,
+    ) -> EntityRepositoryResult<Vec<SubroutineEntity>> {
         let mut client = self.client.read().unwrap().clone().unwrap();
         let key = etcd_subroutine_key(None);
         let result = client
@@ -134,18 +138,18 @@ impl SubroutinesRepository for EtcdRepository {
         Ok(subroutines)
     }
 
-    async fn subroutines_get(&self, id: &EntityId) -> Result<SubroutineEntity> {
+    async fn subroutines_get(&self, id: &EntityId) -> EntityRepositoryResult<SubroutineEntity> {
         let mut client = self.client.read().unwrap().clone().unwrap();
         let key = etcd_subroutine_key(Some(id));
         let result = client.get(key, None).await?;
 
         if result.count() != 1 {
-            Err(Error::NotFound(id.to_owned()))
+            Err(EntityRepositoryError::NotFound(id.to_owned()))
         } else if let Some(kv) = result.kvs().first() {
             let subroutine: SubroutineEntity = serde_json::from_slice(kv.value())?;
             Ok(subroutine)
         } else {
-            Err(Error::NotFound(id.to_owned()))
+            Err(EntityRepositoryError::NotFound(id.to_owned()))
         }
     }
 
@@ -153,7 +157,7 @@ impl SubroutinesRepository for EtcdRepository {
         &self,
         id: &SubroutineEntityId,
         status: Option<SubroutineStatus>,
-    ) -> Result<SubroutineEntity> {
+    ) -> EntityRepositoryResult<SubroutineEntity> {
         let mut client = self.client.read().unwrap().clone().unwrap();
         let key = etcd_subroutine_key(Some(id));
         let result = client.get(key.clone(), None).await?;
@@ -169,11 +173,11 @@ impl SubroutinesRepository for EtcdRepository {
                 .await?;
             Ok(subroutine)
         } else {
-            Err(Error::NotFound(id.to_owned()))
+            Err(EntityRepositoryError::NotFound(id.to_owned()))
         }
     }
 
-    // async fn subroutines_watch(&self) -> Result<WatchHandle<SubroutineEvent>> {
+    // async fn subroutines_watch(&self) -> EntityRepositoryResult<WatchHandle<SubroutineEntityRepositoryEvent>> {
     //     let mut client = self.client.clone();
     //     let options = etcd_client::WatchOptions::new()
     //         .with_prefix()
@@ -196,7 +200,7 @@ impl SubroutinesRepository for EtcdRepository {
     //     Ok(handle)
     // }
 
-    // async fn subroutines_stop_watch(&self, watcher: WatchHandle<SubroutineEvent>) {
+    // async fn subroutines_stop_watch(&self, watcher: WatchHandle<SubroutineEntityRepositoryEvent>) {
     //     let mut watch_handle = self
     //         .subroutine_watchers
     //         .write()
@@ -251,7 +255,7 @@ impl SubroutinesRepository for EtcdRepository {
 
 //     #[rstest]
 //     #[tokio::test]
-//     async fn create_succeeds(mock_subroutine: SubroutineEntity) -> Result<()> {
+//     async fn create_succeeds(mock_subroutine: SubroutineEntity) -> EntityRepositoryResult<()> {
 //         let client = test_client().await;
 //         let repo = EtcdRepository::new(client);
 //         let result = repo
@@ -264,7 +268,7 @@ impl SubroutinesRepository for EtcdRepository {
 
 //     #[rstest]
 //     #[tokio::test]
-//     async fn create_returns_the_subroutine(mock_subroutine: SubroutineEntity) -> Result<()> {
+//     async fn create_returns_the_subroutine(mock_subroutine: SubroutineEntity) -> EntityRepositoryResult<()> {
 //         let client = test_client().await;
 //         let repo = EtcdRepository::new(client);
 //         let new_subroutine = repo
@@ -330,7 +334,7 @@ impl SubroutinesRepository for EtcdRepository {
 //     async fn exists_returns_false_when_no_subroutines_exist() {
 //         let repo = EtcdRepository::new(test_client().await);
 
-//         let query = SubroutinesQuery::default();
+//         let query = SubroutineEntityRepositoryQuery::default();
 
 //         assert_eq!(repo.subroutines_exists(query).await.unwrap(), false);
 //     }
@@ -343,7 +347,7 @@ impl SubroutinesRepository for EtcdRepository {
 //         add_subroutine(&mut client, &mock_subroutine).await;
 
 //         let name = format!("{}extra", mock_subroutine.name());
-//         let query = SubroutinesQuery::builder().name_eq(&name).build();
+//         let query = SubroutineEntityRepositoryQuery::builder().name_eq(&name).build();
 
 //         assert_eq!(repo.subroutines_exists(query).await.unwrap(), false);
 //     }
@@ -355,7 +359,7 @@ impl SubroutinesRepository for EtcdRepository {
 //         let mut client = test_client().await;
 //         add_subroutine(&mut client, &mock_subroutine).await;
 
-//         let query = SubroutinesQuery::builder()
+//         let query = SubroutineEntityRepositoryQuery::builder()
 //             .name_eq(&mock_subroutine.name())
 //             .build();
 

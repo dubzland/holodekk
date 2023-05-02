@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::core::{entities::SceneEntity, repositories::ScenesRepository};
+use crate::core::entities::{SceneEntity, SceneEntityRepository};
 
 use super::Result;
 
@@ -91,14 +91,14 @@ impl<T> ScenesServiceMethods for T where
 #[derive(Debug)]
 pub struct ScenesService<R>
 where
-    R: ScenesRepository,
+    R: SceneEntityRepository,
 {
     repo: Arc<R>,
 }
 
 impl<R> ScenesService<R>
 where
-    R: ScenesRepository,
+    R: SceneEntityRepository,
 {
     pub fn new(repo: Arc<R>) -> Self {
         Self { repo }

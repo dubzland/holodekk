@@ -4,14 +4,15 @@ use mockall::{automock, predicate::*};
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
-    entities::{SceneEntityId, SubroutineEntity, SubroutineEntityId},
+    entities::repository::{EntityRepositoryQuery, EntityRepositoryResult},
     enums::SubroutineStatus,
     images::SubroutineImageId,
-    repositories::{RepositoryQuery, Result},
 };
 
+use super::{SceneEntityId, SubroutineEntity, SubroutineEntityId};
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub enum SubroutineEvent {
+pub enum SubroutineEntityRepositoryEvent {
     Unknown,
     Insert {
         subroutine: SubroutineEntity,
@@ -26,12 +27,12 @@ pub enum SubroutineEvent {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct SubroutinesQuery<'a> {
+pub struct SubroutineEntityRepositoryQuery<'a> {
     pub scene_entity_id: Option<&'a SceneEntityId>,
     pub subroutine_image_id: Option<&'a SubroutineImageId>,
 }
 
-impl<'a> SubroutinesQuery<'a> {
+impl<'a> SubroutineEntityRepositoryQuery<'a> {
     pub fn builder() -> Self {
         Self::default()
     }
@@ -54,7 +55,7 @@ impl<'a> SubroutinesQuery<'a> {
     }
 }
 
-impl<'a> RepositoryQuery for SubroutinesQuery<'a> {
+impl<'a> EntityRepositoryQuery for SubroutineEntityRepositoryQuery<'a> {
     type Entity = SubroutineEntity;
 
     fn matches(&self, record: &SubroutineEntity) -> bool {
@@ -78,30 +79,27 @@ impl<'a> RepositoryQuery for SubroutinesQuery<'a> {
 
 #[cfg_attr(test, automock)]
 #[async_trait]
-pub trait SubroutinesRepository: Send + Sync + 'static {
-    async fn subroutines_create(&self, subroutine: SubroutineEntity) -> Result<SubroutineEntity>;
-    async fn subroutines_delete(&self, id: &SubroutineEntityId) -> Result<()>;
-    async fn subroutines_exists<'a>(&self, query: SubroutinesQuery<'a>) -> Result<bool>;
+pub trait SubroutineEntityRepository: Send + Sync + 'static {
+    async fn subroutines_create(
+        &self,
+        subroutine: SubroutineEntity,
+    ) -> EntityRepositoryResult<SubroutineEntity>;
+    async fn subroutines_delete(&self, id: &SubroutineEntityId) -> EntityRepositoryResult<()>;
+    async fn subroutines_exists<'a>(
+        &self,
+        query: SubroutineEntityRepositoryQuery<'a>,
+    ) -> EntityRepositoryResult<bool>;
     async fn subroutines_find<'a>(
         &self,
-        query: SubroutinesQuery<'a>,
-    ) -> Result<Vec<SubroutineEntity>>;
-    async fn subroutines_get(&self, id: &SubroutineEntityId) -> Result<SubroutineEntity>;
+        query: SubroutineEntityRepositoryQuery<'a>,
+    ) -> EntityRepositoryResult<Vec<SubroutineEntity>>;
+    async fn subroutines_get(
+        &self,
+        id: &SubroutineEntityId,
+    ) -> EntityRepositoryResult<SubroutineEntity>;
     async fn subroutines_update(
         &self,
         id: &SubroutineEntityId,
         status: Option<SubroutineStatus>,
-    ) -> Result<SubroutineEntity>;
-}
-
-#[cfg(test)]
-pub(crate) mod fixtures {
-    use rstest::*;
-
-    use super::MockSubroutinesRepository;
-
-    #[fixture]
-    pub(crate) fn subroutines_repository() -> MockSubroutinesRepository {
-        MockSubroutinesRepository::default()
-    }
+    ) -> EntityRepositoryResult<SubroutineEntity>;
 }

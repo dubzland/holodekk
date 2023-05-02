@@ -11,12 +11,15 @@ use async_trait::async_trait;
 use log::debug;
 use tokio::sync::broadcast::{channel, Sender};
 
-use crate::core::repositories::{Error, Repository, SceneEvent, WatchHandle, WatchId};
+use crate::core::entities::{
+    EntityRepository, EntityRepositoryWatchHandle, EntityRepositoryWatchId,
+    SceneEntityRepositoryEvent,
+};
 
 #[derive(Debug)]
 pub struct MemoryRepository {
     db: Arc<MemoryDatabase>,
-    scene_notify_tx: RwLock<Option<Sender<SceneEvent>>>,
+    scene_notify_tx: RwLock<Option<Sender<SceneEntityRepositoryEvent>>>,
 }
 
 impl Default for MemoryRepository {
@@ -39,8 +42,8 @@ impl MemoryRepository {
 }
 
 #[async_trait]
-impl Repository for MemoryRepository {
-    async fn init(&self) -> std::result::Result<(), Error> {
+impl EntityRepository for MemoryRepository {
+    async fn init(&self) -> EntityRepositoryResult<()> {
         Ok(())
     }
 
@@ -52,9 +55,11 @@ impl Repository for MemoryRepository {
         debug!("Shutdown complete.");
     }
 
-    async fn subscribe_scenes(&self) -> Result<WatchHandle<SceneEvent>> {
-        let id = WatchId::generate();
-        Ok(WatchHandle {
+    async fn subscribe_scenes(
+        &self,
+    ) -> EntityRepositoryResult<EntityRepositoryWatchHandle<SceneEntityRepositoryEvent>> {
+        let id = EntityRepositoryWatchId::generate();
+        Ok(EntityRepositoryWatchHandle {
             id,
             rx: self
                 .scene_notify_tx
@@ -99,7 +104,7 @@ mod tests {
 
     #[rstest]
     #[test]
-    fn can_get_subroutine(mock_subroutine_entity: SubroutineEntity) -> Result<()> {
+    fn can_get_subroutine(mock_subroutine_entity: SubroutineEntity) -> EntityRepositoryResult<()> {
         let db = MemoryDatabase::new();
         db.subroutines().add(mock_subroutine_entity.clone())?;
 
