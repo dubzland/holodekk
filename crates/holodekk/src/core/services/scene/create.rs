@@ -27,7 +27,7 @@ where
 
         // ensure a scene does not exist for this name
         let query = SceneEntityRepositoryQuery::builder()
-            .name_eq(&input.name)
+            .name_eq(input.name)
             .build();
 
         if self.repo.scenes_exists(query).await? {
