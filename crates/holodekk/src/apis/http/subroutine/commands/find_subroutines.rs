@@ -1,12 +1,9 @@
 use std::sync::Arc;
 
-use axum::{
-    extract::{Path, State},
-    response::IntoResponse,
-    Json,
-};
+use axum::extract::{Path, State};
 
-use crate::apis::http::ApiState;
+use crate::apis::http::subroutine::models::Subroutine;
+use crate::apis::http::{ApiState, GetResponse};
 use crate::services::{
     scene::{GetScene, GetSceneInput},
     subroutine::{FindSubroutines, FindSubroutinesInput},
@@ -16,7 +13,7 @@ use crate::services::{
 pub async fn find_subroutines<A, E, U>(
     State(state): State<Arc<A>>,
     Path(scene): Path<String>,
-) -> Result<impl IntoResponse, EntityServiceError>
+) -> Result<GetResponse<Vec<Subroutine>>, EntityServiceError>
 where
     A: ApiState<E, U>,
     E: GetScene,
@@ -31,7 +28,10 @@ where
         .subroutine_entity_service()
         .find(&FindSubroutinesInput::new(Some(&scene.id), None))
         .await?;
-    Ok(Json(subroutines))
+
+    Ok(GetResponse(
+        subroutines.into_iter().map(Into::into).collect(),
+    ))
 }
 
 #[cfg(test)]

@@ -2,13 +2,11 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
-    response::IntoResponse,
     Json,
 };
 
-use crate::apis::http::ApiState;
-use crate::models::NewSubroutine;
+use crate::apis::http::subroutine::models::{NewSubroutine, Subroutine};
+use crate::apis::http::{ApiState, CreateResponse};
 use crate::services::{
     subroutine::{CreateSubroutine, CreateSubroutineInput},
     EntityServiceError,
@@ -18,7 +16,7 @@ pub async fn create_subroutine<A, E, U>(
     Path(scene): Path<String>,
     State(state): State<Arc<A>>,
     Json(new_subroutine): Json<NewSubroutine>,
-) -> Result<impl IntoResponse, EntityServiceError>
+) -> Result<CreateResponse<Subroutine>, EntityServiceError>
 where
     A: ApiState<E, U>,
     E: Send + Sync + 'static,
@@ -31,12 +29,17 @@ where
             &new_subroutine.subroutine_image_id,
         ))
         .await?;
-    Ok((StatusCode::CREATED, Json(subroutine)))
+    Ok(CreateResponse(subroutine.into()))
 }
 
 #[cfg(test)]
 mod tests {
-    use axum::{body::Body, http::Request, routing::post, Router};
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+        routing::post,
+        Router,
+    };
     use rstest::*;
     use tower::ServiceExt;
 
