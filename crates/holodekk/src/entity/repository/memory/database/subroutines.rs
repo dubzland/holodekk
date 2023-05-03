@@ -4,11 +4,11 @@ use crate::entity::repository::{Error, Result};
 use crate::subroutine::{entity::Id, Entity};
 
 #[derive(Debug)]
-pub struct SubroutinesMemoryStore {
+pub struct MemoryStore {
     records: RwLock<HashMap<Id, Entity>>,
 }
 
-impl Default for SubroutinesMemoryStore {
+impl Default for MemoryStore {
     fn default() -> Self {
         Self {
             records: RwLock::new(HashMap::new()),
@@ -16,7 +16,7 @@ impl Default for SubroutinesMemoryStore {
     }
 }
 
-impl SubroutinesMemoryStore {
+impl MemoryStore {
     pub fn add(&self, subroutine: Entity) -> Result<()> {
         if self.records.read().unwrap().contains_key(&subroutine.id) {
             Err(Error::Conflict(format!(
@@ -37,15 +37,17 @@ impl SubroutinesMemoryStore {
             .read()
             .unwrap()
             .values()
-            .map(|i| i.to_owned())
+            .map(std::clone::Clone::clone)
             .collect()
     }
 
+    #[allow(clippy::unnecessary_wraps)]
     pub fn delete(&self, id: &Id) -> Result<()> {
         self.records.write().unwrap().remove(id);
         Ok(())
     }
 
+    #[allow(clippy::unnecessary_wraps)]
     pub fn exists(&self, id: &Id) -> Result<bool> {
         if self.records.read().unwrap().contains_key(id) {
             Ok(true)

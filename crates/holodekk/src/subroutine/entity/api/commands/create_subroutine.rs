@@ -24,7 +24,7 @@ where
 {
     let subroutine = state
         .subroutine_entity_service()
-        .create(&Input::new(&scene, &new_subroutine.subroutine_image_id))
+        .create(&Input::new(&scene, &new_subroutine.image_id))
         .await?;
     Ok(CreateResponse(subroutine.into()))
 }
@@ -42,14 +42,18 @@ mod tests {
 
     use crate::apis::http::MockApiState;
     use crate::entity;
-    use crate::images::{fixtures::mock_subroutine_image, SubroutineImage};
-    use crate::scene::entity::{
-        mock_entity as mock_scene_entity, service::MockService as MockSceneEntityService,
+    use crate::scene::{
+        entity::{
+            mock_entity as mock_scene_entity, service::MockService as MockSceneEntityService,
+        },
         Entity as SceneEntity,
     };
-    use crate::subroutine::entity::{
-        mock_entity,
-        service::{mock_create, MockCreate},
+    use crate::subroutine::{
+        entity::{
+            mock_entity,
+            service::{mock_create, MockCreate},
+        },
+        image::{mock_image, Image},
         Entity,
     };
 
@@ -68,11 +72,11 @@ mod tests {
     fn make_request(
         mock_create: MockCreate,
         scene: SceneEntity,
-        subroutine: SubroutineImage,
+        image: Image,
     ) -> tower::util::Oneshot<axum::Router, http::Request<hyper::Body>> {
         let body = Body::from(
             serde_json::to_string(&NewSubroutine {
-                subroutine_image_id: subroutine.id.to_string(),
+                image_id: image.id.to_string(),
             })
             .unwrap(),
         );
@@ -92,13 +96,13 @@ mod tests {
     async fn responds_with_conflict_when_subroutine_exists(
         mut mock_create: MockCreate,
         mock_scene_entity: SceneEntity,
-        mock_subroutine_image: SubroutineImage,
+        mock_image: Image,
     ) {
         mock_create
             .expect_create()
             .return_once(move |_| Err(entity::service::Error::NotUnique("Already exists".into())));
 
-        let response = make_request(mock_create, mock_scene_entity, mock_subroutine_image)
+        let response = make_request(mock_create, mock_scene_entity, mock_image)
             .await
             .unwrap();
 
@@ -110,7 +114,7 @@ mod tests {
     async fn responds_with_created(
         mut mock_create: MockCreate,
         mock_scene_entity: SceneEntity,
-        mock_subroutine_image: SubroutineImage,
+        mock_image: Image,
         mock_entity: Entity,
     ) {
         {
@@ -118,7 +122,7 @@ mod tests {
             mock_create.expect_create().return_once(move |_| Ok(entity));
         }
 
-        let response = make_request(mock_create, mock_scene_entity, mock_subroutine_image)
+        let response = make_request(mock_create, mock_scene_entity, mock_image)
             .await
             .unwrap();
 
@@ -131,14 +135,14 @@ mod tests {
         mut mock_create: MockCreate,
         mock_entity: Entity,
         mock_scene_entity: SceneEntity,
-        mock_subroutine_image: SubroutineImage,
+        mock_image: Image,
     ) {
         {
             let entity = mock_entity.clone();
             mock_create.expect_create().return_once(move |_| Ok(entity));
         }
 
-        let response = make_request(mock_create, mock_scene_entity, mock_subroutine_image)
+        let response = make_request(mock_create, mock_scene_entity, mock_image)
             .await
             .unwrap();
 

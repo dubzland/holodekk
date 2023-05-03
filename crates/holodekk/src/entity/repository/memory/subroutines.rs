@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use timestamps::Timestamps;
 
 use crate::entity::repository::{Error, Query as RepositoryQuery, Result};
-pub use crate::images::SubroutineImageId;
 use crate::subroutine::{
     entity::{repository::Query, Id, Repository, Status},
     Entity,
@@ -163,7 +162,7 @@ mod tests {
         let repo = Memory::new(db.clone());
         let query = Query::builder()
             .for_scene_entity(&mock_entity.scene_entity_id)
-            .for_subroutine_image(&mock_entity.subroutine_image_id)
+            .for_image(&mock_entity.image_id)
             .build();
         let exists = repo.subroutines_exists(query).await?;
         assert!(exists);
@@ -203,7 +202,7 @@ mod tests {
         let repo = Memory::new(db.clone());
         let query = Query::builder()
             .for_scene_entity(&mock_entity.scene_entity_id)
-            .for_subroutine_image(&mock_entity.subroutine_image_id)
+            .for_image(&mock_entity.image_id)
             .build();
 
         let instances = repo.subroutines_find(query).await?;

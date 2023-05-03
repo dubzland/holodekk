@@ -52,8 +52,7 @@ impl Paths {
 pub mod apis;
 pub mod entity;
 pub mod errors;
-pub mod images;
+pub mod image;
 pub mod scene;
 pub mod subroutine;
-// pub mod stores;
 pub mod utils;

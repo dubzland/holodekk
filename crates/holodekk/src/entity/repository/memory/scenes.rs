@@ -113,7 +113,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn create_succeeds(db: Arc<Database>, mock_entity: Entity) -> Result<()> {
-        let repo = Repository::new(db.clone());
+        let repo = Memory::new(db.clone());
         let result = repo.scenes_create(mock_entity).await;
         assert!(result.is_ok());
         Ok(())
@@ -122,7 +122,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn create_returns_the_scene(db: Arc<Database>, mock_entity: Entity) -> Result<()> {
-        let repo = Repository::new(db.clone());
+        let repo = Memory::new(db.clone());
         let new_scene = repo.scenes_create(mock_entity.clone()).await?;
         assert_eq!(new_scene.name, mock_entity.name);
         assert_eq!(new_scene.status, mock_entity.status);
@@ -132,7 +132,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn create_adds_record(db: Arc<Database>, mock_entity: Entity) -> Result<()> {
-        let repo = Repository::new(db.clone());
+        let repo = Memory::new(db.clone());
         let new_scene = repo.scenes_create(mock_entity).await?;
         let db_scene = db.scenes().get(&new_scene.id)?;
         assert_eq!(new_scene.id, db_scene.id);
@@ -143,7 +143,7 @@ mod tests {
     #[tokio::test]
     async fn delete_fails_for_nonexistent_scene(db: Arc<Database>) -> Result<()> {
         let scene_id = Id::generate();
-        let repo = Repository::new(db.clone());
+        let repo = Memory::new(db.clone());
         let res = repo.scenes_delete(&scene_id).await;
         assert!(matches!(res.unwrap_err(), Error::NotFound(..)));
         Ok(())
@@ -153,7 +153,7 @@ mod tests {
     #[tokio::test]
     async fn delete_removes_the_record(db: Arc<Database>, mock_entity: Entity) -> Result<()> {
         db.scenes().add(mock_entity.clone())?;
-        let repo = Repository::new(db.clone());
+        let repo = Memory::new(db.clone());
         repo.scenes_delete(&mock_entity.id).await?;
 
         assert!(!db.scenes().exists(&mock_entity.id)?);
@@ -167,7 +167,7 @@ mod tests {
         mock_entity: Entity,
     ) -> Result<()> {
         db.scenes().add(mock_entity.clone())?;
-        let repo = Repository::new(db.clone());
+        let repo = Memory::new(db.clone());
         let query = Query::builder().name_eq(&mock_entity.name).build();
         assert!(repo.scenes_exists(query).await?);
         Ok(())
@@ -176,7 +176,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn exists_returns_false_for_nonexistent_scene(db: Arc<Database>) -> Result<()> {
-        let repo = Repository::new(db.clone());
+        let repo = Memory::new(db.clone());
         let name: Name = "nonexistent".into();
         let query = Query::builder().name_eq(&name).build();
         assert!(!repo.scenes_exists(query).await?);
@@ -186,7 +186,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn find_returns_nothing_when_no_records(db: Arc<Database>) -> Result<()> {
-        let repo = Repository::new(db.clone());
+        let repo = Memory::new(db.clone());
         assert!(repo.scenes_find(Query::default()).await?.is_empty());
         Ok(())
     }
@@ -198,7 +198,7 @@ mod tests {
         mock_entity: Entity,
     ) -> Result<()> {
         db.scenes().add(mock_entity.clone())?;
-        let repo = Repository::new(db.clone());
+        let repo = Memory::new(db.clone());
         let name: Name = "nonexistent".into();
         assert!(repo
             .scenes_find(Query::builder().name_eq(&name).build())
@@ -211,7 +211,7 @@ mod tests {
     #[tokio::test]
     async fn find_returns_matches(db: Arc<Database>, mock_entity: Entity) -> Result<()> {
         db.scenes().add(mock_entity.clone())?;
-        let repo = Repository::new(db.clone());
+        let repo = Memory::new(db.clone());
         let res = repo
             .scenes_find(Query::builder().name_eq(&mock_entity.name).build())
             .await?;
@@ -226,7 +226,7 @@ mod tests {
         db: Arc<Database>,
         mock_entity: Entity,
     ) -> Result<()> {
-        let repo = Repository::new(db.clone());
+        let repo = Memory::new(db.clone());
         let res = repo.scenes_get(&mock_entity.id).await;
         assert!(res.is_err());
         assert!(matches!(res.unwrap_err(), Error::NotFound(..)));
@@ -237,7 +237,7 @@ mod tests {
     #[tokio::test]
     async fn get_returns_scene(db: Arc<Database>, mock_entity: Entity) -> Result<()> {
         db.scenes().add(mock_entity.clone())?;
-        let repo = Repository::new(db.clone());
+        let repo = Memory::new(db.clone());
 
         let s = repo.scenes_get(&mock_entity.id).await?;
         assert_eq!(s, mock_entity);
