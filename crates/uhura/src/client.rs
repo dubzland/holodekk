@@ -10,25 +10,33 @@ use tower::service_fn;
 
 use holodekk::errors::grpc::GrpcClientResult;
 
-use crate::apis::grpc::uhura::UhuraApiClient;
+use crate::apis::grpc::uhura::ApiClient;
 
 #[derive(Clone, Debug)]
-pub struct UhuraClient {
+pub struct Client {
     channel: Channel,
 }
 
-impl UhuraClient {
+impl Client {
     fn new(channel: Channel) -> Self {
         Self { channel }
     }
 
-    pub async fn connect_tcp(port: u16, addr: Ipv4Addr) -> GrpcClientResult<UhuraClient> {
-        let connect_address = format!("http://{}:{}", addr, port);
+    /// # Errors
+    ///
+    /// - Failure to generate endpoint address
+    /// - Error connecting to server
+    pub async fn connect_tcp(port: u16, addr: Ipv4Addr) -> GrpcClientResult<Client> {
+        let connect_address = format!("http://{addr}:{port}");
         let channel = Endpoint::from_shared(connect_address)?.connect().await?;
         Ok(Self::new(channel))
     }
 
-    pub async fn connect_unix<P>(socket: P) -> GrpcClientResult<UhuraClient>
+    /// # Errors
+    ///
+    /// - Failure to generate endpoint address
+    /// - Error connecting to server
+    pub async fn connect_unix<P>(socket: P) -> GrpcClientResult<Client>
     where
         P: AsRef<Path> + Into<PathBuf> + Sync + Sync,
     {
@@ -42,7 +50,8 @@ impl UhuraClient {
         Ok(Self::new(channel))
     }
 
-    pub fn uhura(&self) -> UhuraApiClient {
-        UhuraApiClient::new(self.channel.clone())
+    #[must_use]
+    pub fn uhura(&self) -> ApiClient {
+        ApiClient::new(self.channel.clone())
     }
 }

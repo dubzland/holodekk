@@ -134,7 +134,7 @@ where
 pub mod fixtures {
     use rstest::*;
 
-    use crate::enums::SubroutineKind;
+    use crate::subroutine::Kind;
 
     use super::*;
 
@@ -143,7 +143,7 @@ pub mod fixtures {
         SubroutineImage::new(
             "test/sub".into(),
             "/tmp/holodekk/subroutines/test/sub",
-            SubroutineKind::Ruby,
+            Kind::Ruby,
         )
     }
 }

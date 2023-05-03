@@ -6,22 +6,14 @@ use clap::Parser;
 use log::debug;
 
 use holodekk::{
-    entities::EntityRepository,
-    repositories::{
-        etcd::EtcdRepository,
-        memory::{MemoryDatabase, MemoryRepository},
-        RepositoryKind,
-    },
+    entity::{repository, Repository},
     utils::{
         signals::{SignalKind, Signals},
         ConnectionInfo,
     },
 };
 
-use holodekkd::config::HolodekkdConfig;
-
 use holodekkd::api::Server;
-use holodekkd::holodekk::{Holodekk, HolodekkError};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -44,7 +36,7 @@ struct Options {
 
     /// Holodekk API port
     #[arg(long, value_enum)]
-    repository: RepositoryKind,
+    repository: repository::Kind,
 }
 
 fn ensure_directory<P: AsRef<Path>>(path: P) -> std::io::Result<()> {
@@ -55,18 +47,18 @@ fn ensure_directory<P: AsRef<Path>>(path: P) -> std::io::Result<()> {
 }
 
 #[tokio::main]
-async fn main() -> std::result::Result<(), HolodekkError> {
+async fn main() -> std::result::Result<(), holodekkd::Error> {
     let options = Options::parse();
 
     let api_config = ConnectionInfo::tcp(&options.port, None);
 
-    let holodekkd_config = Arc::new(HolodekkdConfig::new(
+    let holodekkd_config = holodekkd::Config::new(
         &options.data_root,
         &options.exec_root,
         &options.bin_path,
         api_config,
         options.repository,
-    ));
+    );
 
     env_logger::init();
 
@@ -80,14 +72,14 @@ async fn main() -> std::result::Result<(), HolodekkError> {
     ensure_directory(holodekkd_config.paths().subroutines_root())?;
 
     match holodekkd_config.repo_kind() {
-        RepositoryKind::Memory => {
-            let db = MemoryDatabase::new();
-            let repo = Arc::new(MemoryRepository::new(Arc::new(db)));
+        repository::Kind::Memory => {
+            let db = repository::memory::Database::new();
+            let repo = Arc::new(repository::Memory::new(Arc::new(db)));
             repo.init().await.unwrap();
             start(repo, holodekkd_config).await
         }
-        RepositoryKind::Etcd => {
-            let etcd = EtcdRepository::new(&["127.0.0.1:2379"]);
+        repository::Kind::Etcd => {
+            let etcd = repository::Etcd::new(&["127.0.0.1:2379"]);
             let repo = Arc::new(etcd);
             repo.init().await.unwrap();
             start(repo, holodekkd_config).await
@@ -97,12 +89,12 @@ async fn main() -> std::result::Result<(), HolodekkError> {
 
 async fn start<R>(
     repo: Arc<R>,
-    config: Arc<HolodekkdConfig>,
-) -> std::result::Result<(), HolodekkError>
+    config: holodekkd::Config,
+) -> std::result::Result<(), holodekkd::Error>
 where
-    R: EntityRepository,
+    R: Repository,
 {
-    let holodekk = Holodekk::start(config.clone(), repo.clone()).await?;
+    let holodekk = holodekkd::Monitor::start(config.clone(), repo.clone()).await?;
     let mut api_server = Server::start(config.holodekk_api_config(), repo.clone());
 
     let signal = Signals::new().await;

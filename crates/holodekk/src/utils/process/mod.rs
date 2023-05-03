@@ -19,7 +19,7 @@ use nix::{
 use serde::{Deserialize, Serialize};
 
 use crate::errors::error_chain_fmt;
-use crate::HolodekkPaths;
+use crate::Paths;
 
 #[derive(thiserror::Error)]
 pub enum DaemonSyncError {
@@ -123,7 +123,7 @@ pub fn get_daemon_pid<P: AsRef<Path>>(
 }
 
 pub fn daemonize<P>(
-    paths: &HolodekkPaths,
+    paths: &Paths,
     mut command: Command,
     pidfile: P,
 ) -> std::result::Result<i32, DaemonizeError>
@@ -169,15 +169,12 @@ pub fn terminate_daemon(pid: i32) -> std::result::Result<i32, DaemonTerminationE
             kill(Pid::from_raw(pid), SIGINT)?;
             debug!("SIGTERM sent.  awaiting process termination ...");
             while count < 10 {
-                match kill(Pid::from_raw(pid), None) {
-                    Ok(_) => {
-                        count += 1;
-                        std::thread::sleep(std::time::Duration::from_secs(1));
-                    }
-                    Err(_) => {
-                        debug!("Process shutdown.  Termination complete");
-                        return Ok(0);
-                    }
+                if kill(Pid::from_raw(pid), None).is_ok() {
+                    count += 1;
+                    std::thread::sleep(std::time::Duration::from_secs(1));
+                } else {
+                    debug!("Process shutdown.  Termination complete");
+                    return Ok(0);
                 }
             }
 

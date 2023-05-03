@@ -2,7 +2,7 @@
 members = [
     "crates/holodekk",
     "crates/holodekkd",
-    "crates/uhura"
+    # "crates/uhura"
 ]
 resolver = "2"
 
