@@ -1,21 +1,19 @@
 mod scenes;
-use scenes::ScenesMemoryStore;
 mod subroutines;
-use subroutines::SubroutinesMemoryStore;
 
 use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Database {
-    scenes: Arc<ScenesMemoryStore>,
-    subroutines: Arc<SubroutinesMemoryStore>,
+    scenes: Arc<scenes::MemoryStore>,
+    subroutines: Arc<subroutines::MemoryStore>,
 }
 
 impl Default for Database {
     fn default() -> Self {
         Self {
-            scenes: Arc::new(ScenesMemoryStore::default()),
-            subroutines: Arc::new(SubroutinesMemoryStore::default()),
+            scenes: Arc::new(scenes::MemoryStore::default()),
+            subroutines: Arc::new(subroutines::MemoryStore::default()),
         }
     }
 }
@@ -25,11 +23,11 @@ impl Database {
         Database::default()
     }
 
-    pub fn scenes(&self) -> Arc<ScenesMemoryStore> {
+    pub fn scenes(&self) -> Arc<scenes::MemoryStore> {
         self.scenes.clone()
     }
 
-    pub fn subroutines(&self) -> Arc<SubroutinesMemoryStore> {
+    pub fn subroutines(&self) -> Arc<subroutines::MemoryStore> {
         self.subroutines.clone()
     }
 }

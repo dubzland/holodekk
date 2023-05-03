@@ -71,3 +71,5 @@ impl Paths {
 
 pub mod entity;
 pub use entity::Entity;
+pub mod image;
+pub use image::Image;

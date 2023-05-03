@@ -68,7 +68,7 @@ where
 
 pub fn scene_key(partial: Option<&entity::Id>) -> String {
     if let Some(partial) = partial {
-        format!("/scenes/{}", partial)
+        format!("/scenes/{partial}")
     } else {
         "/scenes/".to_string()
     }
@@ -76,7 +76,7 @@ pub fn scene_key(partial: Option<&entity::Id>) -> String {
 
 pub fn subroutine_key(partial: Option<&entity::Id>) -> String {
     if let Some(partial) = partial {
-        format!("/subroutines/{}", partial)
+        format!("/subroutines/{partial}")
     } else {
         "/subroutines/".to_string()
     }
@@ -107,7 +107,7 @@ impl entity::Repository for Etcd {
                 Ok(())
             }
             Err(err) => {
-                let msg = format!("Failed to connect to etcd: {}", err);
+                let msg = format!("Failed to connect to etcd: {err}");
                 warn!("{}", msg);
                 Err(Error::Initialization(msg))
             }

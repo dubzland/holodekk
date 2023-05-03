@@ -155,7 +155,7 @@ impl SubroutineRepository for Etcd {
         if let Some(kv) = result.kvs().first() {
             let mut subroutine: Entity = serde_json::from_slice(kv.value())?;
             if let Some(status) = status {
-                subroutine.status = status.clone();
+                subroutine.status = status;
             }
 
             client

@@ -6,11 +6,11 @@ use crate::entity::repository::{Error, Result};
 use crate::scene::{entity::Id, Entity};
 
 #[derive(Debug)]
-pub struct ScenesMemoryStore {
+pub struct MemoryStore {
     records: RwLock<HashMap<Id, Entity>>,
 }
 
-impl Default for ScenesMemoryStore {
+impl Default for MemoryStore {
     fn default() -> Self {
         Self {
             records: RwLock::new(HashMap::new()),
@@ -18,7 +18,7 @@ impl Default for ScenesMemoryStore {
     }
 }
 
-impl ScenesMemoryStore {
+impl MemoryStore {
     pub fn add(&self, scene: Entity) -> Result<()> {
         if self.records.read().unwrap().contains_key(&scene.id) {
             Err(Error::Conflict(format!(
@@ -39,7 +39,7 @@ impl ScenesMemoryStore {
             .read()
             .unwrap()
             .values()
-            .map(|p| p.to_owned())
+            .map(std::clone::Clone::clone)
             .collect()
     }
 
@@ -48,19 +48,20 @@ impl ScenesMemoryStore {
         if self.records.write().unwrap().remove(id).is_some() {
             Ok(())
         } else {
-            Err(Error::NotFound(id.to_owned()))
+            Err(Error::NotFound(id.clone()))
         }
     }
 
+    #[allow(clippy::unnecessary_wraps)]
     pub fn exists(&self, id: &Id) -> Result<bool> {
         Ok(self.records.read().unwrap().contains_key(id))
     }
 
     pub fn get(&self, id: &Id) -> Result<Entity> {
         if let Some(record) = self.records.read().unwrap().get(id) {
-            Ok(record.to_owned())
+            Ok(record.clone())
         } else {
-            Err(Error::NotFound(id.to_owned()))
+            Err(Error::NotFound(id.clone()))
         }
     }
 

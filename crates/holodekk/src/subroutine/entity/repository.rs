@@ -4,8 +4,8 @@ use mockall::{automock, predicate::*};
 use serde::{Deserialize, Serialize};
 
 use crate::entity::{self, repository::Result};
-use crate::images::SubroutineImageId;
 use crate::scene;
+use crate::subroutine::image;
 
 use super::{entity::Id, Entity, Status};
 
@@ -20,7 +20,7 @@ pub enum Event {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Query<'a> {
     pub scene_entity_id: Option<&'a scene::entity::Id>,
-    pub subroutine_image_id: Option<&'a SubroutineImageId>,
+    pub image_id: Option<&'a image::Id>,
 }
 
 impl<'a> Query<'a> {
@@ -33,8 +33,8 @@ impl<'a> Query<'a> {
         self
     }
 
-    pub fn for_subroutine_image(&mut self, id: &'a SubroutineImageId) -> &mut Self {
-        self.subroutine_image_id = Some(id);
+    pub fn for_image(&mut self, id: &'a image::Id) -> &mut Self {
+        self.image_id = Some(id);
         self
     }
 
@@ -42,7 +42,7 @@ impl<'a> Query<'a> {
     pub fn build(&self) -> Self {
         Self {
             scene_entity_id: self.scene_entity_id,
-            subroutine_image_id: self.subroutine_image_id,
+            image_id: self.image_id,
         }
     }
 }
@@ -51,7 +51,7 @@ impl<'a> entity::repository::Query for Query<'a> {
     type Entity = Entity;
 
     fn matches(&self, record: &Entity) -> bool {
-        if self.scene_entity_id.is_none() && self.subroutine_image_id.is_none() {
+        if self.scene_entity_id.is_none() && self.image_id.is_none() {
             true
         } else {
             if let Some(scene_entity_id) = self.scene_entity_id {
@@ -59,8 +59,8 @@ impl<'a> entity::repository::Query for Query<'a> {
                     return false;
                 }
             }
-            if let Some(subroutine_image_id) = self.subroutine_image_id {
-                if subroutine_image_id != &record.subroutine_image_id {
+            if let Some(subroutine_image_id) = self.image_id {
+                if subroutine_image_id != &record.image_id {
                     return false;
                 }
             }

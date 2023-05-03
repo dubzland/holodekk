@@ -159,7 +159,7 @@ impl scene::entity::Repository for Etcd {
                 scene.name = name;
             }
             if let Some(status) = status {
-                scene.status = status.clone();
+                scene.status = status;
             }
 
             client
@@ -170,56 +170,6 @@ impl scene::entity::Repository for Etcd {
             Err(Error::NotFound(id.clone()))
         }
     }
-
-    // async fn scenes_watch(&self) -> EntityRepositoryResult<WatchHandle<SceneEvent>> {
-    //     let mut client = self.client.clone();
-    //     let options = etcd_client::WatchOptions::new()
-    //         .with_prefix()
-    //         .with_prev_key();
-
-    //     let (etcd_watcher, stream) = client.watch(scene_key(None), Some(options)).await?;
-
-    //     let (etcd_handle, rx) = EtcdWatcher::start(etcd_watcher, stream);
-
-    //     let id = WatchId::generate();
-    //     self.scene_watchers
-    //         .write()
-    //         .unwrap()
-    //         .insert(id.clone(), etcd_handle);
-
-    //     let handle = WatchHandle::new(id, rx);
-
-    //     // let stream = ScenesEventStream::new(event_rx);
-    //     // let handle = WatchHandle::new(watcher, stream);
-    //     Ok(handle)
-    // }
-
-    // async fn scenes_stop_watch(&self, watcher: WatchHandle<SceneEvent>) {
-    //     let mut watch_handle = self
-    //         .scene_watchers
-    //         .write()
-    //         .unwrap()
-    //         .remove(&watcher.id)
-    //         .unwrap();
-    //     watch_handle.watcher.cancel().await.unwrap();
-    //     watch_handle.handle.await.unwrap();
-    // }
-
-    // async fn scenes_stop_all_watchers(&self) {
-    //     let ids: Vec<WatchId> = self
-    //         .scene_watchers
-    //         .read()
-    //         .unwrap()
-    //         .keys()
-    //         .map(|k| k.to_owned())
-    //         .collect();
-    //     for id in ids {
-    //         let mut watch_handle = self.scene_watchers.write().unwrap().remove(&id).unwrap();
-    //         debug!("canceling watcher {}", id);
-    //         watch_handle.watcher.cancel().await.unwrap();
-    //         drop(watch_handle);
-    //     }
-    // }
 }
 
 // #[cfg(test)]
