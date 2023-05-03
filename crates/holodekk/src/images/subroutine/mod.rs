@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::enums::SubroutineKind;
+use crate::subroutine;
 
 use super::{ImageId, ImageName};
 
@@ -13,11 +13,11 @@ pub struct SubroutineImage {
     pub id: SubroutineImageId,
     pub name: ImageName,
     pub path: PathBuf,
-    pub kind: SubroutineKind,
+    pub kind: subroutine::Kind,
 }
 
 impl SubroutineImage {
-    pub fn new<P>(name: ImageName, path: P, kind: SubroutineKind) -> Self
+    pub fn new<P>(name: ImageName, path: P, kind: subroutine::Kind) -> Self
     where
         P: Into<PathBuf>,
     {

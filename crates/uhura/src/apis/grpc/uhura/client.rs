@@ -7,11 +7,11 @@ use crate::entities::UhuraStatus;
 use super::proto::{entities::RpcUhuraStatusRequest, RpcUhuraClient};
 
 #[derive(Clone, Debug)]
-pub struct UhuraApiClient {
+pub struct ApiClient {
     inner: RpcUhuraClient<Channel>,
 }
 
-impl UhuraApiClient {
+impl ApiClient {
     pub fn new(channel: Channel) -> Self {
         Self {
             inner: RpcUhuraClient::new(channel),

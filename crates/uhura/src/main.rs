@@ -4,7 +4,6 @@ use std::{
     os::{fd::RawFd, unix::io::FromRawFd},
     panic,
     path::PathBuf,
-    sync::Arc,
 };
 
 use clap::Parser;
@@ -26,9 +25,6 @@ use holodekk::utils::{
     signals::{SignalKind, Signals},
     ConnectionInfoError,
 };
-
-use uhura::config::UhuraConfig;
-use uhura::server::start_uhura_server;
 
 #[derive(thiserror::Error, Debug)]
 enum Error {
@@ -84,13 +80,13 @@ pub struct Options {
 fn main() -> Result<()> {
     let options = Options::parse();
 
-    let config = Arc::new(UhuraConfig::new(
+    let config = uhura::Config::new(
         &options.id,
         &options.name,
         &options.data_root,
         &options.exec_root,
         &options.bin_path,
-    ));
+    );
 
     // Perform the initial fork
     match unsafe { fork() } {
@@ -131,8 +127,8 @@ fn main() -> Result<()> {
         }
         Ok(ForkResult::Child) => {}
         Err(err) => {
-            error!("Failed to fork worker: {}", err);
-            panic!("fork() of the subroutine process failed: {}", err);
+            error!("Failed to fork worker: {err}");
+            panic!("fork() of the subroutine process failed: {err}");
         }
     };
 
@@ -153,9 +149,9 @@ fn main() -> Result<()> {
             .expect("Failed to create root directory for uhura");
     }
 
-    main_loop(&options, config.clone())?;
+    main_loop(&options, &config)?;
 
-    cleanup(config);
+    cleanup(&config);
     info!("Shutdown complete.");
     Ok(())
 }
@@ -163,9 +159,9 @@ fn main() -> Result<()> {
 #[tokio::main]
 async fn main_loop(
     options: &Options,
-    config: Arc<UhuraConfig>,
+    config: &uhura::Config,
 ) -> std::result::Result<(), std::io::Error> {
-    let uhura_server = start_uhura_server(config.clone());
+    let uhura_server = uhura::start(config);
 
     // Notify the holodekk of our state
     debug!("Sending status update to parent");
@@ -180,13 +176,13 @@ async fn main_loop(
         SignalKind::Int | SignalKind::Term | SignalKind::Quit => {
             debug!("Termination signal received.  Processing shutdown.");
 
-            uhura_server.stop().await.unwrap();
+            uhura_server.stop().await;
         }
     }
     Ok(())
 }
 
-fn cleanup(config: Arc<UhuraConfig>) {
+fn cleanup(config: &uhura::Config) {
     if config.scene_paths().socket().exists() {
         match std::fs::remove_file(config.scene_paths().socket()) {
             Ok(_) => {}
@@ -217,7 +213,7 @@ fn send_status_update(options: &Options) {
 
 fn write_pidfile(pidfile: &PathBuf, pid: Pid) {
     info!("forked worker with pid: {}", pid);
-    if let Err(err) = fs::write(pidfile, format!("{}", pid)) {
+    if let Err(err) = fs::write(pidfile, format!("{pid}")) {
         panic!("write() to pidfile {} failed: {}", pidfile.display(), err);
     }
 }

@@ -10,7 +10,7 @@ use log::error;
 use mockall::automock;
 use serde::Serialize;
 
-use crate::services::EntityServiceError;
+use crate::entity;
 
 #[cfg_attr(test, automock)]
 pub trait ApiState<S1, S2>: Send + Sync + 'static
@@ -22,7 +22,7 @@ where
     fn subroutine_entity_service(&self) -> Arc<S2>;
 }
 
-pub struct CreateResponse<T>(T);
+pub struct CreateResponse<T>(pub T);
 impl<T> IntoResponse for CreateResponse<T>
 where
     T: Serialize,
@@ -39,7 +39,7 @@ impl IntoResponse for DeleteResponse {
     }
 }
 
-pub struct GetResponse<T>(T);
+pub struct GetResponse<T>(pub T);
 impl<T> IntoResponse for GetResponse<T>
 where
     T: Serialize,
@@ -49,27 +49,24 @@ where
     }
 }
 
-impl IntoResponse for EntityServiceError {
+impl IntoResponse for entity::service::Error {
     fn into_response(self) -> Response {
         match self {
-            EntityServiceError::NotUnique(_) => (StatusCode::CONFLICT, self.to_string()),
-            EntityServiceError::NotFound(_)
-            | EntityServiceError::InvalidEntityId(_)
-            | EntityServiceError::InvalidImageId(_) => (StatusCode::NOT_FOUND, self.to_string()),
-            EntityServiceError::Repository(err) => {
+            entity::service::Error::NotUnique(_) => (StatusCode::CONFLICT, self.to_string()),
+            entity::service::Error::NotFound(_)
+            | entity::service::Error::InvalidEntityId(_)
+            | entity::service::Error::InvalidImageId(_) => {
+                (StatusCode::NOT_FOUND, self.to_string())
+            }
+            entity::service::Error::Repository(err) => {
                 error!("Repository error: {:?}", err);
                 (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
             }
-            EntityServiceError::Unexpected(err) => {
+            entity::service::Error::Unexpected(err) => {
                 error!("Unexpected error: {:?}", err);
                 (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
             }
         }
         .into_response()
     }
-}
-
-pub mod entity {
-    pub mod scene;
-    pub mod subroutine;
 }

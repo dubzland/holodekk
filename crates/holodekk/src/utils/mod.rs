@@ -1,9 +1,10 @@
 pub mod fs;
+pub mod grpc;
+pub mod http;
 pub mod libsee;
 pub mod logger;
 pub mod pipes;
 pub mod process;
-pub mod servers;
 pub mod signals;
 pub mod streams;
 
@@ -32,27 +33,11 @@ pub enum ConnectionInfo {
 }
 
 impl ConnectionInfo {
-    pub fn from_options<P>(
-        port: Option<&u16>,
-        addr: Option<&Ipv4Addr>,
-        socket: Option<P>,
-    ) -> Result<Self, ConnectionInfoError>
-    where
-        P: AsRef<Path> + Into<PathBuf>,
-    {
-        if let Some(port) = port {
-            Ok(Self::tcp(port, addr))
-        } else if let Some(socket) = socket {
-            Ok(Self::unix(socket))
-        } else {
-            Err(ConnectionInfoError::NotEnoughValues)
-        }
-    }
-
+    #[must_use]
     pub fn tcp(port: &u16, addr: Option<&Ipv4Addr>) -> Self {
         Self::Tcp {
             port: port.to_owned(),
-            addr: addr.unwrap_or(&Ipv4Addr::new(0, 0, 0, 0)).to_owned(),
+            addr: *addr.unwrap_or(&Ipv4Addr::new(0, 0, 0, 0)),
         }
     }
 
@@ -64,19 +49,12 @@ impl ConnectionInfo {
             socket: socket.into(),
         }
     }
-
-    pub fn to_socket(&self) -> std::result::Result<String, ConnectionInfoError> {
-        match self {
-            ConnectionInfo::Tcp { .. } => Err(ConnectionInfoError::NotUnixSocket),
-            ConnectionInfo::Unix { socket } => Ok(socket.to_str().unwrap().to_owned()),
-        }
-    }
 }
 
 impl fmt::Display for ConnectionInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ConnectionInfo::Tcp { port, addr } => write!(f, "Port: {}, Address: {}", port, addr),
+            ConnectionInfo::Tcp { port, addr } => write!(f, "Port: {port}, Address: {addr}"),
             ConnectionInfo::Unix { socket } => write!(f, "Path: {}", socket.display()),
         }
     }

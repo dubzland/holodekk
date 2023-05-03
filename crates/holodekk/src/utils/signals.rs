@@ -35,6 +35,7 @@ impl Default for Signals {
 }
 
 impl Signals {
+    #[must_use]
     pub fn new() -> Self {
         let signal_map = [
             (signal::unix::SignalKind::interrupt(), SignalKind::Int),
@@ -52,7 +53,7 @@ impl Signals {
                             "failed to initialize stream handler for signal {:?}, err: {}",
                             signal,
                             e
-                        )
+                        );
                     })
                     .ok()
             })
@@ -65,7 +66,7 @@ impl Future for Signals {
     type Output = SignalKind;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        for (signal, fut) in self.signals.iter_mut() {
+        for (signal, fut) in &mut self.signals {
             if fut.poll_recv(cx).is_ready() {
                 return Poll::Ready(*signal);
             }
