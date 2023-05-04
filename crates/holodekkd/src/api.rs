@@ -1,13 +1,11 @@
 use std::sync::Arc;
 
 use axum::{response::IntoResponse, routing::get, Json, Router};
-use log::warn;
 use serde::{Deserialize, Serialize};
 
 use holodekk::apis::http::ApiState;
 use holodekk::scene;
 use holodekk::subroutine;
-use holodekk::utils::{http, ConnectionInfo};
 
 pub struct HolodekkdApiState<R>
 where
@@ -58,32 +56,6 @@ where
     Router::new()
         .route("/health", get(health))
         .nest("/scenes", scene::entity::api::router(api_state))
-}
-
-pub struct Server {
-    handle: http::server::Handle,
-}
-
-impl Server {
-    pub fn new(handle: http::server::Handle) -> Self {
-        Self { handle }
-    }
-
-    pub fn start<R>(config: &ConnectionInfo, repo: Arc<R>) -> Self
-    where
-        R: scene::entity::Repository + subroutine::entity::Repository,
-    {
-        let state = HolodekkdApiState::new(repo);
-        let handle = http::server::start(config, router(Arc::new(state)));
-
-        Self::new(handle)
-    }
-
-    pub async fn stop(&mut self) {
-        if let Err(err) = self.handle.stop().await {
-            warn!("Error stopping http server: {err}");
-        }
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]

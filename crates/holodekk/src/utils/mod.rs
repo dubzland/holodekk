@@ -1,12 +1,4 @@
-pub mod fs;
-pub mod grpc;
-pub mod http;
-pub mod libsee;
-pub mod logger;
-pub mod pipes;
-pub mod process;
-pub mod signals;
-pub mod streams;
+//! System-wide utilities
 
 use std::fmt;
 use std::net::Ipv4Addr;
@@ -14,25 +6,38 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(thiserror::Error, Debug)]
-pub enum ConnectionInfoError {
-    #[error("Options for both TCP and UDS were supplied")]
-    TooManyValues,
-    #[error("Neither options were provided")]
-    NotEnoughValues,
-    #[error("Not a Unix socket")]
-    NotUnixSocket,
-}
-
+/// Simple structure to represent the details for a given connection.
+///
+/// Used as both an input (to specify configuration) and an output (to provide connection
+/// details).
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum ConnectionInfo {
     /// TCP based socket
-    Tcp { port: u16, addr: Ipv4Addr },
+    Tcp {
+        /// Numeric tcp port number
+        port: u16,
+        /// IPV4 Address (can be 0.0.0.0 to represent all interfaces)
+        addr: Ipv4Addr,
+    },
     /// Unix domain socket
-    Unix { socket: PathBuf },
+    Unix {
+        /// Filesystem path to the Unix socket file.
+        socket: PathBuf,
+    },
 }
 
 impl ConnectionInfo {
+    /// Create a [`ConnectionInfo`] based on the given port.
+    ///
+    /// Optionally accepts an IPV4 address.  Will default to `0.0.0.0`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use holodekk::utils::ConnectionInfo;
+    ///
+    /// let tcp = ConnectionInfo::tcp(&1234, None);
+    /// ```
     #[must_use]
     pub fn tcp(port: &u16, addr: Option<&Ipv4Addr>) -> Self {
         Self::Tcp {
@@ -41,6 +46,18 @@ impl ConnectionInfo {
         }
     }
 
+    /// Create a [`ConnectionInfo`] instance based on the given socket path.
+    ///
+    /// The path does not need to exist.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use holodekk::utils::ConnectionInfo;
+    ///
+    /// let udp = ConnectionInfo::unix("/var/lib/holodekk.sock");
+    /// ```
+    #[must_use]
     pub fn unix<P>(socket: P) -> Self
     where
         P: AsRef<Path> + Into<PathBuf>,
@@ -59,3 +76,13 @@ impl fmt::Display for ConnectionInfo {
         }
     }
 }
+
+pub mod fs;
+pub mod libsee;
+pub mod logger;
+pub mod pipes;
+pub mod process;
+pub mod server;
+pub use server::Server;
+pub mod signals;
+pub mod streams;

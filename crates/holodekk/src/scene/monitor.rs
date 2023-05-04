@@ -9,7 +9,7 @@ use tokio::task::JoinHandle;
 use crate::scene;
 
 use crate::utils::{
-    fs::ensure_directory,
+    fs::{ensure_directory, remove_directory},
     process::{daemonize, terminate_daemon, DaemonTerminationError, DaemonizeError},
 };
 
@@ -273,7 +273,7 @@ impl Monitor {
 //                             subroutine_pidfile.display()
 //                         );
 //                         warn!("Removing directory: {}", entry.path().display());
-//                         std::fs::remove_dir_all(entry.path()).unwrap();
+//                         remove_directory(entry.path()).unwrap();
 //                         None
 //                     }
 //                     Ok(_) => {
