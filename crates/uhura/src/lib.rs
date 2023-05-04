@@ -1,5 +1,6 @@
 pub mod apis;
 pub mod client;
+pub use client::Client;
 mod config;
 pub use config::*;
 pub mod entities;

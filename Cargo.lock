@@ -2075,6 +2075,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 
 [[package]]
+name = "uhura"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "clap",
+ "env_logger",
+ "futures-util",
+ "holodekk",
+ "log",
+ "mio",
+ "mockall",
+ "nix",
+ "prost",
+ "rstest",
+ "serde",
+ "serde_json",
+ "syslog",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-build",
+ "tower",
+]
+
+[[package]]
 name = "unicode-ident"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -8,7 +8,7 @@ use tokio::net::UnixStream;
 use tonic::transport::{Channel, Endpoint, Uri};
 use tower::service_fn;
 
-use holodekk::errors::grpc::GrpcClientResult;
+use holodekk::errors::grpc::ClientResult;
 
 use crate::apis::grpc::uhura::ApiClient;
 
@@ -26,7 +26,7 @@ impl Client {
     ///
     /// - Failure to generate endpoint address
     /// - Error connecting to server
-    pub async fn connect_tcp(port: u16, addr: Ipv4Addr) -> GrpcClientResult<Client> {
+    pub async fn connect_tcp(port: u16, addr: Ipv4Addr) -> ClientResult<Client> {
         let connect_address = format!("http://{addr}:{port}");
         let channel = Endpoint::from_shared(connect_address)?.connect().await?;
         Ok(Self::new(channel))
@@ -36,7 +36,7 @@ impl Client {
     ///
     /// - Failure to generate endpoint address
     /// - Error connecting to server
-    pub async fn connect_unix<P>(socket: P) -> GrpcClientResult<Client>
+    pub async fn connect_unix<P>(socket: P) -> ClientResult<Client>
     where
         P: AsRef<Path> + Into<PathBuf> + Sync + Sync,
     {

@@ -1,7 +1,7 @@
 use std::{
     fs::{self, File},
     io::Write,
-    os::{fd::RawFd, unix::io::FromRawFd},
+    os::unix::io::FromRawFd,
     panic,
     path::PathBuf,
 };
@@ -9,27 +9,23 @@ use std::{
 use clap::Parser;
 use log::{debug, error, info, warn, LevelFilter};
 use nix::{
-    fcntl::{open, OFlag},
-    sys::{
-        signal::{sigprocmask, SigSet, SigmaskHow, Signal, SIGCHLD, SIGINT, SIGQUIT, SIGTERM},
-        stat::Mode,
-    },
+    sys::signal::{sigprocmask, SigSet, SigmaskHow, Signal, SIGCHLD, SIGINT, SIGQUIT, SIGTERM},
     unistd::{dup2, fork, setsid, ForkResult, Pid},
 };
 use serde::Serialize;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
-use holodekk::entities::{SceneEntityId, SceneName};
+// use holodekk::entities::{SceneEntityId, SceneName};
+use holodekk::scene;
 use holodekk::utils::{
+    fs::open_dev_null,
     libsee,
+    server::Handle,
     signals::{SignalKind, Signals},
-    ConnectionInfoError,
 };
 
 #[derive(thiserror::Error, Debug)]
 enum Error {
-    #[error("Invalid listener configuration")]
-    InvalidListenOptions(#[from] ConnectionInfoError),
     #[error("General IO error occurred")]
     Io(#[from] std::io::Error),
     #[error("General OS error occurred")]
@@ -54,11 +50,11 @@ impl MessageProjectorPid {
 pub struct Options {
     /// ID of the Scene this projector is running under
     #[arg(long, required = true)]
-    id: SceneEntityId,
+    id: scene::entity::Id,
 
     /// Name of the Scene is projector is running under
     #[arg(long, required = true)]
-    name: SceneName,
+    name: scene::entity::Name,
 
     /// Data root path
     #[arg(long, default_value = "/var/lib/holodekk")]
@@ -105,7 +101,7 @@ fn main() -> Result<()> {
     info!("uhura coming online with options: {:?}", options);
 
     // Redirect all streams to /dev/null
-    let (dev_null_rd, dev_null_wr) = open_dev_null();
+    let (dev_null_rd, dev_null_wr) = open_dev_null()?;
     dup2(dev_null_rd, libsee::STDIN_FILENO).expect("Failed to redirect stdin to /dev/null");
     dup2(dev_null_wr, libsee::STDOUT_FILENO).expect("Failed to redirect stdout to /dev/null");
     dup2(dev_null_wr, libsee::STDERR_FILENO).expect("Failed to redirect stderr to /dev/null");
@@ -176,7 +172,7 @@ async fn main_loop(
         SignalKind::Int | SignalKind::Term | SignalKind::Quit => {
             debug!("Termination signal received.  Processing shutdown.");
 
-            uhura_server.stop().await;
+            uhura_server.stop().await.unwrap();
         }
     }
     Ok(())
@@ -223,24 +219,6 @@ fn signal_mask(signals: &[Signal]) -> SigSet {
         mask.add(*sig);
         mask
     })
-}
-
-fn open_dev_null() -> (RawFd, RawFd) {
-    let rd = open(
-        "/dev/null",
-        OFlag::O_RDONLY | OFlag::O_CLOEXEC,
-        Mode::empty(),
-    )
-    .expect("Opening /dev/null for reading failed");
-
-    let wr = open(
-        "/dev/null",
-        OFlag::O_WRONLY | OFlag::O_CLOEXEC,
-        Mode::empty(),
-    )
-    .expect("Opening /dev/null for writing failed");
-
-    (rd, wr)
 }
 
 fn init_logger(level: LevelFilter) {

@@ -85,4 +85,3 @@ pub mod process;
 pub mod server;
 pub use server::Server;
 pub mod signals;
-pub mod streams;
