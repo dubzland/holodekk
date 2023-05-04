@@ -12,7 +12,6 @@ use holodekk::process::{pidfile, syncpipe};
 use holodekk::scene;
 use holodekk::utils::{
     fs::{ensure_directory, open_dev_null},
-    libsee,
     server::Handle,
     signals, Signals,
 };
@@ -68,13 +67,15 @@ fn main() -> Result<()> {
 
     // Perform the initial fork
     match unsafe { fork() } {
-        Ok(ForkResult::Parent { .. }) => {
-            libsee::_exit(0);
-        }
+        Ok(ForkResult::Parent { .. }) => unsafe {
+            libc::_exit(0);
+        },
         Ok(ForkResult::Child) => (),
         Err(err) => {
             error!("Failed to fork from main thres: {}", err);
-            libsee::_exit(1);
+            unsafe {
+                libc::_exit(1);
+            }
         }
     }
 
@@ -84,9 +85,9 @@ fn main() -> Result<()> {
 
     // Redirect all streams to /dev/null
     let (dev_null_rd, dev_null_wr) = open_dev_null()?;
-    dup2(dev_null_rd, libsee::STDIN_FILENO).expect("Failed to redirect stdin to /dev/null");
-    dup2(dev_null_wr, libsee::STDOUT_FILENO).expect("Failed to redirect stdout to /dev/null");
-    dup2(dev_null_wr, libsee::STDERR_FILENO).expect("Failed to redirect stderr to /dev/null");
+    dup2(dev_null_rd, libc::STDIN_FILENO).expect("Failed to redirect stdin to /dev/null");
+    dup2(dev_null_wr, libc::STDOUT_FILENO).expect("Failed to redirect stdout to /dev/null");
+    dup2(dev_null_wr, libc::STDERR_FILENO).expect("Failed to redirect stderr to /dev/null");
 
     // new session
     setsid().expect("Failed to create new session");
@@ -102,7 +103,9 @@ fn main() -> Result<()> {
         Ok(ForkResult::Parent { child, .. }) => {
             pidfile::write_pid(config.scene_paths().pidfile(), child.as_raw())
                 .expect("Failed to write pid to pidfile: {err}");
-            libsee::_exit(1);
+            unsafe {
+                libc::_exit(1);
+            }
         }
         Ok(ForkResult::Child) => {}
         Err(err) => {

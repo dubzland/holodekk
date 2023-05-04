@@ -78,7 +78,6 @@ impl fmt::Display for ConnectionInfo {
 }
 
 pub mod fs;
-pub mod libsee;
 pub mod logger;
 pub mod server;
 pub use server::Server;

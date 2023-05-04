@@ -1,8 +1,19 @@
+//! Syslog initialization
+
 use std::panic;
 
 pub use log::{debug, error, LevelFilter};
 use syslog::{BasicLogger, Facility, Formatter3164};
 
+/// Initialize logging via the syslog facility.
+///
+/// # Examples
+///
+/// ```rust
+/// use holodekk::utils::logger;
+///
+/// logger::init("myapp", log::LevelFilter::Debug);
+/// ```
 pub fn init(process: &str, level: log::LevelFilter) {
     let formatter = Formatter3164 {
         facility: Facility::LOG_USER,
