@@ -21,6 +21,7 @@ impl Paths {
     ///
     /// Following convention over configuration, only the two top-level directories (`data_root`
     /// and `exec_root`) are configurable.  All child directories are derived from there.
+    #[must_use]
     pub fn new<P>(data_root: P, exec_root: P, bin_root: P) -> Self
     where
         P: AsRef<Path>,
@@ -40,26 +41,31 @@ impl Paths {
     }
 
     /// Root directory for storing persistent data (images, configuration, etc)
+    #[must_use]
     pub fn data_root(&self) -> &PathBuf {
         &self.data_root
     }
 
     /// Root directory for storing runtime data (sockets, pipes, etc)
+    #[must_use]
     pub fn exec_root(&self) -> &PathBuf {
         &self.exec_root
     }
 
     /// Root directory within `exec_root` for storing runtime scene information
+    #[must_use]
     pub fn scenes_root(&self) -> &PathBuf {
         &self.scenes_root
     }
 
     /// Root directory with in the `exec_root` for storing runtime subroutine information
+    #[must_use]
     pub fn subroutines_root(&self) -> &PathBuf {
         &self.subroutines_root
     }
 
     /// Directory containing Holodekk executables
+    #[must_use]
     pub fn bin_root(&self) -> &PathBuf {
         &self.bin_root
     }

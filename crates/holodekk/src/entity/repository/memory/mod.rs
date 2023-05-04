@@ -1,3 +1,5 @@
+//! In-memory repository implementation
+
 pub mod database;
 pub use database::Database;
 mod scenes;
@@ -14,6 +16,7 @@ use tokio::sync::broadcast::{channel, Sender};
 use crate::entity;
 use crate::scene;
 
+/// An in-memory repository (mainly for testing)
 #[derive(Debug)]
 pub struct Memory {
     db: Arc<Database>,
@@ -31,6 +34,8 @@ impl Default for Memory {
 }
 
 impl Memory {
+    /// Construct a new memory repository
+    #[must_use]
     pub fn new(db: Arc<Database>) -> Self {
         Self {
             db,

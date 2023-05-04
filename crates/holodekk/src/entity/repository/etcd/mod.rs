@@ -1,4 +1,5 @@
 //! Etcd based implementation of the [Repository](super::Repository).
+
 use std::sync::RwLock;
 
 use async_trait::async_trait;
@@ -12,7 +13,7 @@ use crate::entity::{
 };
 use crate::scene;
 
-/// Wrapper for managing an instance of a [WatchTask].
+/// Wrapper for managing an instance of a [`WatchTask`].
 pub struct WatchTaskHandle<T> {
     watcher: Watcher,
     handle: tokio::task::JoinHandle<()>,
@@ -35,6 +36,7 @@ where
     T: From<Event> + std::fmt::Debug + Clone + Send + 'static,
 {
     /// Start a `tokio` task to monitor for incoming `Etcd` events.
+    #[must_use]
     pub fn start(watcher: Watcher, stream: WatchStream) -> WatchTaskHandle<T> {
         let (tx, _rx) = channel(32);
         let watch_sender = tx.clone();
@@ -71,6 +73,7 @@ where
 ///
 /// Optionally allows a specific id to be appended for managing a specific
 /// [`crate::scene::Entity`]
+#[must_use]
 pub fn scene_key(partial: Option<&entity::Id>) -> String {
     if let Some(partial) = partial {
         format!("/scenes/{partial}")
@@ -83,6 +86,7 @@ pub fn scene_key(partial: Option<&entity::Id>) -> String {
 ///
 /// Optionally allows a specific id to be appended for managing a specific
 /// [`crate::subroutine::Entity`]
+#[must_use]
 pub fn subroutine_key(partial: Option<&entity::Id>) -> String {
     if let Some(partial) = partial {
         format!("/subroutines/{partial}")

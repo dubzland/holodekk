@@ -1,3 +1,5 @@
+//! HTTP specific api elements
+
 use std::sync::Arc;
 
 use axum::{
@@ -19,10 +21,13 @@ where
     S1: Send + Sync + 'static,
     S2: Send + Sync + 'static,
 {
+    /// returns an instance of the `scene` [`Service`][`crate::scene::entity::Service`]
     fn scene_entity_service(&self) -> Arc<S1>;
+    /// returns an instance of the `subroutine` [`Service`][`crate::subroutine::entity::Service`]
     fn subroutine_entity_service(&self) -> Arc<S2>;
 }
 
+/// Ensures create actions return a 201 - Created code
 pub struct CreateResponse<T>(pub T);
 impl<T> IntoResponse for CreateResponse<T>
 where
@@ -33,6 +38,7 @@ where
     }
 }
 
+/// Ensures delete responses return a 204 - No Content code
 pub struct DeleteResponse;
 impl IntoResponse for DeleteResponse {
     fn into_response(self) -> Response {
@@ -40,6 +46,7 @@ impl IntoResponse for DeleteResponse {
     }
 }
 
+/// Ensures get responses return a 200 - OK code
 pub struct GetResponse<T>(pub T);
 impl<T> IntoResponse for GetResponse<T>
 where
