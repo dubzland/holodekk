@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use mockall::{automock, predicate::*};
 use serde::{Deserialize, Serialize};
 
-use crate::entity::{self, repository::Result};
+use crate::entity::repository::{Query as RepositoryQuery, Result};
 use crate::scene;
 use crate::subroutine::image;
 
@@ -73,7 +73,7 @@ impl<'a> Query<'a> {
     }
 }
 
-impl<'a> entity::repository::Query for Query<'a> {
+impl<'a> RepositoryQuery for Query<'a> {
     type Entity = Entity;
 
     fn matches(&self, record: &Entity) -> bool {

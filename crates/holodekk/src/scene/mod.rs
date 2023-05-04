@@ -1,7 +1,10 @@
+//! Scenes
+
 use std::path::PathBuf;
 
 use super::Paths as HolodekkPaths;
 
+/// Paths (on disk) where a given scene is running
 #[derive(Clone, Debug)]
 pub struct Paths {
     root: PathBuf,
@@ -10,6 +13,8 @@ pub struct Paths {
 }
 
 impl Paths {
+    /// Builds a set of paths based on the currently running Holodekk instance for this scene.
+    #[must_use]
     pub fn build(paths: &HolodekkPaths, name: &entity::Name) -> Self {
         let mut root = paths.scenes_root().clone();
         root.push(name);
@@ -27,14 +32,20 @@ impl Paths {
         }
     }
 
+    /// The root directory for this scene
+    #[must_use]
     pub fn root(&self) -> &PathBuf {
         &self.root
     }
 
+    /// Location on disk of this scene projector's pidfile
+    #[must_use]
     pub fn pidfile(&self) -> &PathBuf {
         &self.pidfile
     }
 
+    /// Location on disk of this scene projector's socket
+    #[must_use]
     pub fn socket(&self) -> &PathBuf {
         &self.socket
     }

@@ -36,8 +36,7 @@ impl<'f> Input<'f> {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Find: Send + Sync + 'static {
-    /// Retrieves subroutine instances from the repository based on the input data from the
-    /// repository.
+    /// Retrieves subroutine instances from the repository based on the input data.
     async fn find<'a>(&self, input: &'a Input<'a>) -> Result<Vec<Entity>>;
 }
 

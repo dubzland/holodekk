@@ -3,48 +3,55 @@ use log::{trace, warn};
 #[cfg(test)]
 use mockall::automock;
 
-use crate::entity;
-use crate::scene;
+use crate::entity::service::{Error, Result};
+use crate::scene::{
+    entity::{repository::Query, Repository},
+    Entity,
+};
 
+/// Input requirements for [`Create::create()`]
 #[derive(Clone, Debug)]
 pub struct Input<'c> {
+    /// name to assign to the [`Entity`]
     pub name: &'c str,
 }
 
 impl<'c> Input<'c> {
+    /// Shorthand for instanciating a new [`Input`] instance
+    #[must_use]
     pub fn new(name: &'c str) -> Self {
         Self { name }
     }
 }
 
+/// Store an [`Entity`] in the [`Repository`]
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Create: Send + Sync + 'static {
-    async fn create<'a>(&self, input: &'a Input<'a>) -> entity::service::Result<scene::Entity>;
+    /// Creates an entity using the provided [`Input`], and stores it in the [`Repository`]
+    async fn create<'a>(&self, input: &'a Input<'a>) -> Result<Entity>;
 }
 
-impl From<&Input<'_>> for scene::Entity {
-    fn from(input: &Input<'_>) -> scene::Entity {
-        scene::Entity::new(input.name.into())
+impl From<&Input<'_>> for Entity {
+    fn from(input: &Input<'_>) -> Entity {
+        Entity::new(input.name.into())
     }
 }
 
 #[async_trait]
 impl<R> Create for super::Service<R>
 where
-    R: scene::entity::Repository,
+    R: Repository,
 {
-    async fn create<'a>(&self, input: &'a Input<'a>) -> entity::service::Result<scene::Entity> {
+    async fn create<'a>(&self, input: &'a Input<'a>) -> Result<Entity> {
         trace!("SceneEntityService#create({:?})", input);
 
         // ensure a scene does not exist for this name
-        let query = scene::entity::repository::Query::builder()
-            .name_eq(input.name)
-            .build();
+        let query = Query::builder().name_eq(input.name).build();
 
         if self.repo.scenes_exists(query).await? {
             warn!("scene already exists for name: {}", input.name);
-            Err(entity::service::Error::NotUnique(input.name.into()))
+            Err(Error::NotUnique(input.name.into()))
         } else {
             let scene = self.repo.scenes_create(input.into()).await?;
             Ok(scene)

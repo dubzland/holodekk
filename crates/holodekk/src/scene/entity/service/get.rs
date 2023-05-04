@@ -3,39 +3,51 @@ use log::trace;
 #[cfg(test)]
 use mockall::automock;
 
-use crate::entity;
-use crate::scene;
+use crate::entity::{
+    repository::Error as RepositoryError,
+    service::{Error, Result},
+};
+use crate::scene::{
+    entity::{Id, Repository},
+    Entity,
+};
 
+/// Input requirements for [`Get::get()`]
 #[derive(Clone, Debug)]
 pub struct Input<'g> {
+    /// Specific entity id to retrieve from the repository
     pub id: &'g str,
 }
 
 impl<'g> Input<'g> {
+    /// Shorthand for instantiating a new [`Input`] struct.
+    #[must_use]
     pub fn new(id: &'g str) -> Self {
         Self { id }
     }
 }
 
+/// Retrieve a given [`scene::Entity`][`Entity`] from the repository.
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Get: Send + Sync + 'static {
-    async fn get<'a>(&self, input: &'a Input<'a>) -> entity::service::Result<scene::Entity>;
+    /// Retrieves the scene entity matching the input from the repository.
+    async fn get<'a>(&self, input: &'a Input<'a>) -> Result<Entity>;
 }
 
 #[async_trait]
 impl<R> Get for super::Service<R>
 where
-    R: scene::entity::Repository,
+    R: Repository,
 {
-    async fn get<'a>(&self, input: &'a Input<'a>) -> entity::service::Result<scene::Entity> {
+    async fn get<'a>(&self, input: &'a Input<'a>) -> Result<Entity> {
         trace!("scene::entity::Service#get({:?}", input);
 
-        let id: scene::entity::Id = input.id.parse()?;
+        let id: Id = input.id.parse()?;
 
         let scene = self.repo.scenes_get(&id).await.map_err(|err| match err {
-            entity::repository::Error::NotFound(id) => entity::service::Error::NotFound(id),
-            _ => entity::service::Error::from(err),
+            RepositoryError::NotFound(id) => Error::NotFound(id),
+            _ => Error::from(err),
         })?;
 
         Ok(scene)
