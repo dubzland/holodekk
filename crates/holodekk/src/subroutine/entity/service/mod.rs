@@ -1,10 +1,14 @@
+//! Entity service for the `subroutine` [`Repository`].
+
 use std::sync::Arc;
 
 use crate::subroutine::entity::Repository;
 
+/// Shortcut supertrait for expressing full service implementation.
 pub trait Methods: Create + Delete + Find + Get {}
 impl<T> Methods for T where T: Create + Delete + Find + Get {}
 
+/// Service for interacting with the `Subroutine` entity [`repository`][`Repository`].
 #[derive(Debug)]
 pub struct Service<R>
 where
@@ -17,17 +21,22 @@ impl<R> Service<R>
 where
     R: Repository,
 {
+    /// Wrap the given repository in a service instance.
     pub fn new(repo: Arc<R>) -> Self {
         Self { repo }
     }
 }
 
+/// Store a new [`Entity`][`crate::subroutine::Entity`] in the repository.
 pub mod create;
 pub use create::Create;
+/// Delete an existing [`Entity`][`crate::subroutine::Entity`] from the repository.
 pub mod delete;
 pub use delete::Delete;
+/// Find one or more [`Entities`][`crate::subroutine::Entity`] in the repository.
 pub mod find;
 pub use find::Find;
+/// Retrieve a single [`Entity`][`crate::subroutine::Entity`] from the repository.
 pub mod get;
 pub use get::Get;
 

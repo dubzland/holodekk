@@ -10,13 +10,19 @@ use crate::subroutine::{
 
 use super::Service;
 
+/// Input requirements for [`Create::create()`]
 #[derive(Clone, Debug)]
 pub struct Input<'a> {
+    /// [`Id`][`crate::scene::entity::Id`] of the `scene` entity to which this subroutine will
+    /// belong
     pub scene_entity_id: &'a str,
+    /// [`Id`][`image::Id`] of the `image` this subroutine will be running
     pub image_id: &'a str,
 }
 
 impl<'a> Input<'a> {
+    /// Shorthand for instanciating a new [`Input`] instance
+    #[must_use]
     pub fn new(scene_entity_id: &'a str, image_id: &'a str) -> Self {
         Self {
             scene_entity_id,
@@ -25,9 +31,11 @@ impl<'a> Input<'a> {
     }
 }
 
+/// Store an [`Entity`] in the [`Repository`]
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Create: Send + Sync + 'static {
+    /// Creates an entity using the provided [`Input`], and stores it in the [`Repository`]
     async fn create<'a>(&self, input: &'a Input<'a>) -> Result<Entity>;
 }
 

@@ -1,3 +1,5 @@
+//! The HTTP API for `subroutine` entity management.
+
 use std::sync::Arc;
 
 use axum::{
@@ -9,6 +11,7 @@ use crate::apis::http::ApiState;
 use crate::scene::entity::service::Methods as SceneMethods;
 use crate::subroutine::entity::service::Methods as SubroutineMethods;
 
+/// Axum router for handling subroutine requests.
 pub fn router<A, E, U>(state: Arc<A>) -> Router<Arc<A>>
 where
     A: ApiState<E, U>,
@@ -25,6 +28,7 @@ where
 }
 
 pub mod commands {
+    //! Api commands (CRUD) for `subroutine` entities
     mod create_subroutine;
     pub use create_subroutine::*;
     mod delete_subroutine;

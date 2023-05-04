@@ -1,3 +1,5 @@
+//! The HTTP API for `scene` entity management.
+
 use std::sync::Arc;
 
 use axum::{
@@ -9,6 +11,7 @@ use crate::apis::http::ApiState;
 use crate::scene;
 use crate::subroutine;
 
+/// Axum router for handling scene (and subroutine) requests.
 pub fn router<A, E, U>(state: Arc<A>) -> Router
 where
     A: ApiState<E, U>,
@@ -26,6 +29,7 @@ where
 }
 
 pub mod commands {
+    //! Api commands (CRUD) for `scene` entities
     mod create_scene;
     pub use create_scene::*;
     mod delete_scene;

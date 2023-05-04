@@ -7,6 +7,13 @@ use crate::entity;
 use crate::scene::entity::service::{get::Input as GetSceneInput, Get as GetScene};
 use crate::subroutine::entity::service::{delete::Input, Delete};
 
+/// Delete the given subroutine entity from the server
+///
+/// # Errors
+///
+/// - Scene id is invalid (or does not exist)
+/// - Subroutine id is invalid (or does not exist)
+/// - repository error occurred
 pub async fn delete_subroutine<A, E, U>(
     State(state): State<Arc<A>>,
     Path((scene, subroutine)): Path<(String, String)>,

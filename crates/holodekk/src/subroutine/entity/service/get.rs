@@ -13,20 +13,26 @@ use crate::subroutine::{
 
 use super::Service;
 
+/// Input requirements for [`Get::get()`]
 #[derive(Clone, Debug)]
 pub struct Input<'a> {
+    /// Specific entity id to retrieve from the repository
     pub id: &'a str,
 }
 
 impl<'a> Input<'a> {
+    /// Shorthand for instantiating a new [`Input`] struct.
+    #[must_use]
     pub fn new(id: &'a str) -> Self {
         Self { id }
     }
 }
 
+/// Retrieve a given [`subroutine::Entity`][`Entity`] from the repository.
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Get: Send + Sync + 'static {
+    /// Retrieves the subroutine entity matching the input from the repository.
     async fn get<'a>(&self, input: &'a Input<'a>) -> Result<Entity>;
 }
 

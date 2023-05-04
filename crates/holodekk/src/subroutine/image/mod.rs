@@ -1,3 +1,9 @@
+//! Subroutine images.
+//!
+//! Each [`Subroutine`][`crate::subroutine::entity::Entity`] running on the Holodekk is backed
+//! by an "image" residing on disk.  These are currently just a directory containing the code that
+//! makes up the subroutine.
+
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
@@ -5,17 +11,26 @@ use serde::{Deserialize, Serialize};
 use crate::image;
 use crate::subroutine;
 
+/// Subroutine specific image id
 pub type Id = image::Id;
 
+/// Subroutine image
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Image {
+    /// Image id
     pub id: Id,
+    /// Image name
     pub name: image::Name,
+    /// Path on disk to the image
     pub path: PathBuf,
+    /// Kind of subroutine (ruby, node, etc)
     pub kind: subroutine::Kind,
 }
 
 impl Image {
+    /// Constructs a new subroutine image.
+    ///
+    /// This does not actually perform any storage operations.
     pub fn new<P>(name: image::Name, path: P, kind: subroutine::Kind) -> Self
     where
         P: Into<PathBuf>,

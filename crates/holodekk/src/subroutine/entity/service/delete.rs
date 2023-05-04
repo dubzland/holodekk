@@ -11,20 +11,26 @@ use crate::subroutine::entity::{Id, Repository};
 
 use super::Service;
 
+/// Input requirements for [`Delete::delete()`]
 #[derive(Clone, Debug)]
 pub struct Input<'a> {
+    /// Specific entity id to delete from the repository
     pub id: &'a str,
 }
 
 impl<'a> Input<'a> {
+    /// Shorthand for instantiating a new [`Input`] struct.
+    #[must_use]
     pub fn new(id: &'a str) -> Self {
         Self { id }
     }
 }
 
+/// Delete a given [`subroutine::Entity`]['Entity`] from the repository.
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Delete: Send + Sync + 'static {
+    /// Deletes the subroutine entity matching the spefied [`Id`] from the repository.
     async fn delete<'a>(&self, input: &'a Input<'a>) -> Result<()>;
 }
 
