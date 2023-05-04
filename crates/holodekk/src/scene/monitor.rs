@@ -6,12 +6,9 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
 
+use crate::process::daemon;
 use crate::scene;
-
-use crate::utils::{
-    fs::ensure_directory,
-    process::{daemonize, terminate_daemon, DaemonTerminationError, DaemonizeError},
-};
+use crate::utils::fs::ensure_directory;
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum Message {
@@ -27,10 +24,8 @@ pub enum Event {
 pub enum Error {
     #[error("Scene is invalid")]
     InvalidScene,
-    #[error("Failed to launch projector process")]
-    Daemonize(#[from] DaemonizeError),
-    #[error("Failed to terminate projector process")]
-    Termination(#[from] DaemonTerminationError),
+    #[error("Failure during daemonization")]
+    Daemon(#[from] daemon::Error),
     #[error("Error during cleanup")]
     Io(#[from] std::io::Error),
 }
@@ -179,14 +174,14 @@ impl Monitor {
         command.arg("--name");
         command.arg(name);
 
-        let pid = daemonize(&self.paths, command, paths.pidfile())?;
+        let pid = daemon::start(&self.paths, command, paths.pidfile())?;
         Ok(scene::entity::Status::Running(pid))
     }
 
     fn stop_projector(&self) -> std::result::Result<(), Error> {
         trace!("Scene::stop_projector()");
         if let scene::entity::Status::Running(pid) = self.status {
-            terminate_daemon(pid)?;
+            daemon::stop(pid)?;
             std::fs::remove_dir_all(self.scene_paths.root())?;
             debug!("Scene cleanup complete.");
         }

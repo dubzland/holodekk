@@ -8,11 +8,11 @@ use nix::{
 };
 use syslog::{BasicLogger, Facility, Formatter3164};
 
+use holodekk::process::{pidfile, syncpipe};
 use holodekk::scene;
 use holodekk::utils::{
     fs::{ensure_directory, open_dev_null},
     libsee,
-    process::{write_pid_to_pid_file, write_pid_to_sync_pipe},
     server::Handle,
     signals, Signals,
 };
@@ -100,7 +100,7 @@ fn main() -> Result<()> {
     // fork again
     match unsafe { fork() } {
         Ok(ForkResult::Parent { child, .. }) => {
-            write_pid_to_pid_file(config.scene_paths().pidfile(), child.as_raw())
+            pidfile::write_pid(config.scene_paths().pidfile(), child.as_raw())
                 .expect("Failed to write pid to pidfile: {err}");
             libsee::_exit(1);
         }
@@ -145,7 +145,7 @@ async fn main_loop(
     // Notify the holodekk of our state
     debug!("Sending status update to parent");
     if let Some(syncpipe_fd) = options.syncpipe_fd {
-        if let Err(err) = write_pid_to_sync_pipe(syncpipe_fd, std::process::id() as i32) {
+        if let Err(err) = syncpipe::write_pid(syncpipe_fd, std::process::id() as i32) {
             warn!("Failed to notify parent of our pid: {err}");
         }
     }

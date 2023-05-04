@@ -80,8 +80,6 @@ impl fmt::Display for ConnectionInfo {
 pub mod fs;
 pub mod libsee;
 pub mod logger;
-pub mod pipes;
-pub mod process;
 pub mod server;
 pub use server::Server;
 pub mod signals;

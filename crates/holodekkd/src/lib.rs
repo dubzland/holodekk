@@ -8,9 +8,8 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
 
 use holodekk::entity::repository;
-use holodekk::scene;
-use holodekk::scene::entity::service::Find;
-use holodekk::utils::process::terminate_daemon;
+use holodekk::process::daemon;
+use holodekk::scene::{self, entity::service::Find};
 
 #[derive(Debug)]
 pub enum Message {}
@@ -179,7 +178,7 @@ where
     for scene in running_scenes {
         debug!("cleaning up dead scene: {}", scene.name);
         if let scene::entity::Status::Running(pid) = scene.status {
-            if let Err(err) = terminate_daemon(pid) {
+            if let Err(err) = daemon::stop(pid) {
                 warn!("failed to terminate projector running with pid {pid}: {err}");
             }
         }
