@@ -1,34 +1,43 @@
+//! Entity service for the `scene` [`Repository`].
+
 use std::sync::Arc;
 
-use crate::scene;
+use crate::scene::entity::Repository;
 
+/// Shortcut supertrait for expressing full service implementation.
 pub trait Methods: Create + Delete + Find + Get {}
-
 impl<T> Methods for T where T: Create + Delete + Find + Get {}
 
+/// Service for interacting with the `Scene` entity [`repository`][`Repository`].
 #[derive(Debug)]
 pub struct Service<R>
 where
-    R: scene::entity::Repository,
+    R: Repository,
 {
     repo: Arc<R>,
 }
 
 impl<R> Service<R>
 where
-    R: scene::entity::Repository,
+    R: Repository,
 {
+    /// Wrap the given repository in a service instance.
+    #[must_use]
     pub fn new(repo: Arc<R>) -> Self {
         Self { repo }
     }
 }
 
+/// Store a new [`Entity`][`crate::scene::Entity`] in the repository.
 pub mod create;
 pub use create::Create;
+/// Delete an existing [`Entity`][`crate::scene::Entity`] from the repository.
 pub mod delete;
 pub use delete::Delete;
+/// Find one or more [`Entities`][`crate::scene::Entity`] in the repository.
 pub mod find;
 pub use find::Find;
+/// Retrieve a single [`Entity`][`crate::scene::Entity`] from the repository.
 pub mod get;
 pub use get::Get;
 

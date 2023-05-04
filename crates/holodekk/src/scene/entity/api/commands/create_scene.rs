@@ -9,6 +9,13 @@ use crate::scene::entity::{
     service::{create::Input, Create},
 };
 
+/// Creates a new scene entity on the server
+///
+/// # Errors
+///
+/// - Scene id is invalid (or does not exist)
+/// - Input parameters are invalid
+/// - repository error occurred
 pub async fn create_scene<A, E, U>(
     State(state): State<Arc<A>>,
     Json(new_scene): Json<NewScene>,

@@ -3,35 +3,44 @@ use log::trace;
 #[cfg(test)]
 use mockall::automock;
 
-use crate::entity;
-use crate::scene;
+use crate::entity::service::Result;
+use crate::scene::{
+    entity::{repository::Query, Repository},
+    Entity,
+};
 
+/// Input requirements for [`Find::find()`]
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Input<'f> {
+    /// name to query
     pub name: Option<&'f str>,
 }
 
 impl<'f> Input<'f> {
+    /// Shorthand for instanciating a new [`Input`] instance
+    #[must_use]
     pub fn new(name: Option<&'f str>) -> Self {
         Self { name }
     }
 }
 
+/// Retrieve one or more [`Entities`][`Entity`] from the [`Repository`]
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Find: Send + Sync + 'static {
-    async fn find<'a>(&self, input: &'a Input<'a>) -> entity::service::Result<Vec<scene::Entity>>;
+    /// Retrieves scene instances from the repository based on the input data.
+    async fn find<'a>(&self, input: &'a Input<'a>) -> Result<Vec<Entity>>;
 }
 
 #[async_trait]
 impl<R> Find for super::Service<R>
 where
-    R: scene::entity::Repository,
+    R: Repository,
 {
-    async fn find<'a>(&self, input: &'a Input<'a>) -> entity::service::Result<Vec<scene::Entity>> {
+    async fn find<'a>(&self, input: &'a Input<'a>) -> Result<Vec<Entity>> {
         trace!("scene::entity::Service#delete({:?})", input);
 
-        let query = scene::entity::repository::Query::default();
+        let query = Query::default();
 
         let scenes = self.repo.scenes_find(query).await?;
         Ok(scenes)

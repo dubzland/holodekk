@@ -9,6 +9,12 @@ use crate::scene::entity::{
     service::{find::Input, Find},
 };
 
+/// Retrieve a list of scene entities from the server
+///
+/// # Errors
+///
+/// - Scene id is invalid (or does not exist)
+/// - repository error occurred
 pub async fn find_scenes<A, E, U>(
     State(state): State<Arc<A>>,
 ) -> Result<GetResponse<Vec<Scene>>, entity::service::Error>

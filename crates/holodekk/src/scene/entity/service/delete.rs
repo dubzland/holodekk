@@ -3,40 +3,49 @@ use log::trace;
 #[cfg(test)]
 use mockall::automock;
 
-use crate::entity;
-use crate::scene;
+use crate::entity::{
+    repository::Error as RepositoryError,
+    service::{Error, Result},
+};
+use crate::scene::entity::{Id, Repository};
 
+/// Input requirements for [`Delete::delete()`]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Input<'d> {
+    /// Specific entity id to delete from the repository
     pub id: &'d str,
 }
 
 impl<'d> Input<'d> {
+    /// Shorthand for instantiating a new [`Input`] struct.
+    #[must_use]
     pub fn new(id: &'d str) -> Self {
         Self { id }
     }
 }
 
+/// Delete a given [`scene::Entity`]['Entity`] from the repository.
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Delete: Send + Sync + 'static {
-    async fn delete<'a>(&self, input: &'a Input<'a>) -> entity::service::Result<()>;
+    /// Deletes the scene entity matching the spefied [`Id`] from the repository.
+    async fn delete<'a>(&self, input: &'a Input<'a>) -> Result<()>;
 }
 
 #[async_trait]
 impl<R> Delete for super::Service<R>
 where
-    R: scene::entity::Repository,
+    R: Repository,
 {
-    async fn delete<'a>(&self, input: &'a Input<'a>) -> entity::service::Result<()> {
+    async fn delete<'a>(&self, input: &'a Input<'a>) -> Result<()> {
         trace!("scene::entity::Service#delete({:?}", input);
 
-        let id: scene::entity::Id = input.id.parse()?;
+        let id: Id = input.id.parse()?;
 
         // ensure the scene exists
         let scene = self.repo.scenes_get(&id).await.map_err(|err| match err {
-            entity::repository::Error::NotFound(id) => entity::service::Error::NotFound(id),
-            _ => entity::service::Error::from(err),
+            RepositoryError::NotFound(id) => Error::NotFound(id),
+            _ => Error::from(err),
         })?;
 
         // remove scene from the repository

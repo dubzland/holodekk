@@ -22,6 +22,7 @@ where
     R: Repository,
 {
     /// Wrap the given repository in a service instance.
+    #[must_use]
     pub fn new(repo: Arc<R>) -> Self {
         Self { repo }
     }

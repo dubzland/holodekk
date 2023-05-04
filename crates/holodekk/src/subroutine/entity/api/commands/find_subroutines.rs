@@ -15,7 +15,7 @@ use crate::subroutine::entity::{
 ///
 /// # Errors
 ///
-/// - Scene id is invalid
+/// - Scene id is invalid (or does not exist)
 /// - repository error occurred
 pub async fn find_subroutines<A, E, U>(
     State(state): State<Arc<A>>,

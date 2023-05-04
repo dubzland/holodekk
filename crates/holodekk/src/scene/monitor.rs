@@ -1,3 +1,5 @@
+//! Monitors a given scene (and its associated projector process)
+
 use std::process::Command;
 
 use log::{debug, error, info, trace, warn};
@@ -10,33 +12,46 @@ use crate::process::daemon;
 use crate::scene;
 use crate::utils::fs::ensure_directory;
 
+/// Messages this [`Monitor`] understands (currently only termination)
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum Message {
+    /// Terminate gracefully
     Shutdown,
 }
 
+/// Events delivered by the [`Monitor`] upstream
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum Event {
+    /// The projector process has been started (with the specified pid)
     Started(i32),
 }
 
+/// Errors encountered by the [`Monitor`]
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    /// the specified scene could not be found in the repository
     #[error("Scene is invalid")]
     InvalidScene,
+    /// Failed to start/stop the projector process
     #[error("Failure during daemonization")]
     Daemon(#[from] daemon::Error),
+    /// Error removing directories during cleanup
     #[error("Error during cleanup")]
     Io(#[from] std::io::Error),
 }
 
+/// Wrapper to allow interacting with the [`Monitor`] process
 pub struct Handle {
+    /// tx endpoint for sending requests to the [`Monitor`]
     pub sender: Option<Sender<Message>>,
+    /// rx endpoint for receiving events from the [`Monitor`]
     pub projector_events: Receiver<Event>,
+    /// the actual tokio task handle (used to wait for shutdown)
     pub handle: JoinHandle<()>,
 }
 
 impl Handle {
+    /// Stops the scene monitor this [`Handle`] is associated with
     pub async fn stop(mut self) {
         let sender = self.sender.take();
         if let Some(sender) = sender {
@@ -53,17 +68,26 @@ impl Handle {
     }
 }
 
+/// Process for monitoring a scene (currently that's primarily the projector process)
 pub struct Monitor {
+    /// globally unique scene entity id
     pub id: scene::entity::Id,
+    /// name assigned to this scene by the user
     pub name: scene::entity::Name,
+    /// current status of this scene's projector
     pub status: scene::entity::Status,
+    /// filesystem paths specific to this `scene`
     pub scene_paths: scene::Paths,
+    /// rx endpoint for receiving Holodekk messages
     pub receiver: Receiver<Message>,
+    /// tx endpoint for sending events upstream
     pub event_sender: Sender<Event>,
+    /// global Holodekk paths
     pub paths: crate::Paths,
 }
 
 impl Monitor {
+    /// Start a monitor process for the given scene
     #[must_use]
     pub fn start(paths: crate::Paths, entity: &scene::Entity) -> Handle {
         let (messages_tx, messages_rx) = channel(32);

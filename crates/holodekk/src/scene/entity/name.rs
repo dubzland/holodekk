@@ -2,6 +2,7 @@ use std::ops::Deref;
 
 use serde::{Deserialize, Serialize};
 
+/// Newtype wrapped around a `String` to allow constraints to be applied later
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Name(String);
 
