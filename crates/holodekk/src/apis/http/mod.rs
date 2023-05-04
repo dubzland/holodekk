@@ -12,6 +12,7 @@ use serde::Serialize;
 
 use crate::entity;
 
+/// Global shared state for all http api endpoints
 #[cfg_attr(test, automock)]
 pub trait ApiState<S1, S2>: Send + Sync + 'static
 where

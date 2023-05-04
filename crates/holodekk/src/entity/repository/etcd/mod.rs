@@ -1,8 +1,4 @@
-mod scenes;
-pub use scenes::*;
-mod subroutines;
-pub use subroutines::*;
-
+//! Etcd based implementation of the [Repository](super::Repository).
 use std::sync::RwLock;
 
 use async_trait::async_trait;
@@ -16,12 +12,16 @@ use crate::entity::{
 };
 use crate::scene;
 
+/// Wrapper for managing an instance of a [WatchTask].
 pub struct WatchTaskHandle<T> {
     watcher: Watcher,
     handle: tokio::task::JoinHandle<()>,
     tx: Sender<T>,
 }
 
+/// Processes repository events received from `Etcd`.
+///
+/// Distributes these events to any subscribers after mapping to the proper internal event.
 pub struct WatchTask<T>
 where
     T: Send,
@@ -34,6 +34,7 @@ impl<T> WatchTask<T>
 where
     T: From<Event> + std::fmt::Debug + Clone + Send + 'static,
 {
+    /// Start a `tokio` task to monitor for incoming `Etcd` events.
     pub fn start(watcher: Watcher, stream: WatchStream) -> WatchTaskHandle<T> {
         let (tx, _rx) = channel(32);
         let watch_sender = tx.clone();
@@ -66,6 +67,10 @@ where
     }
 }
 
+/// Scene specific key for  performing get/put operations in `Etcd`.
+///
+/// Optionally allows a specific id to be appended for managing a specific
+/// [`crate::scene::Entity`]
 pub fn scene_key(partial: Option<&entity::Id>) -> String {
     if let Some(partial) = partial {
         format!("/scenes/{partial}")
@@ -74,6 +79,10 @@ pub fn scene_key(partial: Option<&entity::Id>) -> String {
     }
 }
 
+/// Subroutine specific key for  performing get/put operations in `Etcd`.
+///
+/// Optionally allows a specific id to be appended for managing a specific
+/// [`crate::subroutine::Entity`]
 pub fn subroutine_key(partial: Option<&entity::Id>) -> String {
     if let Some(partial) = partial {
         format!("/subroutines/{partial}")
@@ -82,6 +91,7 @@ pub fn subroutine_key(partial: Option<&entity::Id>) -> String {
     }
 }
 
+/// `Etcd` based [Repository](super::Repository) implementation.
 pub struct Etcd {
     hosts: &'static [&'static str],
     client: RwLock<Option<Client>>,
@@ -89,6 +99,10 @@ pub struct Etcd {
 }
 
 impl Etcd {
+    /// Create a new repository instance.
+    ///
+    /// Note: this function doesn't actually make a connection to `Etcd`.  That is done in
+    /// [`entity::Repository::init()`].
     pub fn new(hosts: &'static [&'static str]) -> Self {
         Self {
             hosts,
@@ -155,3 +169,8 @@ impl entity::Repository for Etcd {
         Ok(handle)
     }
 }
+
+mod scenes;
+pub use scenes::*;
+mod subroutines;
+pub use subroutines::*;
