@@ -9,8 +9,7 @@ use holodekk::{
     entity::{repository, Repository},
     utils::{
         server::{Handle, Http},
-        signals::{SignalKind, Signals},
-        ConnectionInfo, Server,
+        signals, ConnectionInfo, Server, Signals,
     },
 };
 
@@ -101,7 +100,7 @@ where
 
     let signal = Signals::new().await;
     match signal {
-        SignalKind::Int => {
+        signals::Kind::Int => {
             debug!("SIGINT received.  Processing shutdown.");
 
             debug!("Awaiting api server shutdown ...");
@@ -113,7 +112,7 @@ where
 
             debug!("Shutdown complete.");
         }
-        SignalKind::Quit | SignalKind::Term => {
+        signals::Kind::Quit | signals::Kind::Term => {
             debug!("Unexpected {} received.  Terminating immediately", signal);
         }
     }
