@@ -22,6 +22,7 @@ impl RpcUhura for Server {
     }
 }
 
+#[must_use]
 pub fn uhura_api(service: Arc<crate::Service>) -> RpcUhuraServer<Server> {
     RpcUhuraServer::new(Server { service })
 }
