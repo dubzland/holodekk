@@ -1,3 +1,5 @@
+//! OS signal handling utility library.
+
 use std::{
     fmt,
     future::Future,
@@ -7,25 +9,30 @@ use std::{
 
 use tokio::signal;
 
+/// The kind of signal being monitored
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum SignalKind {
+pub enum Kind {
+    /// Interrupt (SIGNINT)
     Int,
+    /// Termination (SIGTERM)
     Term,
+    /// Shutdown (SIGQUIT)
     Quit,
 }
 
-impl fmt::Display for SignalKind {
+impl fmt::Display for Kind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
-            SignalKind::Int => "SIGINT",
-            SignalKind::Term => "SIGTERM",
-            SignalKind::Quit => "SIGQUIT",
+            Kind::Int => "SIGINT",
+            Kind::Term => "SIGTERM",
+            Kind::Quit => "SIGQUIT",
         })
     }
 }
 
+/// Simple tokio/futures based signal handler.
 pub struct Signals {
-    signals: Vec<(SignalKind, signal::unix::Signal)>,
+    signals: Vec<(Kind, signal::unix::Signal)>,
 }
 
 impl Default for Signals {
@@ -35,12 +42,13 @@ impl Default for Signals {
 }
 
 impl Signals {
+    /// Creates a handler for the 3 signals listed in `signal::Kind`.
     #[must_use]
     pub fn new() -> Self {
         let signal_map = [
-            (signal::unix::SignalKind::interrupt(), SignalKind::Int),
-            (signal::unix::SignalKind::terminate(), SignalKind::Term),
-            (signal::unix::SignalKind::quit(), SignalKind::Quit),
+            (signal::unix::SignalKind::interrupt(), Kind::Int),
+            (signal::unix::SignalKind::terminate(), Kind::Term),
+            (signal::unix::SignalKind::quit(), Kind::Quit),
         ];
 
         let signals = signal_map
@@ -63,7 +71,7 @@ impl Signals {
 }
 
 impl Future for Signals {
-    type Output = SignalKind;
+    type Output = Kind;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         for (signal, fut) in &mut self.signals {

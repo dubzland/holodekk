@@ -15,14 +15,8 @@ use nix::{
 use serde::Serialize;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
-// use holodekk::entities::{SceneEntityId, SceneName};
 use holodekk::scene;
-use holodekk::utils::{
-    fs::open_dev_null,
-    libsee,
-    server::Handle,
-    signals::{SignalKind, Signals},
-};
+use holodekk::utils::{fs::open_dev_null, libsee, server::Handle, signals, Signals};
 
 #[derive(thiserror::Error, Debug)]
 enum Error {
@@ -169,7 +163,7 @@ async fn main_loop(
 
     let signal = Signals::new().await;
     match signal {
-        SignalKind::Int | SignalKind::Term | SignalKind::Quit => {
+        signals::Kind::Int | signals::Kind::Term | signals::Kind::Quit => {
             debug!("Termination signal received.  Processing shutdown.");
 
             uhura_server.stop().await.unwrap();
