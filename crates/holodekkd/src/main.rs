@@ -8,12 +8,13 @@ use log::debug;
 use holodekk::{
     entity::{repository, Repository},
     utils::{
+        server::{Handle, Http},
         signals::{SignalKind, Signals},
-        ConnectionInfo,
+        ConnectionInfo, Server,
     },
 };
 
-use holodekkd::api::Server;
+use holodekkd::api;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -95,7 +96,8 @@ where
     R: Repository,
 {
     let holodekk = holodekkd::Monitor::start(config.clone(), repo.clone()).await?;
-    let mut api_server = Server::start(config.holodekk_api_config(), repo.clone());
+    let state = api::HolodekkdApiState::new(repo.clone());
+    let api_server = Http::start(config.holodekk_api_config(), api::router(Arc::new(state)));
 
     let signal = Signals::new().await;
     match signal {
@@ -103,7 +105,7 @@ where
             debug!("SIGINT received.  Processing shutdown.");
 
             debug!("Awaiting api server shutdown ...");
-            api_server.stop().await;
+            api_server.stop().await.unwrap();
             debug!("API server shutdown complete.");
             debug!("Awaiting Holodekk shutdown ...");
             holodekk.stop().await;

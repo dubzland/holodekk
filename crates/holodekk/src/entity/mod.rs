@@ -74,8 +74,8 @@ where
     }
 }
 
+/// Entity id generation
 pub mod id {
-    //! Entity id generation
 
     use rand::RngCore;
 
