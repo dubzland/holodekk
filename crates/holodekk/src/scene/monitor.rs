@@ -9,7 +9,7 @@ use tokio::task::JoinHandle;
 use crate::scene;
 
 use crate::utils::{
-    fs::{ensure_directory, remove_directory},
+    fs::ensure_directory,
     process::{daemonize, terminate_daemon, DaemonTerminationError, DaemonizeError},
 };
 

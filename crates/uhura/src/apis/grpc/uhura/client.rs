@@ -1,6 +1,6 @@
 use tonic::transport::Channel;
 
-use holodekk::errors::grpc::GrpcClientResult;
+use holodekk::errors::grpc::ClientResult;
 
 use crate::entities::UhuraStatus;
 
@@ -18,7 +18,7 @@ impl ApiClient {
         }
     }
 
-    pub async fn status(&self) -> GrpcClientResult<UhuraStatus> {
+    pub async fn status(&self) -> ClientResult<UhuraStatus> {
         let mut client = self.inner.clone();
         let request = tonic::Request::new(RpcUhuraStatusRequest {});
         let response = client.status(request).await?;

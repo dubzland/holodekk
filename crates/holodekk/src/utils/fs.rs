@@ -1,7 +1,13 @@
 //! Generic filesystem utilities
 
 use std::fs;
+use std::os::fd::RawFd;
 use std::path::Path;
+
+use nix::{
+    fcntl::{open, OFlag},
+    sys::stat::Mode,
+};
 
 /// Removes the given file from the filesystem.
 ///
@@ -80,6 +86,34 @@ pub fn ensure_directory<P: AsRef<Path>>(path: P) -> std::io::Result<()> {
         fs::create_dir_all(path)?;
     }
     Ok(())
+}
+
+/// Open `/dev/null` for both reading and writing.
+///
+/// # Errors
+///
+/// Will error if `/dev/null` cannot be opened for either reading or writing.
+///
+/// # Examples
+///
+/// ```rust
+/// use holodekk::utils::fs::open_dev_null;
+/// let (devnull_rd, devnull_wr) = open_dev_null().unwrap();
+/// ```
+pub fn open_dev_null() -> std::result::Result<(RawFd, RawFd), nix::errno::Errno> {
+    let rd = open(
+        "/dev/null",
+        OFlag::O_RDONLY | OFlag::O_CLOEXEC,
+        Mode::empty(),
+    )?;
+
+    let wr = open(
+        "/dev/null",
+        OFlag::O_WRONLY | OFlag::O_CLOEXEC,
+        Mode::empty(),
+    )?;
+
+    Ok((rd, wr))
 }
 
 #[cfg(test)]

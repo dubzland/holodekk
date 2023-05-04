@@ -1,20 +1,15 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use futures_util::FutureExt;
 use tempfile::tempdir;
-use tokio::{
-    net::UnixListener,
-    sync::oneshot::{channel, Sender},
-    task::JoinHandle,
+
+use holodekk::errors::grpc::ClientResult;
+use holodekk::utils::{
+    server::{grpc, Grpc, Handle},
+    ConnectionInfo, Server,
 };
-use tokio_stream::wrappers::UnixListenerStream;
 
-use holodekk::errors::grpc::GrpcClientResult;
-
-use uhura::apis::grpc::uhura::uhura_api_server;
-use uhura::client::UhuraClient;
-use uhura::services::UhuraService;
+use uhura::apis::grpc::uhura::uhura_api;
 
 #[cfg(test)]
 mod test {
@@ -24,32 +19,21 @@ mod test {
         let _ = env_logger::builder().is_test(true).try_init();
     }
 
-    async fn launch_uhura_server<P: AsRef<Path>>(
-        root: P,
-    ) -> (
-        Sender<()>,
-        JoinHandle<std::result::Result<(), tonic::transport::Error>>,
-        PathBuf,
-    ) {
-        let (shutdown_tx, shutdown_rx) = channel();
+    async fn launch_uhura_server<P: AsRef<Path>>(root: P) -> (grpc::Handle, PathBuf) {
         let socket = root.as_ref().to_owned().join("uhura.socket");
-        let uds = UnixListener::bind(&socket).unwrap();
-        let listener = UnixListenerStream::new(uds);
+        let config = ConnectionInfo::unix(&socket);
 
-        let uhura_service = Arc::new(UhuraService::new());
-        let handle = tokio::spawn(async move {
-            tonic::transport::Server::builder()
-                .add_service(uhura_api_server(uhura_service))
-                .serve_with_incoming_shutdown(listener, shutdown_rx.map(drop))
-                .await
-        });
+        let uhura_service = Arc::new(uhura::Service::new());
+        let uhura_server =
+            tonic::transport::Server::builder().add_service(uhura_api(uhura_service));
+        let handle = Grpc::start(&config, uhura_server);
 
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-        (shutdown_tx, handle, socket)
+        (handle, socket)
     }
 
-    async fn setup_uhura_client<P: AsRef<Path>>(socket: P) -> GrpcClientResult<UhuraClient> {
-        UhuraClient::connect_unix(socket.as_ref()).await
+    async fn setup_uhura_client<P: AsRef<Path>>(socket: P) -> ClientResult<uhura::Client> {
+        uhura::Client::connect_unix(socket.as_ref()).await
     }
 
     #[tokio::test]
@@ -57,11 +41,10 @@ mod test {
         setup_test_logger();
         let root = tempdir().unwrap();
 
-        let (shutdown_tx, handle, socket) = launch_uhura_server(root.path()).await;
+        let (handle, socket) = launch_uhura_server(root.path()).await;
         let client = setup_uhura_client(&socket).await.unwrap();
         let result = client.uhura().status().await.unwrap();
-        shutdown_tx.send(()).unwrap();
-        handle.await.unwrap().unwrap();
+        handle.stop().await.unwrap();
         assert_eq!(result.pid, std::process::id());
     }
 }
