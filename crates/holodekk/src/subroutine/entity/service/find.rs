@@ -11,13 +11,19 @@ use crate::subroutine::{
 
 use super::Service;
 
+/// Input requirements for [`Find::find()`]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Input<'f> {
+    /// [`Id`][`crate::scene::entity::Id`] of the `scene` entity to which this subroutine instance
+    /// belongs
     pub scene_entity_id: Option<&'f str>,
+    /// [`Id`][`image::Id`] of the `image` this subroutine instance is running
     pub image_id: Option<&'f str>,
 }
 
 impl<'f> Input<'f> {
+    /// Shorthand for instanciating a new [`Input`] instance
+    #[must_use]
     pub fn new(scene_entity_id: Option<&'f str>, image_id: Option<&'f str>) -> Self {
         Self {
             scene_entity_id,
@@ -26,9 +32,12 @@ impl<'f> Input<'f> {
     }
 }
 
+/// Retrieve one or more [`Entities`][`Entity`] from the [`Repository`]
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Find: Send + Sync + 'static {
+    /// Retrieves subroutine instances from the repository based on the input data from the
+    /// repository.
     async fn find<'a>(&self, input: &'a Input<'a>) -> Result<Vec<Entity>>;
 }
 

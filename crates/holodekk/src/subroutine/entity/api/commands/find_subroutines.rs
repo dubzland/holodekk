@@ -11,14 +11,12 @@ use crate::subroutine::entity::{
     service::{find::Input as FindInput, Find as FindSubroutines},
 };
 
-// use crate::apis::http::entity::subroutine::models::Subroutine;
-// use crate::apis::http::{ApiState, GetResponse};
-// use crate::services::{
-//     scene::{GetScene, GetSceneInput},
-//     subroutine::{FindSubroutines, FindSubroutinesInput},
-//     EntityServiceError,
-// };
-
+/// Retrieve a list of subroutine entities from the server
+///
+/// # Errors
+///
+/// - Scene id is invalid
+/// - repository error occurred
 pub async fn find_subroutines<A, E, U>(
     State(state): State<Arc<A>>,
     Path(scene): Path<String>,

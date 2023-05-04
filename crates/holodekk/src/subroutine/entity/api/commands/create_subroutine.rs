@@ -12,6 +12,13 @@ use crate::subroutine::entity::{
     service::{create::Input, Create},
 };
 
+/// Creates a new subroutine entity on the server
+///
+/// # Errors
+///
+/// - Scene id is invalid (or does not exist)
+/// - Input parameters are invalid
+/// - repository error occurred
 pub async fn create_subroutine<A, E, U>(
     Path(scene): Path<String>,
     State(state): State<Arc<A>>,
