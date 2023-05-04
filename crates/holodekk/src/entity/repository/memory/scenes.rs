@@ -14,20 +14,30 @@ use crate::scene::{
 use super::Memory;
 
 impl Memory {
+    /// Notifies all subscribed clients of the supplied event
     pub fn broadcast_scene_notification(&mut self, msg: Event) {
-        if let Some(tx) = self.scene_notify_tx.read().unwrap().as_ref() {
-            if let Err(err) = tx.send(msg) {
-                warn!("Error broadcasting scene repository event: {}", err);
+        match self.scene_notify_tx.read() {
+            Ok(guard) => {
+                if let Some(tx) = guard.as_ref() {
+                    if let Err(err) = tx.send(msg) {
+                        warn!("Error broadcasting scene repository event: {}", err);
+                    }
+                }
+            }
+            Err(err) => {
+                warn!("Failed to acquire lock on notification tx: {err}");
             }
         }
     }
 
+    /// Broadcasts an insert event
     pub fn notify_scene_insert(&mut self, scene: &Entity) {
         self.broadcast_scene_notification(Event::Insert {
             scene: scene.clone(),
         });
     }
 
+    /// Broadcasts an update event
     pub fn notify_scene_update(&mut self, scene: &Entity, orig: &Entity) {
         self.broadcast_scene_notification(Event::Update {
             scene: scene.clone(),
@@ -35,6 +45,7 @@ impl Memory {
         });
     }
 
+    /// Broadcasts a delete event
     pub fn notify_scene_delete(&mut self, scene: &Entity) {
         self.broadcast_scene_notification(Event::Delete {
             scene: scene.clone(),

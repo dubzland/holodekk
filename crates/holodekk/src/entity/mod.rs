@@ -1,4 +1,4 @@
-//! Repository-backed storage entity.
+//! Repository-backed storage item.
 //!
 //! Entities represent the manageable resources within the `Holodekk`.
 use std::convert::TryFrom;
@@ -19,6 +19,7 @@ pub struct Id(String);
 
 impl Id {
     /// Generates a new random 32-bit `Entity` id.
+    #[must_use]
     pub fn generate() -> Self {
         Self(id::generate())
     }
@@ -80,6 +81,7 @@ pub mod id {
     use rand::RngCore;
 
     /// Pulls in random data to generate a new 32 character hex string
+    #[must_use]
     pub fn generate() -> String {
         let mut bytes: [u8; 32] = [0; 32];
         rand::thread_rng().fill_bytes(&mut bytes);

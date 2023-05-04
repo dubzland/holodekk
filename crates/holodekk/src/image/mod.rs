@@ -1,3 +1,5 @@
+//! Store-backed storage item.
+
 use std::convert::TryFrom;
 use std::ops::Deref;
 use std::str::FromStr;
@@ -10,10 +12,13 @@ lazy_static! {
     static ref IMAGE_ID_RE: Regex = Regex::new(r"^[0-9a-fA-F]{64}$").unwrap();
 }
 
+/// Newtype unique identifier for an `Image`
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Id(String);
 
 impl Id {
+    /// Generates a new 32-bit `Image` id based on a hash of the name.
+    #[must_use]
     pub fn generate(name: &Name) -> Self {
         Self(id::generate(name))
     }
@@ -26,7 +31,7 @@ impl FromStr for Id {
         if IMAGE_ID_RE.is_match(s) {
             Ok(Id(s.to_string()))
         } else {
-            Err(id::Error::Format(s.to_string()))
+            Err(id::Error(s.to_string()))
         }
     }
 }
@@ -69,22 +74,33 @@ where
     }
 }
 
+/// Image id generation
 pub mod id {
     use sha2::{Digest, Sha256};
 
+    /// creates a SHA-256 hash of the name to generate a 32-char hex id
+    #[must_use]
     pub fn generate(name: &super::Name) -> String {
         let mut hasher = Sha256::new();
         hasher.update(name);
         format!("{:x}", hasher.finalize())
     }
 
+    /// Error converting from input string to Image id
     #[derive(thiserror::Error, Debug)]
-    pub enum Error {
-        #[error("Invalid ImageId format")]
-        Format(String),
+    pub struct Error(
+        /// Input string
+        pub String,
+    );
+
+    impl std::fmt::Display for Error {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "Invalid format for Image Id: {}", self.0)
+        }
     }
 }
 
+/// Newtype String wrapper to allow constraints to be placed on image name
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Name(String);
 
