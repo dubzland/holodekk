@@ -1,22 +1,21 @@
-use std::{
-    fs::{self, File},
-    io::Write,
-    os::unix::io::FromRawFd,
-    panic,
-    path::PathBuf,
-};
+use std::{panic, path::PathBuf};
 
 use clap::Parser;
 use log::{debug, error, info, warn, LevelFilter};
 use nix::{
     sys::signal::{sigprocmask, SigSet, SigmaskHow, Signal, SIGCHLD, SIGINT, SIGQUIT, SIGTERM},
-    unistd::{dup2, fork, setsid, ForkResult, Pid},
+    unistd::{dup2, fork, setsid, ForkResult},
 };
-use serde::Serialize;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
 use holodekk::scene;
-use holodekk::utils::{fs::open_dev_null, libsee, server::Handle, signals, Signals};
+use holodekk::utils::{
+    fs::{ensure_directory, open_dev_null},
+    libsee,
+    process::{write_pid_to_pid_file, write_pid_to_sync_pipe},
+    server::Handle,
+    signals, Signals,
+};
 
 #[derive(thiserror::Error, Debug)]
 enum Error {
@@ -27,17 +26,6 @@ enum Error {
 }
 
 type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Serialize)]
-struct MessageProjectorPid {
-    pid: u32,
-}
-
-impl MessageProjectorPid {
-    pub fn new(pid: u32) -> Self {
-        Self { pid }
-    }
-}
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -112,7 +100,8 @@ fn main() -> Result<()> {
     // fork again
     match unsafe { fork() } {
         Ok(ForkResult::Parent { child, .. }) => {
-            write_pidfile(config.scene_paths().pidfile(), child);
+            write_pid_to_pid_file(config.scene_paths().pidfile(), child.as_raw())
+                .expect("Failed to write pid to pidfile: {err}");
             libsee::_exit(1);
         }
         Ok(ForkResult::Child) => {}
@@ -135,7 +124,7 @@ fn main() -> Result<()> {
             "Creating uhura root directory: {}",
             config.scene_paths().root().display()
         );
-        fs::create_dir_all(config.scene_paths().root())
+        ensure_directory(config.scene_paths().root())
             .expect("Failed to create root directory for uhura");
     }
 
@@ -155,8 +144,10 @@ async fn main_loop(
 
     // Notify the holodekk of our state
     debug!("Sending status update to parent");
-    if options.syncpipe_fd.is_some() {
-        send_status_update(options);
+    if let Some(syncpipe_fd) = options.syncpipe_fd {
+        if let Err(err) = write_pid_to_sync_pipe(syncpipe_fd, std::process::id() as i32) {
+            warn!("Failed to notify parent of our pid: {err}");
+        }
     }
 
     debug!("Complete.  Waiting for shutdown signal");
@@ -183,30 +174,23 @@ fn cleanup(config: &uhura::Config) {
     }
 }
 
-fn send_status_update(options: &Options) {
-    let status = MessageProjectorPid::new(std::process::id());
-    match serde_json::to_vec(&status) {
-        Ok(msg) => {
-            let mut sync_pipe = unsafe { File::from_raw_fd(options.syncpipe_fd.unwrap()) };
-            match sync_pipe.write_all(&msg) {
-                Ok(_) => {}
-                Err(err) => {
-                    warn!("Failed to write status to sync pipe: {}", err);
-                }
-            }
-        }
-        Err(err) => {
-            warn!("Failed to serialize JSON for sync update: {}", err);
-        }
-    }
-}
-
-fn write_pidfile(pidfile: &PathBuf, pid: Pid) {
-    info!("forked worker with pid: {}", pid);
-    if let Err(err) = fs::write(pidfile, format!("{pid}")) {
-        panic!("write() to pidfile {} failed: {}", pidfile.display(), err);
-    }
-}
+// fn send_status_update(options: &Options) {
+//     let status = MessageProjectorPid::new(std::process::id());
+//     match serde_json::to_vec(&status) {
+//         Ok(msg) => {
+//             let mut sync_pipe = unsafe { File::from_raw_fd(options.syncpipe_fd.unwrap()) };
+//             match sync_pipe.write_all(&msg) {
+//                 Ok(_) => {}
+//                 Err(err) => {
+//                     warn!("Failed to write status to sync pipe: {}", err);
+//                 }
+//             }
+//         }
+//         Err(err) => {
+//             warn!("Failed to serialize JSON for sync update: {}", err);
+//         }
+//     }
+// }
 
 fn signal_mask(signals: &[Signal]) -> SigSet {
     *signals.iter().fold(&mut SigSet::empty(), |mask, sig| {

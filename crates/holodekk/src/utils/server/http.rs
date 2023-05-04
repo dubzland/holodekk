@@ -67,6 +67,7 @@ pub struct Handle {
 
 impl Handle {
     /// Constructs a new [`Handle`] instance.
+    #[must_use]
     pub fn new(
         shutdown_tx: Sender<()>,
         task_handle: JoinHandle<std::result::Result<(), hyper::Error>>,

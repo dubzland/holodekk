@@ -2084,10 +2084,10 @@ dependencies = [
  "futures-util",
  "holodekk",
  "log",
- "mio",
+ "mio 0.8.11",
  "mockall",
  "nix",
- "prost",
+ "prost 0.11.9",
  "rstest",
  "serde",
  "serde_json",
@@ -2096,8 +2096,8 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
- "tonic",
- "tonic-build",
+ "tonic 0.8.3",
+ "tonic-build 0.8.4",
  "tower",
 ]
 
