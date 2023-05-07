@@ -1,5 +1,12 @@
 mod pb {
+
     pub(crate) mod uhura {
+        #![allow(
+            clippy::default_trait_access,
+            clippy::missing_errors_doc,
+            clippy::wildcard_imports
+        )]
+
         tonic::include_proto!("uhura");
     }
 }

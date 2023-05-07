@@ -2,8 +2,7 @@ use async_trait::async_trait;
 use etcd_client::GetOptions;
 use timestamps::Timestamps;
 
-use crate::entity::repository::{Error, Query as RepositoryQuery, Result};
-use crate::scene::{
+use crate::core::scene::{
     self,
     entity::{
         repository::{Event, Query},
@@ -11,6 +10,7 @@ use crate::scene::{
     },
     Entity,
 };
+use crate::entity::repository::{Error, Query as RepositoryQuery, Result};
 
 use super::{scene_key, Etcd};
 

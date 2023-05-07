@@ -32,9 +32,9 @@
 use async_trait::async_trait;
 use clap::ValueEnum;
 
+use crate::core::scene;
+use crate::core::subroutine;
 use crate::errors::error_chain_fmt;
-use crate::scene;
-use crate::subroutine;
 
 /// Type of repository currently being used
 #[derive(Clone, Copy, Debug, PartialEq, ValueEnum)]
@@ -113,8 +113,8 @@ pub mod fixtures {
     use async_trait::async_trait;
     use mockall::mock;
 
-    use crate::scene::{self, entity::Repository as SceneRepository};
-    use crate::subroutine::{self, entity::Repository as SubroutineRepository};
+    use crate::core::scene::{self, entity::Repository as SceneRepository};
+    use crate::core::subroutine::{self, entity::Repository as SubroutineRepository};
 
     use super::*;
 

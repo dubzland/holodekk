@@ -13,8 +13,8 @@ use async_trait::async_trait;
 use log::debug;
 use tokio::sync::broadcast::{channel, Sender};
 
+use crate::core::scene;
 use crate::entity;
-use crate::scene;
 
 /// An in-memory repository (mainly for testing)
 #[derive(Debug)]
@@ -81,8 +81,8 @@ impl entity::Repository for Memory {
 mod tests {
     use rstest::*;
 
-    use crate::scene::{self, entity::mock_entity as mock_scene_entity};
-    use crate::subroutine::{self, entity::mock_entity as mock_subroutine_entity};
+    use crate::core::scene::{self, entity::mock_entity as mock_scene_entity};
+    use crate::core::subroutine::{self, entity::mock_entity as mock_subroutine_entity};
 
     use super::*;
 

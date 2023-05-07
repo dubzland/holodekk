@@ -2,16 +2,16 @@ use async_trait::async_trait;
 use etcd_client::GetOptions;
 use timestamps::Timestamps;
 
-use crate::entity::{
-    self,
-    repository::{Error, Query as RepositoryQuery, Result},
-};
-use crate::subroutine::{
+use crate::core::subroutine::{
     entity::{
         repository::{Event, Query},
         Id, Repository as SubroutineRepository, Status,
     },
     Entity,
+};
+use crate::entity::{
+    self,
+    repository::{Error, Query as RepositoryQuery, Result},
 };
 
 use super::{subroutine_key, Etcd};

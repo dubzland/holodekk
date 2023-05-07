@@ -7,11 +7,11 @@ use etcd_client::{Client, Event, WatchStream, Watcher};
 use log::{debug, error, warn};
 use tokio::sync::broadcast::{channel, Sender};
 
+use crate::core::scene;
 use crate::entity::{
     self,
     repository::{watch, Error, Result},
 };
-use crate::scene;
 
 /// Wrapper for managing an instance of a [`WatchTask`].
 pub struct WatchTaskHandle<T> {
@@ -72,7 +72,7 @@ where
 /// Scene specific key for  performing get/put operations in `Etcd`.
 ///
 /// Optionally allows a specific id to be appended for managing a specific
-/// [`crate::scene::Entity`]
+/// [`crate::core::scene::Entity`]
 #[must_use]
 pub fn scene_key(partial: Option<&entity::Id>) -> String {
     if let Some(partial) = partial {
@@ -85,7 +85,7 @@ pub fn scene_key(partial: Option<&entity::Id>) -> String {
 /// Subroutine specific key for  performing get/put operations in `Etcd`.
 ///
 /// Optionally allows a specific id to be appended for managing a specific
-/// [`crate::subroutine::Entity`]
+/// [`crate::core::subroutine::Entity`]
 #[must_use]
 pub fn subroutine_key(partial: Option<&entity::Id>) -> String {
     if let Some(partial) = partial {

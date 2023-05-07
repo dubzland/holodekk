@@ -7,17 +7,21 @@ use crate::entities::UhuraStatus;
 use super::proto::{entities::RpcUhuraStatusRequest, RpcUhuraClient};
 
 #[derive(Clone, Debug)]
-pub struct ApiClient {
+pub struct Client {
     inner: RpcUhuraClient<Channel>,
 }
 
-impl ApiClient {
+impl Client {
+    #[must_use]
     pub fn new(channel: Channel) -> Self {
         Self {
             inner: RpcUhuraClient::new(channel),
         }
     }
 
+    /// # Errors
+    ///
+    /// - Failure to connect to server
     pub async fn status(&self) -> ClientResult<UhuraStatus> {
         let mut client = self.inner.clone();
         let request = tonic::Request::new(RpcUhuraStatusRequest {});
