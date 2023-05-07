@@ -9,7 +9,7 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,no_run
 /// use holodekk::utils::logger;
 ///
 /// logger::init("myapp", log::LevelFilter::Debug);
