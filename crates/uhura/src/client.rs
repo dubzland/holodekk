@@ -10,7 +10,7 @@ use tower::service_fn;
 
 use holodekk::errors::grpc::ClientResult;
 
-use crate::apis::grpc::uhura::ApiClient;
+use crate::apis::grpc::uhura::Client as GrpcClient;
 
 #[derive(Clone, Debug)]
 pub struct Client {
@@ -18,6 +18,7 @@ pub struct Client {
 }
 
 impl Client {
+    #[must_use]
     fn new(channel: Channel) -> Self {
         Self { channel }
     }
@@ -51,7 +52,7 @@ impl Client {
     }
 
     #[must_use]
-    pub fn uhura(&self) -> ApiClient {
-        ApiClient::new(self.channel.clone())
+    pub fn uhura(&self) -> GrpcClient {
+        GrpcClient::new(self.channel.clone())
     }
 }

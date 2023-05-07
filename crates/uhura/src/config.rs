@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use holodekk::scene;
+use holodekk::core::scene;
 use holodekk::Paths;
 
 #[derive(Clone, Debug)]

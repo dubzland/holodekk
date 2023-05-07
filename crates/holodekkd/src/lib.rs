@@ -7,9 +7,9 @@ use nix::{sys::signal::kill, unistd::Pid};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
 
+use holodekk::core::scene::{self, entity::service::Find};
 use holodekk::entity::repository;
 use holodekk::process::daemon;
-use holodekk::scene::{self, entity::service::Find};
 
 #[derive(Debug)]
 pub enum Message {}

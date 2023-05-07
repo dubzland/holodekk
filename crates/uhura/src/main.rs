@@ -8,8 +8,8 @@ use nix::{
 };
 use syslog::{BasicLogger, Facility, Formatter3164};
 
+use holodekk::core::scene;
 use holodekk::process::{pidfile, syncpipe};
-use holodekk::scene;
 use holodekk::utils::{
     fs::{ensure_directory, open_dev_null},
     server::Handle,

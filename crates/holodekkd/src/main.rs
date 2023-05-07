@@ -95,7 +95,7 @@ where
     R: Repository,
 {
     let holodekk = holodekkd::Monitor::start(config.clone(), repo.clone()).await?;
-    let state = api::HolodekkdApiState::new(repo.clone());
+    let state = api::State::new(repo.clone());
     let api_server = Http::start(config.holodekk_api_config(), api::router(Arc::new(state)));
 
     let signal = Signals::new().await;

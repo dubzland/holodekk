@@ -2,14 +2,14 @@ use async_trait::async_trait;
 use log::warn;
 use timestamps::Timestamps;
 
-use crate::entity::repository::{Query as RepositoryQuery, Result};
-use crate::scene::{
+use crate::core::scene::{
     entity::{
         repository::{Event, Query},
         Id, Name, Repository, Status,
     },
     Entity,
 };
+use crate::entity::repository::{Query as RepositoryQuery, Result};
 
 use super::Memory;
 
@@ -111,8 +111,8 @@ mod tests {
 
     use rstest::*;
 
+    use crate::core::scene::{entity::mock_entity, Entity};
     use crate::entity::repository::{memory::Database, Error, Result};
-    use crate::scene::{entity::mock_entity, Entity};
 
     use super::*;
 

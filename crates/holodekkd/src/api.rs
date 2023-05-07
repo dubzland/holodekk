@@ -3,11 +3,11 @@ use std::sync::Arc;
 use axum::{response::IntoResponse, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 
-use holodekk::apis::http::ApiState;
-use holodekk::scene;
-use holodekk::subroutine;
+use holodekk::core::scene;
+use holodekk::core::subroutine;
 
-pub struct HolodekkdApiState<R>
+/// Global shared state for all http api endpoints
+pub struct State<R>
 where
     R: scene::entity::Repository + subroutine::entity::Repository,
 {
@@ -16,7 +16,7 @@ where
     subroutine_entity_service: Arc<subroutine::entity::Service<R>>,
 }
 
-impl<R> HolodekkdApiState<R>
+impl<R> State<R>
 where
     R: scene::entity::Repository + subroutine::entity::Repository,
 {
@@ -36,26 +36,36 @@ where
     }
 }
 
-impl<R> ApiState<scene::entity::Service<R>, subroutine::entity::Service<R>> for HolodekkdApiState<R>
+impl<R> scene::entity::api::State<scene::entity::Service<R>> for State<R>
 where
     R: scene::entity::Repository + subroutine::entity::Repository,
 {
     fn scene_entity_service(&self) -> Arc<scene::entity::Service<R>> {
         self.scene_entity_service.clone()
     }
+}
 
+impl<R> subroutine::entity::api::State<subroutine::entity::Service<R>> for State<R>
+where
+    R: scene::entity::Repository + subroutine::entity::Repository,
+{
     fn subroutine_entity_service(&self) -> Arc<subroutine::entity::Service<R>> {
         self.subroutine_entity_service.clone()
     }
 }
 
-pub fn router<R>(api_state: Arc<HolodekkdApiState<R>>) -> axum::Router
+pub fn router<R>(api_state: Arc<State<R>>) -> axum::Router
 where
     R: scene::entity::Repository + subroutine::entity::Repository,
 {
     Router::new()
         .route("/health", get(health))
-        .nest("/scenes", scene::entity::api::router(api_state))
+        .nest(
+            "/scenes",
+            scene::entity::api::router()
+                .nest("/scenes/:scene_id/", subroutine::entity::api::router()),
+        )
+        .with_state(api_state)
 }
 
 #[derive(Debug, Deserialize, Serialize)]

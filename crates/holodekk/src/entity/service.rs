@@ -15,7 +15,7 @@
 //! ```rust,no_run
 //! use async_trait::async_trait;
 //! use holodekk::entity::service;
-//! use holodekk::scene;
+//! use holodekk::core::scene;
 //!
 //! struct Input<'a> {
 //!   id: &'a scene::entity::Id,

@@ -71,11 +71,11 @@ impl Paths {
     }
 }
 
-pub mod apis;
+pub mod core;
 pub mod entity;
 pub mod errors;
 pub mod image;
 pub mod process;
-pub mod scene;
-pub mod subroutine;
+// pub mod scene;
+// pub mod subroutine;
 pub mod utils;
