@@ -17,7 +17,7 @@ pub struct Input<'c> {
 }
 
 impl<'c> Input<'c> {
-    /// Shorthand for instanciating a new [`Input`] instance
+    /// Shorthand for instantiating a new [`Input`] instance
     #[must_use]
     pub fn new(name: &'c str) -> Self {
         Self { name }
@@ -117,7 +117,7 @@ mod tests {
                         && scene.created_at.is_none()
                         && scene.updated_at.is_none()
                 })
-                .return_once(move |_| Ok(entity.clone()));
+                .return_once(move |_| Ok(entity));
         }
 
         let service = scene::entity::Service::new(Arc::new(mock_repository));
