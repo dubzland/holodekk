@@ -17,7 +17,7 @@ holodekk = { path = "./crates/holodekk" }
 timestamps = { git = "https://git.dubzland.net/holodekk/timestamps-rs.git" }
 anyhow = "1.0.82"
 axum = { version = "0.6.12", features = ["multipart"] }
-async-trait = "0.1.67"
+async-trait = "0.1.80"
 bytes = "1.4.0"
 chrono = { version = "0.4.24", features = ["serde"] }
 clap = { version = "4.1.6", features = ["derive"] }
