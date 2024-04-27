@@ -1,5 +1,5 @@
 image:
-  name: gitlab-registry.dubzland.net/holodekk/rust-docker-ci:latest
+  name: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/holodekk/rust-docker-ci:latest
 
 stages:
   - test
