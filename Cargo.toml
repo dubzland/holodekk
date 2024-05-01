@@ -46,7 +46,7 @@ tar = "0.4.40"
 tempfile = "3.5.0"
 thiserror = "1.0.59"
 tokio = { version = "1.26.0", features = ["full"] }
-tokio-stream = { version = "0.1.12", features = ["net"] }
+tokio-stream = { version = "0.1.15", features = ["net"] }
 tokio-util = { version = "0.7.7", features = ["io"] }
 tonic = "0.8.3"
 tonic-build = "0.8.4"
