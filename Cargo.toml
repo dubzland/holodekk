@@ -31,7 +31,7 @@ hyper = "0.14.28"
 lazy_static = "1.4.0"
 log = "0.4.21"
 mio = "0.8.11"
-mockall = "0.11.4"
+mockall = "0.12.1"
 mockall_double = "0.3.1"
 nix = "0.26.2"
 prost = "0.11.8"
@@ -47,7 +47,7 @@ tempfile = "3.5.0"
 thiserror = "1.0.59"
 tokio = { version = "1.37.0", features = ["full"] }
 tokio-stream = { version = "0.1.15", features = ["net"] }
-tokio-util = { version = "0.7.10", features = ["io"] }
+tokio-util = { version = "0.7.11", features = ["io"] }
 tonic = "0.8.3"
 tonic-build = "0.8.4"
 tower = "0.4.13"
