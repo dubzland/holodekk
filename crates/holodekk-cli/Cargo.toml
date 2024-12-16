@@ -17,7 +17,7 @@ serde_json.workspace = true
 tar.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
-colored = "2.0.0"
+colored = "2.2.0"
 
 [[bin]]
 name = "holodekk"
