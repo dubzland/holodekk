@@ -21,7 +21,7 @@ axum = { version = "0.6.12", features = ["multipart"] }
 async-trait = "0.1.80"
 bytes = "1.9.0"
 chrono = { version = "0.4.38", features = ["serde"] }
-clap = { version = "4.1.6", features = ["derive"] }
+clap = { version = "4.5.26", features = ["derive"] }
 env_logger = "0.11.3"
 futures = "0.3.30"
 futures-core = "0.3.30"
