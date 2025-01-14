@@ -22,7 +22,7 @@ async-trait = "0.1.85"
 bytes = "1.9.0"
 chrono = { version = "0.4.38", features = ["serde"] }
 clap = { version = "4.1.6", features = ["derive"] }
-env_logger = "0.11.3"
+env_logger = "0.11.6"
 futures = "0.3.30"
 futures-core = "0.3.30"
 futures-util = "0.3.30"
