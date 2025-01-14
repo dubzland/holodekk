@@ -39,7 +39,7 @@ url.workspace = true
 uuid.workspace = true
 walkdir.workspace = true
 bollard = { version = "0.18.1", features = ["ssl"] }
-libc = "0.2.153"
+libc = "0.2.169"
 
 [build-dependencies]
 tonic-build.workspace = true
