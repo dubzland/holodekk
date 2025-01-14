@@ -1,6 +1,9 @@
 use std::fs::{self, File};
 use std::io::Read;
-use std::os::unix::io::{FromRawFd, RawFd};
+use std::os::{
+    fd::AsRawFd,
+    unix::io::{FromRawFd, RawFd},
+};
 use std::path::Path;
 use std::process::Command;
 
@@ -79,8 +82,8 @@ impl PidSyncMessage {
 
 pub fn setup_sync_pipe() -> std::result::Result<(File, RawFd), DaemonSyncError> {
     let (parent_fd, child_fd) = pipe2(OFlag::empty())?;
-    let sync_pipe = unsafe { File::from_raw_fd(parent_fd) };
-    Ok((sync_pipe, child_fd))
+    let sync_pipe = unsafe { File::from_raw_fd(parent_fd.as_raw_fd()) };
+    Ok((sync_pipe, child_fd.as_raw_fd()))
 }
 
 pub fn read_pid_from_sync_pipe(mut sync_pipe: File) -> std::result::Result<i32, DaemonSyncError> {

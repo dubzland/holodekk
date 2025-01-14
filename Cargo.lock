@@ -294,9 +294,8 @@ version = "4.5.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96b01801b5fc6a0a232407abc821660c9c6d25a1cafc0d4f85f29fb8d9afc121"
 dependencies = [
- "anstream 0.2.6",
- "anstyle 0.3.5",
- "bitflags 1.3.2",
+ "anstream",
+ "anstyle",
  "clap_lex",
  "strsim",
 ]
