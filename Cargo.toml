@@ -20,7 +20,7 @@ anyhow = "1.0.95"
 axum = { version = "0.6.12", features = ["multipart"] }
 async-trait = "0.1.85"
 bytes = "1.9.0"
-chrono = { version = "0.4.38", features = ["serde"] }
+chrono = { version = "0.4.39", features = ["serde"] }
 clap = { version = "4.1.6", features = ["derive"] }
 env_logger = "0.11.6"
 futures = "0.3.30"
