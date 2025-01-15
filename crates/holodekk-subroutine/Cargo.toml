@@ -8,7 +8,7 @@ license-file.workspace = true
 [dependencies]
 clap.workspace = true
 holodekk.workspace = true
-holodekk-common.workspace = true
+#holodekk-common.workspace = true
 log.workspace = true
 mio.workspace = true
 nix.workspace = true

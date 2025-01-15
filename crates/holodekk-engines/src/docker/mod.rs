@@ -8,7 +8,7 @@ use log::debug;
 
 use url::Url;
 
-use crate::engines::{Engine, Identity};
+use crate::{Engine, Identity};
 
 pub(crate) const DOCKER_PREFIX: &str = "holodekk";
 

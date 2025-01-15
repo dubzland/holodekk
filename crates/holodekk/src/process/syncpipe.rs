@@ -6,6 +6,7 @@
 
 use std::fs::File;
 use std::io::{Read, Write};
+use std::os::fd::AsRawFd;
 use std::os::unix::io::{FromRawFd, RawFd};
 
 use nix::{fcntl::OFlag, unistd::pipe2};
@@ -65,8 +66,8 @@ impl PidSyncMessage {
 /// ```
 pub fn create() -> Result<(File, RawFd)> {
     let (parent_fd, child_fd) = pipe2(OFlag::empty())?;
-    let sync_pipe = unsafe { File::from_raw_fd(parent_fd) };
-    Ok((sync_pipe, child_fd))
+    let sync_pipe = unsafe { File::from_raw_fd(parent_fd.as_raw_fd()) };
+    Ok((sync_pipe, child_fd.as_raw_fd()))
 }
 
 /// Writes process (pid) information to the child end of a sync pipe.

@@ -1,8 +1,10 @@
 [workspace]
 members = [
-    "crates/holodekk",
-    "crates/holodekkd",
-    "crates/uhura"
+	"crates/holodekk",
+	"crates/holodekk-common",
+	"crates/holodekk-engines",
+	"crates/holodekkd",
+	"crates/uhura",
 ]
 resolver = "2"
 
@@ -30,6 +32,7 @@ hex = "0.4.3"
 http = "0.2.12"
 hyper = "0.14.32"
 lazy_static = "1.4.0"
+libc = "0.2.139"
 log = "0.4.25"
 mio = "0.8.11"
 mockall = "0.12.1"

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::errors::error_chain_fmt;
+use holodekk::errors::error_chain_fmt;
 
 #[derive(thiserror::Error)]
 pub enum EngineError {

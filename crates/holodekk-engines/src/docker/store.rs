@@ -7,7 +7,7 @@ use bollard::image::ListImagesOptions;
 use regex::Regex;
 
 use super::Docker;
-use crate::engines::{Image, ImageKind, Result, Store};
+use crate::{Image, ImageKind, Result, Store};
 
 pub(crate) struct ImageStore<'a> {
     client: &'a bollard::Docker,

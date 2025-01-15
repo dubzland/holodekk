@@ -1,0 +1,51 @@
+[package]
+name = "holodekk-engines"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license-file.workspace = true
+
+[dependencies]
+# anyhow.workspace = true
+async-trait.workspace = true
+# axum.workspace = true
+# bytes.workspace = true
+# clap.workspace = true
+# futures.workspace = true
+# futures-core.workspace = true
+futures-util.workspace = true
+# hex.workspace = true
+holodekk.workspace = true
+# hyper.workspace = true
+log.workspace = true
+# mio.workspace = true
+# nix.workspace = true
+# prost.workspace = true
+# rand.workspace = true
+regex.workspace = true
+serde.workspace = true
+# serde_json.workspace = true
+# sha2.workspace = true
+# syslog.workspace = true
+# tar.workspace = true
+# tempfile.workspace = true
+thiserror.workspace = true
+# tokio.workspace = true
+# tokio-stream.workspace = true
+# tokio-util.workspace = true
+# tonic.workspace = true
+# tower.workspace = true
+# tracing.workspace = true
+url.workspace = true
+# uuid.workspace = true
+# walkdir.workspace = true
+bollard = { version = "0.18.1", features = ["ssl"] }
+# libc = "0.2.153"
+
+# [build-dependencies]
+# tonic-build.workspace = true
+
+# [dev-dependencies]
+# env_logger.workspace = true
+# mockall.workspace = true
+# rstest.workspace = true
