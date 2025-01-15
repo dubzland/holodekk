@@ -35,7 +35,7 @@ mio = "0.8.11"
 mockall = "0.12.1"
 mockall_double = "0.3.1"
 nix = { version = "0.29.0", features = ["fs", "signal"] }
-prost = "0.11.8"
+prost = "0.13.4"
 rand = "0.8.5"
 regex = "1.11.1"
 rstest = "0.24.0"
