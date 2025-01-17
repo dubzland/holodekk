@@ -23,8 +23,8 @@ bytes = "1.9.0"
 chrono = { version = "0.4.39", features = ["serde"] }
 clap = { version = "4.5.26", features = ["derive"] }
 env_logger = "0.11.6"
-futures = "0.3.30"
-futures-core = "0.3.30"
+futures = "0.3.31"
+futures-core = "0.3.31"
 futures-util = "0.3.30"
 hex = "0.4.3"
 http = "0.2.12"
