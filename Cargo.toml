@@ -17,7 +17,7 @@ license-file = "LICENSE"
 holodekk = { path = "./crates/holodekk" }
 timestamps = { git = "https://git.dubzland.net/holodekk/timestamps-rs.git" }
 anyhow = "1.0.95"
-axum = { version = "0.6.12", features = ["multipart"] }
+axum = { version = "0.8.1", features = ["multipart"] }
 async-trait = "0.1.85"
 bytes = "1.9.0"
 chrono = { version = "0.4.39", features = ["serde"] }
